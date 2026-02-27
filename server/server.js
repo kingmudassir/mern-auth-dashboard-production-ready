@@ -8,14 +8,16 @@ dotenv.config()
 const PORT = process.env.PORT || 5001
 
 const server = async () => { 
-    // await connection()
+    await connection()
 
     app.listen(PORT, () => {
         console.log(`Server running in ${process.env.NODE_ENV} mode and listening on port ${PORT}`)
     })
 }
 
+server()
+
 process.on("unhandledRejection", (err) => {
     console.log(`Error: ${err.message}`)
-    server-close(() => process.exit(1))
+    server.close(() => process.exit(1))
 })
