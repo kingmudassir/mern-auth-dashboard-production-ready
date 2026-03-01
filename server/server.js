@@ -1,4 +1,3 @@
-import { configDotenv } from "dotenv";
 import dotenv from "dotenv";
 import app from "./app.js";
 import connection from "./config/dbConnection.js";
@@ -7,17 +6,20 @@ dotenv.config()
 
 const PORT = process.env.PORT || 5001
 
-const server = async () => { 
-    await connection()
+const startServer = async () => {
+    try {
+        await connection();
 
-    app.listen(PORT, () => {
-        console.log(`Server running in ${process.env.NODE_ENV} mode and listening on port ${PORT}`)
-    })
-}
+        const server = app.listen(PORT, () => {
+        console.log(
+            `Server running in ${process.env.NODE_ENV} mode on port ${PORT}`
+        );
+        });
 
-server()
+    } catch (error) {
+        console.error("Failed to start server:", error.message);
+        process.exit(1);
+    }
+};
 
-process.on("unhandledRejection", (err) => {
-    console.log(`Error: ${err.message}`)
-    server.close(() => process.exit(1))
-})
+startServer ()

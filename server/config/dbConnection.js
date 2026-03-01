@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 const connection = async () => {
     try {
-        mongoose.connect(process.env.MONGO_URI, {
+        await mongoose.connect(process.env.MONGO_URI, {
             dbName: "MERN_Authentication"
         })
 
@@ -12,7 +12,6 @@ const connection = async () => {
             "MongoDB connected failed: ",
             error.name,
             error.message,
-            error.stack
         )
 
         process.exit(1)

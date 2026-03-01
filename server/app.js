@@ -1,5 +1,10 @@
-import express from "express"
+import express from "express";
+import authRoutes from "./routes/authRoutes.js";
 
-const app = express()
+const app = express();
 
-export default app
+app.use(express.json());
+
+app.use("/api/v2/auth", authRoutes);
+
+export default app;
