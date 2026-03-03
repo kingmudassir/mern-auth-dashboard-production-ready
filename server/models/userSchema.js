@@ -1,127 +1,151 @@
 import mongoose from "mongoose";
-import bcrypt from "bcryptjs"
+import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import crypto from "crypto"
+import crypto from "crypto";
 
-const userSchema = new mongoose.Schema({
-    name: {
-        type: String,
-        required: [true, "Please add a name."],
-        minLength: 3,
-        maxLength: 50,
-        trim: true
+const userSchema = new mongoose.Schema(
+    {
+        name: {
+            type: String,
+            required: [true, "Please add a name."],
+            minLength: [3, "Name must be at least 3 characters."],
+            maxLength: [50, "Name cannot exceed 50 characters."],
+            trim: true
+        },
+
+        email: {
+            type: String,
+            required: [true, "Please add an email."],
+            unique: true,
+            lowercase: true,
+            trim: true,
+            match: [/^\S+@\S+\.\S+$/, "Please provide a valid email address."]
+        },
+
+        // NOTE: Do NOT validate password format here via match/regex.
+        // By the time Mongoose validators run on re-save, the value is
+        // already a bcrypt hash — the regex will always fail.
+        // Validate password strength in your controller or middleware instead.
+        password: {
+            type: String,
+            required: [true, "Please add a password."],
+            // No trim — spaces in passwords are intentional and valid.
+            // No match — see note above.
+            select: false
+        },
+
+        role: {
+            type: String,
+            enum: ["user", "admin"],
+            default: "user"
+        },
+
+        isEmailVerified: {
+            type: Boolean,
+            default: false
+        },
+
+        // Stores a SHA-256 hash of the verification code, not the raw code.
+        // Raw code is returned from the method and sent to the user via email.
+        emailVerificationCode: {
+            type: String
+        },
+
+        emailVerificationCodeExpire: {
+            type: Date
+        },
+
+        // Stores a SHA-256 hash of the reset token, not the raw token.
+        resetPasswordToken: {
+            type: String
+        },
+
+        resetPasswordExpire: {
+            type: Date
+        },
+
+        // Stores a SHA-256 hash of the refresh token, not the raw token.
+        refreshToken: {
+            type: String
+        }
     },
-
-    email: {
-        type: String,
-        required: true,
-        unique: true,
-        lowercase: true,
-        trim: true,
-        match: [/^\S+@\S+\.\S+$/, "Please provide a valid email address. [userSchema.js - email]"]
-    },
-
-    password: {
-        type: String,
-        required: true,
-        trim: true,
-        minLength:[8, "Password must have at least 8 characters. [userSchema.js - password]"],
-        maxLength: [128, "Password cannot have more than 128 characters. [userSchema.js - password]"],
-        match: [/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$/, "Password must contain uppercase, lowercase, number, and special character"],
-        select: false
-    },
-
-    role: {
-        type: String,
-        enum: ["user", "admin"],
-        default: 'user'
-    },
-
-    isEmailVerified: {
-        type: Boolean,
-        default: false
-    },
-
-    emailVerificationToken: {
-        type: String,
-        default: null
-    },
-
-    emailVerificationTokenExpire: {
-        type: Date,
-        default: null
-    },
-
-    resetPasswordToken: {
-        type: String,
-        default: null
-    },
-
-    resetPasswordExpire: {
-        type: Date,
-        default: null
-    },
-
-    refreshToken: {
-        type: String,
-        default: null
-    },
-}, {
-    timestamps: true
-})
-
-
-
-/**
- * Mongoose pre-save hook
- * Hashes the password only if it has been modified.
- * Prevents double-hashing on updates.
- */
-userSchema.pre("save", async function () {
-    // If password field was not modified, skip hashing
-    if (!this.isModified("password")) {
-        return;
+    {
+        timestamps: true
     }
+);
 
-    // Hash the password before saving to the database
-    this.password = await bcrypt.hash(this.password, 10);
+// =========================
+// Hash password before save
+// =========================
+userSchema.pre("save", async function () {
+    if (!this.isModified("password")) return;
+    this.password = await bcrypt.hash(this.password, 12);
 });
 
-
-
-
-
-/**
- * Generates a 5-digit numeric verification code
- * and sets its expiration time on the user document.
- */
-userSchema.methods.generateVerificationCode = function () {
-    /**
-     * Generates a random 5-digit number where
-     * the first digit is never zero.
-     */
-    function generateRandomFiveDigitNumber() {
-        const firstDigit = Math.floor(Math.random() * 9) + 1;
-        const remainingDigits = Math.floor(Math.random() * 10000)
-            .toString()
-            .padStart(4, "0");
-
-        return parseInt(firstDigit + remainingDigits, 10);
-    }
-
-
-    const verificationCode = generateRandomFiveDigitNumber();
-    this.verificationCode = verificationCode;
-
-    this.verificationCodeExpire = Date.now() + 10 * 60 * 1000;
-
-    return verificationCode;
+// =========================
+// Compare entered password with stored hash
+// =========================
+userSchema.methods.comparePassword = async function (enteredPassword) {
+    return bcrypt.compare(enteredPassword, this.password);
 };
 
-userSchema.methods.generateToken = function () {
+// =========================
+// Generate 6-digit OTP verification code
+// Stores hashed version in DB, returns raw code to send via email
+// =========================
+userSchema.methods.generateVerificationCode = function () {
+    // crypto.randomInt is cryptographically secure, unlike Math.random()
+    const rawCode = crypto.randomInt(100000, 999999).toString();
+
+    this.emailVerificationCode = crypto
+        .createHash("sha256")
+        .update(rawCode)
+        .digest("hex");
+
+    this.emailVerificationCodeExpire = Date.now() + 10 * 60 * 1000; // 10 minutes
+
+    return rawCode; // Send this to the user's email, never store it raw
+};
+
+// =========================
+// Generate password reset token
+// Stores hashed version in DB, returns raw token to send via email
+// =========================
+userSchema.methods.generateResetPasswordToken = function () {
+    const rawToken = crypto.randomBytes(32).toString("hex");
+
+    this.resetPasswordToken = crypto
+        .createHash("sha256")
+        .update(rawToken)
+        .digest("hex");
+
+    this.resetPasswordExpire = Date.now() + 15 * 60 * 1000; // 15 minutes
+
+    return rawToken;
+};
+
+// =========================
+// Generate JWT access token
+// =========================
+userSchema.methods.generateAccessToken = function () {
     return jwt.sign({ id: this._id }, process.env.JWT_SECRET_KEY, {
-        expiresIn: process.env.JWT_EXPIRE?.trim(),
+        expiresIn: process.env.JWT_EXPIRE?.trim()
     });
 };
 
-export const User = mongoose.model("User", userSchema)
+// =========================
+// Generate and store hashed refresh token
+// Returns raw token to be sent to client (httpOnly cookie)
+// =========================
+userSchema.methods.generateRefreshToken = function () {
+    const rawToken = crypto.randomBytes(64).toString("hex");
+
+    this.refreshToken = crypto
+        .createHash("sha256")
+        .update(rawToken)
+        .digest("hex");
+
+    return rawToken;
+};
+
+export const User = mongoose.model("User", userSchema);

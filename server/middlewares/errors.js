@@ -1,86 +1,100 @@
 class ErrorHandler extends Error {
-    constructor (message, statusCode) {
-        super(message)
-        this.statusCode = statusCode
-        this.isOperational = true
-        Error.captureStackTrace(this, this.constructor)
+    constructor(message, statusCode) {
+        super(message);
+        this.statusCode = statusCode;
+        this.isOperational = true;
+        Error.captureStackTrace(this, this.constructor);
     }
 }
 
 const errorMap = {
-    // Native JS Error
-    Error: { 
-        statusCode: 500, 
-        message: "Internal Server Error" 
-    },
-
     // Mongoose Errors
-    CastError: { 
-        statusCode: 400, 
-        message: "Invalid value or ID format" 
+    CastError: {
+        statusCode: 400,
+        message: "Invalid value or ID format"
     },
 
-    DocumentNotFoundError: { 
-        statusCode: 404, 
-        message: "Document not found" 
+    DocumentNotFoundError: {
+        statusCode: 404,
+        message: "Document not found"
     },
 
-    MongooseServerSelectionError: { 
-        statusCode: 503, 
-        message: "Cannot connect to MongoDB server" 
+    MongooseServerSelectionError: {
+        statusCode: 503,
+        message: "Cannot connect to MongoDB server"
     },
 
-    MongoServerError: { 
+    MongoServerError: {
         statusCode: 409,
         handler: (err) => {
-            // Duplicate key error
             if (err.code === 11000) {
                 const field = Object.keys(err.keyValue)[0];
                 return {
-                    errors: {
-                        [field]: `${field} already exists`
+                    statusCode: 409,
+                    body: {
+                        errors: {
+                            [field]: `${field} already exists`
+                        }
                     }
                 };
             }
-
+            // Generic DB error — not safe to expose, treat as non-operational
             return {
-                message: "Database error"
+                statusCode: 500,
+                body: { message: "Internal Server Error" },
+                isOperational: false
             };
         }
     },
 
-    ValidationError: { 
+    ValidationError: {
         statusCode: 400,
         handler: (err) => {
             const errors = {};
-
             Object.keys(err.errors || {}).forEach(field => {
                 errors[field] = err.errors[field].message;
             });
-
-            return { errors };
+            return {
+                statusCode: 400,
+                body: { errors }
+            };
         }
     },
 
-    ValidatorError: { 
-        statusCode: 400,
-        message: "Validation failed"
-    },
-
-    VersionError: { 
-        statusCode: 409, 
-        message: "Document version conflict" 
+    VersionError: {
+        statusCode: 409,
+        message: "Document version conflict"
     },
 
     // JWT Errors
-    JsonWebTokenError: { 
-        statusCode: 401, 
-        message: "Invalid token. Please login again." 
+    JsonWebTokenError: {
+        statusCode: 401,
+        message: "Invalid token. Please login again."
     },
 
-    TokenExpiredError: { 
-        statusCode: 401, 
-        message: "Token expired. Please login again." 
+    TokenExpiredError: {
+        statusCode: 401,
+        message: "Token expired. Please login again."
+    },
+
+    // Express JSON body parse error
+    SyntaxError: {
+        statusCode: 400,
+        handler: (err) => {
+            // Only handle Express body-parser syntax errors
+            if (err.status === 400 && err.body !== undefined) {
+                return {
+                    statusCode: 400,
+                    body: { message: "Malformed JSON in request body" }
+                };
+            }
+            // All other SyntaxErrors are non-operational
+            return {
+                statusCode: 500,
+                body: { message: "Internal Server Error" },
+                isOperational: false
+            };
+        }
     }
 };
 
@@ -89,48 +103,48 @@ export const errorMiddleware = (err, req, res, next) => {
 
     let statusCode = err.statusCode || 500;
     let responseBody = { message: "Internal Server Error" };
+    let isOperational = err.isOperational || false;
 
     // =========================
     // Map known errors
     // =========================
     if (err.name && errorMap[err.name]) {
         const mapped = errorMap[err.name];
-        statusCode = mapped.statusCode || statusCode;
 
-        // If structured handler exists
         if (mapped.handler) {
-            responseBody = mapped.handler(err);
+            const result = mapped.handler(err);
+            statusCode = result.statusCode;
+            responseBody = result.body;
+            // Handler can explicitly mark something non-operational
+            isOperational = result.isOperational !== false;
         } else {
-            responseBody = {
-                message:
-                    typeof mapped.message === "function"
-                        ? mapped.message(err)
-                        : mapped.message
-            };
+            statusCode = mapped.statusCode;
+            responseBody = { message: mapped.message };
+            isOperational = true;
         }
-
-        err.isOperational = true;
     }
 
     // =========================
-    // Custom operational errors
+    // Custom operational errors (ErrorHandler instances)
+    // Not in the map, but explicitly marked operational
     // =========================
-    if (err.isOperational && !errorMap[err.name]) {
-        statusCode = err.statusCode || statusCode;
+    else if (err.isOperational) {
+        statusCode = err.statusCode || 500;
         responseBody = { message: err.message };
+        isOperational = true;
     }
 
     // =========================
     // Logging
     // =========================
-    if (!err.isOperational) {
+    if (!isOperational) {
         console.error("NON-OPERATIONAL ERROR:", err);
     } else {
-        console.warn("OPERATIONAL ERROR:", err.message);
+        console.warn(`OPERATIONAL ERROR [${statusCode}]:`, err.message);
     }
 
     // =========================
-    // DEVELOPMENT
+    // Development — always full detail
     // =========================
     if (isDev) {
         return res.status(statusCode).json({
@@ -142,21 +156,20 @@ export const errorMiddleware = (err, req, res, next) => {
     }
 
     // =========================
-    // PRODUCTION
+    // Production — operational errors get real response
     // =========================
-    if (err.isOperational) {
+    if (isOperational) {
         return res.status(statusCode).json({
             success: false,
             ...responseBody
         });
     }
 
-    // Non-operational in production
+    // Non-operational in production — never leak details
     return res.status(500).json({
         success: false,
         message: "Internal Server Error"
     });
 };
 
-
-export default ErrorHandler
+export default ErrorHandler;
