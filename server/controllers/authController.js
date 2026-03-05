@@ -127,7 +127,7 @@ export const register = catchAsyncError(async (req, res, next) => {
             });
         } catch (error) {
             // Reset verification code on failure
-            existingUser.emailVerificationCode = null;
+            existingUser.emailVerificationCode = undefined;
             await existingUser.save({ validateModifiedOnly: true });
             return next(
                 new ErrorHandler(
@@ -151,8 +151,8 @@ export const register = catchAsyncError(async (req, res, next) => {
         });
     } catch (error) {
         // If sending fails, cleanup verification code
-        newUser.emailVerificationCode = null;
-        newUser.emailVerificationCodeExpire = null
+        newUser.emailVerificationCode = undefined;
+        newUser.emailVerificationCodeExpire = undefined
         await newUser.save({ validateModifiedOnly: true });
         return next(
             new ErrorHandler(
@@ -182,7 +182,7 @@ export const resendOTP = catchAsyncError(async (req, res, next) => {
     const verificationCode = existingUser.generateVerificationCode();
     await existingUser.save({ validateModifiedOnly: true });
 
-        try {
+    try {
         await sendVerificationCode(verificationCode, existingUser.email);
         return res.status(200).json({
             success: true,
@@ -190,8 +190,8 @@ export const resendOTP = catchAsyncError(async (req, res, next) => {
         });
     } catch (error) {
         // If sending fails, cleanup verification code
-        existingUser.emailVerificationCode = null;
-        existingUser.emailVerificationCodeExpire = null
+        existingUser.emailVerificationCode = undefined;
+        existingUser.emailVerificationCodeExpire = undefined
         await existingUser.save({ validateModifiedOnly: true });
         return next(
             new ErrorHandler(
@@ -225,8 +225,8 @@ export const verifyOTP = catchAsyncError(async (req, res, next) => {
     }
 
     existingUser.isEmailVerified = true;
-    existingUser.emailVerificationCode = null;
-    existingUser.emailVerificationCodeExpire = null;
+    existingUser.emailVerificationCode = undefined;
+    existingUser.emailVerificationCodeExpire = undefined;
 
     await existingUser.save({ validateModifiedOnly: true });
 
@@ -277,9 +277,213 @@ async function sendVerificationCode(verificationCode, email) {
     }
 }
 
-export const resetPassword = catchAsyncError(req, res, next) {
-    
-}
+export const resetPassword = catchAsyncError(async (req, res, next) => {
+
+    const { password, confirmPassword } = req.body;
+
+    if (!req.params.token)
+        return next(new ErrorHandler("Invalid reset request", 400));
+
+    if (!password || !confirmPassword)
+        return next(new ErrorHandler("Password fields are required", 400));
+
+    if (!validator.isStrongPassword(password, {
+        minLength: 8,
+        minLowercase: 1,
+        minUppercase: 1,
+        minNumbers: 1,
+        minSymbols: 1,
+    })) {
+        return next(new ErrorHandler(
+            "Password must be 8+ chars with uppercase, lowercase, number, and symbol.",
+            400
+        ));
+    }
+
+    if (password !== confirmPassword)
+        return next(new ErrorHandler("Passwords do not match", 400));
+
+    const hashedToken = crypto
+        .createHash("sha256")
+        .update(req.params.token)
+        .digest("hex");
+
+    const existingUser = await User.findOne({
+        resetPasswordToken: hashedToken,
+        resetPasswordExpire: { $gt: Date.now() }
+    });
+
+    if (!existingUser)
+        return next(new ErrorHandler("Reset token is invalid or expired", 400));
+
+    existingUser.password = password;
+
+    existingUser.resetPasswordToken = undefined;
+    existingUser.resetPasswordExpire = undefined;
+
+    await existingUser.save({ validateModifiedOnly: true });
+
+    res.status(200).json({
+        success: true,
+        message: "Password reset successful"
+    });
+});
+
+export const forgetPassword = catchAsyncError(async (req, res, next) => {
+    const { email } = req.body
+
+    const emailError = validateEmail(email);
+
+    if (emailError) {
+        return next(new ErrorHandler(emailError, 400));
+    }
+
+    const existingUser = await User.findOne({
+        email,
+        isEmailVerified: true
+    })
+
+    if (!existingUser) {
+        return next(new ErrorHandler("User does not exist.", 404))
+    }
+
+    const generateResetPasswordToken = existingUser.generateResetPasswordToken()
+    await existingUser.save({ validateModifiedOnly: false })
+
+    const resetPasswordUrl = `${process.env.FRONTEND_URL}/password/reset/${generateResetPasswordToken}`;
+    const message = generateResetPasswordEmailTemplate(resetPasswordUrl);
+
+
+    try {
+        await sendEmail({
+            email: existingUser.email,
+            subject: "Password Reset Request",
+            message,
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: "A password reset link has been sent to your email!",
+        });
+    } catch (error) {
+
+        existingUser.resetPasswordToken = undefined;
+        existingUser.resetPasswordExpire = undefined;
+        await existingUser.save({ validateBeforeSave: false });
+
+        throw new ErrorHandler(`Failed to send verification email: ${error.message}`, 500);
+    }
+
+})
+
+export const changePassword = catchAsyncError(async (req, res, next) => {
+    const { currentPassword, newPassword, confirmPassword } = req.body;
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+        return next(new ErrorHandler("All password fields are required.", 400));
+    }
+
+    const user = await User.findById(req.user._id).select("+password");
+    if (!user) {
+        return next(new ErrorHandler("User not found.", 404));
+    }
+
+    // Verify current password
+    const isMatch = await user.comparePassword(currentPassword);
+    if (!isMatch) {
+        return next(new ErrorHandler("Current password is incorrect.", 401));
+    }
+
+    // Check new password matches confirmation
+    if (newPassword !== confirmPassword) {
+        return next(new ErrorHandler("New passwords do not match.", 400));
+    }
+
+    // Strong password validation
+    if (!validator.isStrongPassword(newPassword, {
+        minLength: 8,
+        minLowercase: 1,
+        minUppercase: 1,
+        minNumbers: 1,
+        minSymbols: 1,
+    })) {
+        return next(new ErrorHandler(
+            "New password must be at least 8 characters and include uppercase, lowercase, number, and symbol.",
+            400
+        ));
+    }
+
+    // Update password
+    user.password = newPassword;
+
+    // Save only the modified field (hash will run via pre-save hook)
+    await user.save({ validateModifiedOnly: true });
+
+    res.status(200).json({
+        success: true,
+        message: "Password changed successfully."
+    });
+});
+
+export const login = catchAsyncError(async (req, res, next) => {
+    const { email, password } = req.body
+
+    const emailError = validateEmail(email);
+
+    if (emailError) {
+        return next(new ErrorHandler(emailError, 400));
+    }
+
+    const existingUser = await User.findOne({
+        email,
+        isEmailVerified: true
+    }).select("+password")
+
+    // first check if user exists
+    if (!existingUser) {
+        return next(new ErrorHandler("Incorrect email or password.", 401));
+    }
+
+    // compare password
+    const doesPassMatch = await existingUser.comparePassword(password);
+
+    if (!doesPassMatch) {
+        return next(new ErrorHandler("Incorrect email or password.", 401));
+    }
+
+    sendToken(existingUser, 200, "User logged in successfully.", res);
+})
+
+export const logout = catchAsyncError(async (req, res, next) => {
+    res.status(200)
+    .cookie("token", "", {
+        expires: new Date(Date.now()),
+        httpOnly: true
+    })
+    .cookie("refreshToken", "", {
+        expires: new Date(Date.now()),
+        httpOnly: true,
+    })
+    .json({
+        success: true,
+        message: "Logged out successfully.",
+    })
+})
+
+export const getUser = catchAsyncError(async (req, res, next) => {
+    const user = req.user
+    res.status(200).json({
+        success: true,
+        user: { 
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            isEmailVerified: user.isEmailVerified,
+            createdAt: user.createdAt,
+        }
+    })
+})
 
 function generateEmailTemplate(verificationCode) {
     return `
@@ -300,4 +504,40 @@ function generateEmailTemplate(verificationCode) {
         </footer>
         </div>
     `
+}
+
+function generateResetPasswordEmailTemplate(resetPasswordUrl) {
+    return `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px; background-color: #f9f9f9;">
+        <h2 style="color: #e53935; text-align: center;">Reset Your Password</h2>
+
+        <p style="font-size: 16px; color: #333;">Dear User,</p>
+
+        <p style="font-size: 16px; color: #333;">
+        You requested to reset your password. Click the button below to proceed:
+        </p>
+
+        <div style="text-align: center; margin: 30px 0;">
+        <a href="${resetPasswordUrl}"
+            style="display: inline-block; font-size: 18px; font-weight: bold; color: #ffffff; padding: 12px 24px; background-color: #e53935; text-decoration: none; border-radius: 5px;">
+            Reset Password
+        </a>
+        </div>
+
+        <p style="font-size: 16px; color: #333;">
+        This link will expire in 15 minutes.
+        </p>
+
+        <p style="font-size: 16px; color: #333;">
+        If you did not request a password reset, please ignore this email. Your account remains secure.
+        </p>
+
+        <footer style="margin-top: 20px; text-align: center; font-size: 14px; color: #999;">
+        <p>Thank you,<br>Your Company Team</p>
+        <p style="font-size: 12px; color: #aaa;">
+            This is an automated message. Please do not reply to this email.
+        </p>
+        </footer>
+    </div>
+    `;
 }
