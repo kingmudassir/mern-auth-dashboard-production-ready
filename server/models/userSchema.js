@@ -79,14 +79,24 @@ const userSchema = new mongoose.Schema(
 // =========================
 userSchema.pre("save", async function () {
     if (!this.isModified("password")) return;
-    this.password = await bcrypt.hash(this.password, 12);
+
+    try {
+        this.password = await bcrypt.hash(this.password, 12);
+    } catch (error) {
+        next(error);
+    }
 });
 
 // =========================
 // Compare entered password with stored hash
 // =========================
 userSchema.methods.comparePassword = async function (enteredPassword) {
-    return bcrypt.compare(enteredPassword, this.password);
+    try {
+        return await bcrypt.compare(enteredPassword, this.password);
+    } catch (error) {
+        console.error("Password comparison failed:", error);
+        return false;
+    }
 };
 
 // =========================
@@ -94,8 +104,7 @@ userSchema.methods.comparePassword = async function (enteredPassword) {
 // Stores hashed version in DB, returns raw code to send via email
 // =========================
 userSchema.methods.generateVerificationCode = function () {
-    // crypto.randomInt is cryptographically secure, unlike Math.random()
-    const rawCode = crypto.randomInt(100000, 999999).toString();
+    const rawCode = (crypto.randomInt(0, 900000) + 100000).toString();
 
     this.emailVerificationCode = crypto
         .createHash("sha256")
@@ -104,7 +113,7 @@ userSchema.methods.generateVerificationCode = function () {
 
     this.emailVerificationCodeExpire = Date.now() + 10 * 60 * 1000; // 10 minutes
 
-    return rawCode; // Send this to the user's email, never store it raw
+    return rawCode; 
 };
 
 // =========================

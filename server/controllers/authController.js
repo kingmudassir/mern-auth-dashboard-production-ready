@@ -1,6 +1,71 @@
 import { catchAsyncError } from "../middlewares/catchAsyncError.js";
 import ErrorHandler from "../middlewares/errors.js";
 import validator from "validator"
+import { User } from "../models/userSchema.js";
+import { sendEmail } from "../utilities/sendEmail.js";
+import crypto from "crypto";
+
+const validateEmail = (rawEmail) => {
+    if (!rawEmail || typeof rawEmail !== "string") {
+        return "Email is required."
+    }
+
+    // Normalize first (lowercase, remove dots where applicable, etc.)
+    const email = validator.normalizeEmail(rawEmail, {
+        gmail_remove_dots: false,
+        gmail_remove_subaddress: false,
+        outlookdotcom_remove_subaddress: false,
+        yahoo_remove_subaddress: false,
+        icloud_remove_subaddress: false,
+    });
+
+    if (!email) {
+        return "Invalid email."
+    }
+
+    // Hard limits from RFC
+    if (email.length > 254) {
+        return "Email too long."
+    }
+
+    const [local, domain] = email.split("@");
+
+    if (!local || !domain) {
+        return "Invalid email structure."
+    }
+
+    if (local.length > 64) {
+        return "Invalid email."
+    }
+
+    // Format + domain rules
+    const isValid = validator.isEmail(email, {
+        require_tld: true,
+        allow_utf8_local_part: false,
+        allow_ip_domain: false,
+        domain_specific_validation: true,
+        blacklisted_chars: "()<>,;:\\\"[]",
+    });
+
+    if (!isValid) {
+        return "Invalid email."
+    }
+
+    // Disposable domain blocking (basic but effective)
+    const disposableDomains = [
+        "tempmail.com",
+        "10minutemail.com",
+        "mailinator.com",
+        "guerrillamail.com",
+        "yopmail.com",
+    ];
+
+    if (disposableDomains.includes(domain)) {
+        return "Disposable emails are not allowed."
+    }
+
+    return null
+};
 
 const validate = (name, email, password) => {
     if (!name || !email || !password) {
@@ -11,8 +76,9 @@ const validate = (name, email, password) => {
         return "Invalid name."
     }
 
-    if (!validator.isEmail(email)) {
-        return "Invalid email."
+    const emailResult = validateEmail(email);
+    if (typeof emailResult === "string") {
+        return emailResult;
     }
 
     if (!validator.isStrongPassword(password, {
@@ -29,9 +95,136 @@ const validate = (name, email, password) => {
 }
 
 export const register = catchAsyncError(async (req, res, next) => {
-    const {name, email, password} = req.body
+    const { name, email, password } = req.body;
 
-    credentialsValidation = validate(name, email, password)
+    // Validate input
+    const validationError = validate(name, email, password);
+    if (validationError) {
+        return next(new ErrorHandler(validationError, 400));
+    }
 
+    // Check if user already exists
+    const existingUser = await User.findOne({ email });
 
+    if (existingUser) {
+        if (existingUser.isEmailVerified) {
+            return res.status(409).json({
+                success: false,
+                message: "Account already registered!"
+            });
+        }
+
+        // User exists but email not verified → resend verification code
+        const verificationCode = existingUser.generateVerificationCode();
+        await existingUser.save({ validateModifiedOnly: true });
+
+        try {
+            await sendVerificationCode(verificationCode, existingUser.email);
+            return res.status(200).json({
+                success: true,
+                message: "Verification code resent!",
+            });
+        } catch (error) {
+            // Reset verification code on failure
+            existingUser.emailVerificationCode = null;
+            await existingUser.save({ validateModifiedOnly: true });
+            return next(
+                new ErrorHandler(
+                    `${error.message} - Verification code sending failed. Try registering again.`,
+                    500
+                )
+            );
+        }
+    }
+
+    // User does not exist → create new user
+    const newUser = await User.create({ name, email, password });
+    const verificationCode = newUser.generateVerificationCode();
+    await newUser.save({ validateModifiedOnly: true });
+
+    try {
+        await sendVerificationCode(verificationCode, newUser.email);
+        return res.status(201).json({
+            success: true,
+            message: "Registration successful. Please verify your email.",
+        });
+    } catch (error) {
+        // If sending fails, cleanup verification code
+        newUser.emailVerificationCode = null;
+        newUser.emailVerificationCodeExpire = null
+        await newUser.save({ validateModifiedOnly: true });
+        return next(
+            new ErrorHandler(
+                `${error.message} - Verification code sending failed. Try registering again.`,
+                500
+            )
+        );
+    }
+});
+
+export const verifyOTP = catchAsyncError(async (req, res, next) => {
+    const { email, verificationCode } = req.body
+
+    const existingUser = await User.findOne({ email })
+
+    if (!existingUser) {
+        return next(new ErrorHandler("User does not exist.", 404))
+    }
+
+    const convertedVerificationCode = crypto
+    .createHash("sha256")
+    .update(verificationCode)
+    .digest("hex");
+
+    if (!existingUser.emailVerificationCode ||
+        existingUser.emailVerificationCodeExpire < Date.now()) {
+        return next(new ErrorHandler("OTP expired.", 400));
+    }
+
+    if (convertedVerificationCode !== existingUser.emailVerificationCode) {
+        return next(new ErrorHandler("Invalid OTP.", 400));
+    }
+
+    existingUser.isEmailVerified = true;
+    existingUser.emailVerificationCode = null;
+    existingUser.emailVerificationCodeExpire = null;
+
+    await existingUser.save({ validateModifiedOnly: true });
+    sendToken(existingUser, 200, "Account Verified.", res);
+
+    res.status(200).json({
+        success: true,
+        message: "Email verified successfully."
+    });
 })
+
+async function sendVerificationCode(verificationCode, email) {
+    try {
+        const message = generateEmailTemplate(verificationCode);
+
+        await sendEmail({ email, subject: "Your verification code: ", message });
+    } catch (error) {
+        throw new ErrorHandler(`Failed to send verification email: ${error.message}`, 500);
+    }
+}
+
+function generateEmailTemplate(verificationCode) {
+    return `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px; background-color: #f9f9f9;">
+        <h2 style="color: #4CAF50; text-align: center;">Verification Code</h2>
+        <p style="font-size: 16px; color: #333;">Dear User,</p>
+        <p style="font-size: 16px; color: #333;">Your verification code is:</p>
+        <div style="text-align: center; margin: 20px 0;">
+            <span style="display: inline-block; font-size: 24px; font-weight: bold; color: #4CAF50; padding: 10px 20px; border: 1px solid #4CAF50; border-radius: 5px; background-color: #e8f5e9;">
+            ${verificationCode}
+            </span>
+        </div>
+        <p style="font-size: 16px; color: #333;">Please use this code to verify your email address. The code will expire in 10 minutes.</p>
+        <p style="font-size: 16px; color: #333;">If you did not request this, please ignore this email.</p>
+        <footer style="margin-top: 20px; text-align: center; font-size: 14px; color: #999;">
+            <p>Thank you,<br>Your Company Team</p>
+            <p style="font-size: 12px; color: #aaa;">This is an automated message. Please do not reply to this email.</p>
+        </footer>
+        </div>
+    `
+}

@@ -20,25 +20,24 @@ export const errorMiddleware = (err, req, res, next) => {
     if (err instanceof ErrorHandler) {
         return res.status(err.statusCode).json({
             success: false,
-            message: "Khinzeer ho tum sab log!"
+            message: `${err.message} ---------- I passed this error myself because this isn't a mongodb error!` || "I passed this error myself because this isn't a mongodb error!"
         });
     }
 
     // If it's a mapped Mongoose error (example: ValidationError)
-    if (ErrorMap[err.name]) {
-        const mappedError = ErrorMap[err.name];
-
-        return res.status(mappedError.statusCode).json({
+    if (err.name && ErrorMap[err.name]) {
+        res.status(ErrorMap[err.name].statusCode).json({
             success: false,
-            message: mappedError.message
-        });
+            message: ErrorMap[err.name].message
+        })
     }
 
     // Fallback → unknown error
-    return res.status(500).json({
-        success: false,
-        message: "Internal Server Error"
-    });
+    res.status(500).json({
+            success: false,
+            message: `${err.message} ---------- Internal Server Error: I resorted to the fallback in errors.js`,
+            stack: err.stack
+        })
 };
 
 export default ErrorHandler
