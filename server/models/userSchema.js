@@ -67,6 +67,10 @@ const userSchema = new mongoose.Schema(
         // Stores a SHA-256 hash of the refresh token, not the raw token.
         refreshToken: {
             type: String
+        },
+
+        refreshTokenExpire: {
+            type: Date
         }
     },
     {
@@ -111,7 +115,7 @@ userSchema.methods.generateVerificationCode = function () {
         .update(rawCode)
         .digest("hex");
 
-    this.emailVerificationCodeExpire = Date.now() + 10 * 60 * 1000; // 10 minutes
+    this.emailVerificationCodeExpire = Date.now() + 1 * 60 * 1000; // 10 minutes
 
     return rawCode; 
 };
@@ -153,6 +157,8 @@ userSchema.methods.generateRefreshToken = function () {
         .createHash("sha256")
         .update(rawToken)
         .digest("hex");
+
+    this.refreshTokenExpire = Date.now() + 30*24*60*60*1000; // 30 days
 
     return rawToken;
 };

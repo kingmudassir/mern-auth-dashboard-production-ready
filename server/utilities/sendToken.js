@@ -1,20 +1,35 @@
-export const sendToken = (user, statusCode, message, res) => {
-    const token = user.generateToken();
-    const cookieExpireDays = parseInt(process.env.COOKIE_EXPIRE, 10) || 1
+export const sendToken = async (user, statusCode, message, res) => {
+
+    const token = user.generateAccessToken();
+    const refreshToken = user.generateRefreshToken();
+
+    await user.save({ validateModifiedOnly: true });
 
     res
         .status(statusCode)
+
+        // Access token cookie
         .cookie("token", token, {
-        expires: new Date(Date.now() + cookieExpireDays * 24 * 60 * 60 * 1000),
-        httpOnly: true,
+            expires: new Date(Date.now() + 15 * 60 * 1000),
+            httpOnly: true,
         })
+
+        // Refresh token cookie
+        .cookie("refreshToken", refreshToken, {
+            expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+            httpOnly: true,
+        })
+
         .json({
-        success: true,
-        message: message || "Account Verified.",
-        user: {
-            email: user.email,
-            accountVerified: user.accountVerified,
-        },
-        token,
+            success: true,
+            message: message || "Account Verified.",
+            user: {
+                _id: user._id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                isEmailVerified: user.isEmailVerified,
+                createdAt: user.createdAt,
+            },
         });
 };

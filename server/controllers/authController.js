@@ -4,6 +4,7 @@ import validator from "validator"
 import { User } from "../models/userSchema.js";
 import { sendEmail } from "../utilities/sendEmail.js";
 import crypto from "crypto";
+import { sendToken } from "../utilities/sendToken.js";
 
 const validateEmail = (rawEmail) => {
     if (!rawEmail || typeof rawEmail !== "string") {
@@ -162,27 +163,65 @@ export const register = catchAsyncError(async (req, res, next) => {
     }
 });
 
-export const verifyOTP = catchAsyncError(async (req, res, next) => {
-    const { email, verificationCode } = req.body
+export const resendOTP = catchAsyncError(async (req, res, next) => {
+    const { email } = req.body
 
-    const existingUser = await User.findOne({ email })
+    if (!email) {
+        return next(new ErrorHandler("Resend unsuccessful. Try registering again.", 403))
+    }
+
+    const existingUser = await User.findOne({
+        email,
+        isEmailVerified: false,
+    });
 
     if (!existingUser) {
-        return next(new ErrorHandler("User does not exist.", 404))
+        return next(new ErrorHandler("Resend unsuccessful. Try registering again.", 403))
+    }
+
+    const verificationCode = existingUser.generateVerificationCode();
+    await existingUser.save({ validateModifiedOnly: true });
+
+        try {
+        await sendVerificationCode(verificationCode, existingUser.email);
+        return res.status(200).json({
+            success: true,
+            message: "Verification code resent!",
+        });
+    } catch (error) {
+        // If sending fails, cleanup verification code
+        existingUser.emailVerificationCode = null;
+        existingUser.emailVerificationCodeExpire = null
+        await existingUser.save({ validateModifiedOnly: true });
+        return next(
+            new ErrorHandler(
+                `${error.message} - Verification code sending failed. Try registering again.`,
+                500
+            )
+        );
+    };
+})
+
+export const verifyOTP = catchAsyncError(async (req, res, next) => {
+    const { email, verificationCode } = req.body;
+
+    if (!email || !verificationCode) {
+        return next(new ErrorHandler("There seems to be an error. Try registering again.", 400));
     }
 
     const convertedVerificationCode = crypto
-    .createHash("sha256")
-    .update(verificationCode)
-    .digest("hex");
+        .createHash("sha256")
+        .update(String(verificationCode))
+        .digest("hex");
 
-    if (!existingUser.emailVerificationCode ||
-        existingUser.emailVerificationCodeExpire < Date.now()) {
-        return next(new ErrorHandler("OTP expired.", 400));
-    }
+    const existingUser = await User.findOne({
+        email,
+        emailVerificationCode: convertedVerificationCode,
+        emailVerificationCodeExpire: { $gt: Date.now() }
+    });
 
-    if (convertedVerificationCode !== existingUser.emailVerificationCode) {
-        return next(new ErrorHandler("Invalid OTP.", 400));
+    if (!existingUser) {
+        return next(new ErrorHandler("Invalid or expired OTP.", 400));
     }
 
     existingUser.isEmailVerified = true;
@@ -190,13 +229,43 @@ export const verifyOTP = catchAsyncError(async (req, res, next) => {
     existingUser.emailVerificationCodeExpire = null;
 
     await existingUser.save({ validateModifiedOnly: true });
-    sendToken(existingUser, 200, "Account Verified.", res);
 
-    res.status(200).json({
-        success: true,
-        message: "Email verified successfully."
+    sendToken(existingUser, 200, "Account Verified.", res);
+});
+
+export const refreshAccessToken = async (req, res, next) => {
+
+    const { refreshToken } = req.cookies;
+
+    if (!refreshToken)
+        return next(new ErrorHandler("Unauthorized", 401));
+
+    const hashedToken = crypto
+        .createHash("sha256")
+        .update(refreshToken)
+        .digest("hex");
+
+    const existingUser = await User.findOne({ 
+        refreshToken: hashedToken,
+        refreshTokenExpire: { $gt: Date.now() } 
     });
-})
+
+    if (!existingUser)
+        return next(new ErrorHandler("Invalid refresh token", 401));
+
+    const newAccessToken = existingUser.generateAccessToken();
+    await existingUser.save({ validateModifiedOnly: true });
+
+
+    res.cookie("token", newAccessToken, {
+        httpOnly: true,
+        expires: new Date(Date.now() + 15 * 60 * 1000),
+    });
+
+    res.json({
+        success: true,
+    });
+};
 
 async function sendVerificationCode(verificationCode, email) {
     try {
@@ -206,6 +275,10 @@ async function sendVerificationCode(verificationCode, email) {
     } catch (error) {
         throw new ErrorHandler(`Failed to send verification email: ${error.message}`, 500);
     }
+}
+
+export const resetPassword = catchAsyncError(req, res, next) {
+    
 }
 
 function generateEmailTemplate(verificationCode) {
