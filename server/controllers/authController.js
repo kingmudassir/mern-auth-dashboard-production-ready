@@ -260,6 +260,7 @@ export const refreshAccessToken = async (req, res, next) => {
     res.cookie("token", newAccessToken, {
         httpOnly: true,
         expires: new Date(Date.now() + 15 * 60 * 1000),
+        path: "/"
     });
 
     res.json({
@@ -484,6 +485,18 @@ export const getUser = catchAsyncError(async (req, res, next) => {
         }
     })
 })
+
+export const getAllUsers = catchAsyncError(async (req, res, next) => {
+
+    const users = await User.find({ role: "user" }).select("-password -refreshToken -refreshTokenExpire -resetPasswordToken -resetPasswordExpire -__v -updatedAt");
+
+    res.status(200).json({
+        success: true,
+        message: "Request successful",
+        count: users.length,
+        users
+    });
+});
 
 function generateEmailTemplate(verificationCode) {
     return `

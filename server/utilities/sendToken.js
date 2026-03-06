@@ -12,12 +12,14 @@ export const sendToken = async (user, statusCode, message, res) => {
         .cookie("token", token, {
             expires: new Date(Date.now() + 15 * 60 * 1000),
             httpOnly: true,
+            path: "/"
         })
 
         // Refresh token cookie
         .cookie("refreshToken", refreshToken, {
             expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
             httpOnly: true,
+            path: "/"
         })
 
         .json({

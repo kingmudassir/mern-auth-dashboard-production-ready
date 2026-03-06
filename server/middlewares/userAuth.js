@@ -15,8 +15,15 @@ export const isAuthenticated = catchAsyncError(async (req, res, next) => {
         const existingUser = await User.findById(decoded.id);
 
         if (!existingUser) {
-            res.clearCookie("token");
-            res.clearCookie("refreshToken");
+            res
+            .cookie("token", "", {
+                expires: new Date(Date.now()),
+                httpOnly: true
+            })
+            .cookie("refreshToken", "", {
+                expires: new Date(Date.now()),
+                httpOnly: true,
+            })
             return next(new ErrorHandler("User no longer exists", 401));
         }
 
