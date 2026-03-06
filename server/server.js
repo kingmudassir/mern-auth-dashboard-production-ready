@@ -1,6 +1,8 @@
 import dotenv from "dotenv";
 import app from "./app.js";
 import connection from "./config/dbConnection.js";
+import "./utilities/cleanupUnverifiedUsers.js"
+import './utilities/deleteScheduledAccounts.js'
 
 dotenv.config()
 

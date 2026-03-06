@@ -40,6 +40,11 @@ const userSchema = new mongoose.Schema(
             default: "user"
         },
 
+        isAccountVerified: {
+            type: Boolean,
+            default: false
+        },
+
         isEmailVerified: {
             type: Boolean,
             default: false
@@ -71,6 +76,11 @@ const userSchema = new mongoose.Schema(
 
         refreshTokenExpire: {
             type: Date
+        },
+
+        deleteAccountRequestAt: {
+            type: Date,
+            default: undefined
         }
     },
     {

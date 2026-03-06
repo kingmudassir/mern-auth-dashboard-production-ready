@@ -1,5 +1,5 @@
 import express from "express"
-import { changePassword, forgetPassword, getAllUsers, getUser, login, logout, refreshAccessToken, register, resendOTP, resetPassword, verifyOTP } from "../controllers/authController.js"
+import { changePassword, deleteAccount, forgetPassword, getAllUsers, getUser, login, logout, refreshAccessToken, register, resendOTP, resetPassword, verifyOTP } from "../controllers/authController.js"
 import { isAuthenticated } from "../middlewares/userAuth.js"
 import { redirectIfAuthenticated } from "../middlewares/authRedirect.js"
 import { authorizeRoles } from "../middlewares/authorizeRoles.js"
@@ -16,6 +16,7 @@ router.put('/password/reset/:token', redirectIfAuthenticated, resetPassword)
 router.post('/logout', isAuthenticated, logout)
 router.get('/getuser', isAuthenticated, getUser)
 router.put('/changePassword', isAuthenticated, changePassword)
+router.post('/deleteAccount', isAuthenticated, deleteAccount)
 
 // Only for testing purposes!
 router.post('/refresh', refreshAccessToken)

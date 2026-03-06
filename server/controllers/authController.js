@@ -6,7 +6,7 @@ import { sendEmail } from "../utilities/sendEmail.js";
 import crypto from "crypto";
 import { sendToken } from "../utilities/sendToken.js";
 
-const validateEmail = (rawEmail) => {
+export const validateEmail = (rawEmail) => {
     if (!rawEmail || typeof rawEmail !== "string") {
         return "Email is required."
     }
@@ -73,7 +73,7 @@ const validate = (name, email, password) => {
         return "All fields are required."
     }
 
-    if (name.length < 3 || name.length > 50 || !/^[a-zA-Z]{2,}(?:[\s'-][a-zA-Z]{2,})*$/.test(name) ) {
+    if (name.length < 2 || name.length > 50 || !/^[a-zA-Z]{2,}(?:[\s'-][a-zA-Z]{2,})*$/.test(name) ) {
         return "Invalid name."
     }
 
@@ -108,7 +108,7 @@ export const register = catchAsyncError(async (req, res, next) => {
     const existingUser = await User.findOne({ email });
 
     if (existingUser) {
-        if (existingUser.isEmailVerified) {
+        if (existingUser.isAccountVerified) {
             return res.status(409).json({
                 success: false,
                 message: "Account already registered!"
@@ -172,7 +172,7 @@ export const resendOTP = catchAsyncError(async (req, res, next) => {
 
     const existingUser = await User.findOne({
         email,
-        isEmailVerified: false,
+        isAccountVerified: false,
     });
 
     if (!existingUser) {
@@ -224,6 +224,7 @@ export const verifyOTP = catchAsyncError(async (req, res, next) => {
         return next(new ErrorHandler("Invalid or expired OTP.", 400));
     }
 
+    existingUser.isAccountVerified = true;
     existingUser.isEmailVerified = true;
     existingUser.emailVerificationCode = undefined;
     existingUser.emailVerificationCodeExpire = undefined;
@@ -268,7 +269,7 @@ export const refreshAccessToken = async (req, res, next) => {
     });
 };
 
-async function sendVerificationCode(verificationCode, email) {
+export async function sendVerificationCode(verificationCode, email) {
     try {
         const message = generateEmailTemplate(verificationCode);
 
@@ -341,6 +342,7 @@ export const forgetPassword = catchAsyncError(async (req, res, next) => {
 
     const existingUser = await User.findOne({
         email,
+        isAccountVerified: true,
         isEmailVerified: true
     })
 
@@ -437,12 +439,18 @@ export const login = catchAsyncError(async (req, res, next) => {
 
     const existingUser = await User.findOne({
         email,
-        isEmailVerified: true
+        isAccountVerified: true
     }).select("+password")
 
     // first check if user exists
     if (!existingUser) {
         return next(new ErrorHandler("Incorrect email or password.", 401));
+    }
+
+    // check if user scheduled his account for deletion
+    if (existingUser.deleteAccountRequestAt) {
+        existingUser.deleteAccountRequestAt = undefined
+        await existingUser.save({ validateModifiedOnly: true })
     }
 
     // compare password
@@ -475,14 +483,7 @@ export const getUser = catchAsyncError(async (req, res, next) => {
     const user = req.user
     res.status(200).json({
         success: true,
-        user: { 
-            _id: user._id,
-            name: user.name,
-            email: user.email,
-            role: user.role,
-            isEmailVerified: user.isEmailVerified,
-            createdAt: user.createdAt,
-        }
+        user
     })
 })
 
@@ -497,6 +498,26 @@ export const getAllUsers = catchAsyncError(async (req, res, next) => {
         users
     });
 });
+
+export const deleteAccount = catchAsyncError(async (req, res, next) => {
+    const { currentPassword } = req.body
+
+    const existingUser = await User.findById(req.user._id).select("+password")
+
+    const isMatch = await existingUser.comparePassword(currentPassword)
+
+    if (!isMatch) {
+        return next(new ErrorHandler("Incorrect password.", 401))
+    }
+
+    existingUser.deleteAccountRequestAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+    await existingUser.save({ validateModifiedOnly: true })
+
+    res.status(200).json({
+        success: true, 
+        message: "Account deleted successfully!",
+    })
+})
 
 function generateEmailTemplate(verificationCode) {
     return `

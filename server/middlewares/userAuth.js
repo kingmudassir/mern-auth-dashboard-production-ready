@@ -12,7 +12,7 @@ export const isAuthenticated = catchAsyncError(async (req, res, next) => {
 
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY)
-        const existingUser = await User.findById(decoded.id);
+        const existingUser = await User.findById(decoded.id).select("-password -refreshToken -refreshTokenExpire -resetPasswordToken -resetPasswordExpire -__v -updatedAt");
 
         if (!existingUser) {
             res
