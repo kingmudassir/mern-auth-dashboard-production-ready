@@ -255,16 +255,26 @@ export const refreshAccessToken = async (req, res, next) => {
         return next(new ErrorHandler("Invalid refresh token", 401));
 
     const newAccessToken = existingUser.generateAccessToken();
+    const newRefreshToken = existingUser.generateRefreshToken();
+
     await existingUser.save({ validateModifiedOnly: true });
 
 
     res.cookie("token", newAccessToken, {
         httpOnly: true,
         expires: new Date(Date.now() + 15 * 60 * 1000),
+        sameSite: "strict",
         path: "/"
     });
 
-    res.json({
+    res.cookie("refreshToken", newRefreshToken, {
+        httpOnly: true,
+        expires: new Date(Date.now() + 30*24*60*60*1000),
+        sameSite: "strict",
+        path: "/"
+    });
+
+    res.status(200).res.json({
         success: true,
     });
 };
