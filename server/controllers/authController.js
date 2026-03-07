@@ -274,8 +274,10 @@ export const refreshAccessToken = async (req, res, next) => {
         path: "/"
     });
 
-    res.status(200).res.json({
+    res.status(200).json({
         success: true,
+        newAccessToken,
+        newRefreshToken
     });
 };
 
@@ -460,6 +462,7 @@ export const login = catchAsyncError(async (req, res, next) => {
     // check if user scheduled his account for deletion
     if (existingUser.deleteAccountRequestAt) {
         existingUser.deleteAccountRequestAt = undefined
+        existingUser.deletionPausedUntil = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
         await existingUser.save({ validateModifiedOnly: true })
     }
 
@@ -512,12 +515,24 @@ export const getAllUsers = catchAsyncError(async (req, res, next) => {
 export const deleteAccount = catchAsyncError(async (req, res, next) => {
     const { currentPassword } = req.body
 
+    const now = new Date()
+
     const existingUser = await User.findById(req.user._id).select("+password")
 
     const isMatch = await existingUser.comparePassword(currentPassword)
 
     if (!isMatch) {
         return next(new ErrorHandler("Incorrect password.", 401))
+    }
+
+    const remainingMs = existingUser.deletionPausedUntil - now;
+    const remainingDays = Math.ceil(remainingMs / (1000 * 60 * 60 * 24));
+
+    if (now <= existingUser.deletionPausedUntil) {
+        return res.status(403).json({
+            success: false,
+            message: `Account can be deleted after a period of ${remainingDays} days.`
+        })
     }
 
     existingUser.deleteAccountRequestAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)

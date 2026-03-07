@@ -81,6 +81,11 @@ const userSchema = new mongoose.Schema(
         deleteAccountRequestAt: {
             type: Date,
             default: undefined
+        },
+
+        deletionPausedUntil: {
+            type: Date,
+            default: undefined
         }
     },
     {
