@@ -24,9 +24,8 @@ export default function Navbar() {
         <header
           className={`
             fixed top-0 left-0 right-0 z-50
-            bg-white border-b border-[#E8E3DC]
             transition-[background-color,box-shadow] duration-300
-            ${isScrolled ? 'navbar-scrolled' : ''}
+            ${isScrolled ? 'navbar-scrolled' : 'bg-transparent'}
           `}
         >
           {/* ── Main row ── */}

@@ -1,9 +1,9 @@
 import { Route, Routes } from 'react-router-dom';
 import UserLayout from '../Layout/UserLayout';
 import Home from '../Pages/Home';
-import Login from '../Pages/Register';
+import Login from '../Pages/Login';
 import Register from '../Pages/Register';
-import LoginForm from '../Pages/Login';
+import UserProfile from '../Pages/UserProfile';
 
 function Approutes() {
   return (
@@ -12,7 +12,7 @@ function Approutes() {
         <Route index element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/loginform" element={<LoginForm />} />
+        <Route path="/userprofile" element={<UserProfile />} />
       </Route>
     </Routes>
   );
