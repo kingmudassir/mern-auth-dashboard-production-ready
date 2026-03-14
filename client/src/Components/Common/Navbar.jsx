@@ -25,7 +25,7 @@ export default function Navbar() {
           className={`
             fixed top-0 left-0 right-0 z-50
             transition-[background-color,box-shadow] duration-300
-            ${isScrolled ? 'navbar-scrolled' : 'bg-transparent'}
+            ${isScrolled || isMobileOpen ? 'navbar-scrolled' : 'bg-transparent'}
           `}
         >
           {/* ── Main row ── */}

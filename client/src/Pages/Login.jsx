@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Mail, Lock, Eye, EyeOff, ArrowRight, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Mail, Lock, Eye, EyeOff, ArrowRight, AlertCircle } from 'lucide-react';
 import { useLogin } from '../Hooks/useLogin';
 import { Field } from '../Components/Login/Field';
 import { Input } from '../Components/Login/Input';
@@ -25,39 +25,18 @@ function Login() {
   const [fields, setFields] = useState({ email: '', password: '' });
   const [showPw, setShowPw] = useState(false);
   const [errors, setErrors] = useState({});
-  // const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [globalErr, setGlobalErr] = useState('');
   const navigate = useNavigate();
 
   //Tanstack
-  const { mutateAsync: loginUser, isPending } = useLogin();
+  const { mutateAsync: loginUser, isPending, isError, error, isSuccess } = useLogin();
 
   const set = (key) => (e) => {
     setFields((p) => ({ ...p, [key]: e.target.value }));
     if (errors[key]) setErrors((p) => ({ ...p, [key]: '' }));
     if (globalErr) setGlobalErr('');
   };
-
-  // const handleSubmit = async (e) => {
-  //   e.preventDefault();
-  //   const errs = validate(fields);
-  //   if (Object.keys(errs).length) {
-  //     setErrors(errs);
-  //     return;
-  //   }
-  //   setLoading(true);
-  //   setGlobalErr('');
-  //   // Simulate API call — swap for axios.post('/api/auth/login', fields)
-  //   await new Promise((r) => setTimeout(r, 1400));
-  //   setLoading(false);
-  //   // Simulate wrong credentials 20% of the time for demo purposes
-  //   if (Math.random() < 0.2) {
-  //     setGlobalErr('Incorrect email or password. Please try again.');
-  //     return;
-  //   }
-  //   setSubmitted(true);
-  // };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -73,49 +52,16 @@ function Login() {
       await loginUser(fields);
       setSubmitted(true);
     } catch (error) {
-      setGlobalErr(error?.response?.data?.message || 'Incorrect email or password.');
+      setGlobalErr(error?.message || 'Incorrect email or password.');
     }
   };
 
   // ── Success screen ─────────────────────────────────────────────
-  if (submitted) {
-    navigate('/userprofile');
-    // return (
-    //   <>
-    //     <div className="login-bg min-h-screen flex items-center justify-center px-4 py-16">
-    //       <div className="success-pop bg-white border border-[#E8E3DC] rounded-3xl p-10 max-w-sm w-full text-center shadow-[0_8px_40px_rgba(26,21,35,0.08)]">
-    //         <div className="w-16 h-16 rounded-full bg-[rgba(108,60,225,0.1)] flex items-center justify-center mx-auto mb-5">
-    //           <CheckCircle2 size={30} strokeWidth={1.8} className="text-[#6C3CE1]" />
-    //         </div>
-    //         <h2
-    //           className="text-[1.6rem] font-extrabold text-[#1A1523] mb-2 leading-tight tracking-[-0.03em]"
-    //           style={{ fontFamily: "'Syne', sans-serif" }}
-    //         >
-    //           Welcome back!
-    //         </h2>
-    //         <p
-    //           className="text-[#8A8390] text-[0.9rem] leading-relaxed mb-7"
-    //           style={{ fontFamily: "'DM Sans', sans-serif" }}
-    //         >
-    //           You're logged in. Let's find your perfect drive.
-    //         </p>
-    //         <a
-    //           href="/"
-    //           className="inline-flex items-center justify-center gap-2 w-full text-white text-[0.875rem] font-semibold py-3 rounded-xl transition-transform duration-200 hover:-translate-y-px"
-    //           style={{
-    //             background: 'linear-gradient(135deg, #E8622A 0%, #C4531F 100%)',
-    //             boxShadow: '0 2px 12px rgba(232,98,42,0.3)',
-    //             fontFamily: "'DM Sans', sans-serif",
-    //           }}
-    //         >
-    //           Go to Homepage
-    //           <ArrowRight size={15} strokeWidth={2.2} />
-    //         </a>
-    //       </div>
-    //     </div>
-    //   </>
-    // );
-  }
+  useEffect(() => {
+    if (isSuccess) {
+      navigate('/userprofile');
+    }
+  }, [isSuccess, navigate]);
 
   // ── Login form ─────────────────────────────────────────────────
   return (
@@ -125,7 +71,7 @@ function Login() {
           {/* ── Header ── */}
           <div className="text-center mb-8">
             <a
-              href="/"
+              href="/login"
               className="inline-flex items-center gap-2 mb-6"
               aria-label="Paiyya homepage"
             >
@@ -204,7 +150,7 @@ function Login() {
                     Password
                   </label>
                   <a
-                    href="/forgot-password"
+                    href="/forgotpassword"
                     className="forgot-link"
                     aria-label="Forgot your password?"
                   >

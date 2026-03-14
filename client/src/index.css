@@ -616,12 +616,6 @@ select {
 /* ********** Styling for Register ends here ********** */
 
 /* ********** Styling for Login starts here ********** */
-.login-bg {
-  background-color: #f7f4f0;
-  background-image:
-    radial-gradient(ellipse 60% 50% at 20% 30%, rgba(108, 60, 225, 0.07) 0%, transparent 70%),
-    radial-gradient(ellipse 50% 40% at 80% 70%, rgba(232, 98, 42, 0.06) 0%, transparent 65%);
-}
 @keyframes successPop {
   0% {
     opacity: 0;
@@ -791,3 +785,195 @@ select {
   transform: translateY(-1px);
 }
 /* ********** Styling for Login ends here ********** */
+
+/* ********** Styling for Forgot Password ends here ********** */
+:root {
+  --paiyya-ink: #1a1523;
+  --paiyya-border: #e8e3dc;
+  --paiyya-muted: #8a8390;
+  --paiyya-violet: #6c3ce1;
+  --paiyya-ember: #e8622a;
+  --paiyya-ember-d: #c4531f;
+  --paiyya-gold: #c9a84c;
+}
+
+.fp-bg {
+  background-color: #f7f4f0;
+  background-image:
+    radial-gradient(ellipse 60% 50% at 15% 30%, rgba(108, 60, 225, 0.07) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 40% at 85% 70%, rgba(232, 98, 42, 0.06) 0%, transparent 65%),
+    radial-gradient(ellipse 35% 30% at 55% 95%, rgba(201, 168, 76, 0.05) 0%, transparent 60%);
+}
+
+.fp-bg::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(26, 21, 35, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(26, 21, 35, 0.025) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.fp-card {
+  background: #ffffff;
+  border: 1.5px solid #e8e3dc;
+  box-shadow:
+    0 8px 40px rgba(26, 21, 35, 0.07),
+    0 2px 8px rgba(26, 21, 35, 0.04);
+}
+
+/* Mode toggle */
+.mode-pill {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0.5rem 0;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 0.18s ease,
+    color 0.18s ease,
+    box-shadow 0.18s ease;
+  font-family: 'DM Sans', sans-serif;
+  border: none;
+  outline: none;
+}
+
+.mode-pill.active {
+  background: #ffffff;
+  color: #6c3ce1;
+  box-shadow:
+    0 1px 4px rgba(26, 21, 35, 0.08),
+    0 0 0 1px rgba(108, 60, 225, 0.15);
+}
+
+.mode-pill.inactive {
+  background: transparent;
+  color: #8a8390;
+}
+
+.mode-pill.inactive:hover {
+  color: #1a1523;
+}
+
+/* Input */
+.fp-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  border: 1.5px solid #e8e3dc;
+  border-radius: 12px;
+  height: 44px;
+  background: #fafaf9;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.fp-input-wrap:focus-within {
+  border-color: rgba(108, 60, 225, 0.4);
+  box-shadow: 0 0 0 3px rgba(108, 60, 225, 0.08);
+  background-color: #ffffff;
+}
+
+.fp-input-wrap.has-error {
+  border-color: rgba(232, 98, 42, 0.5);
+}
+
+.fp-input-wrap.has-error:focus-within {
+  border-color: #e8622a;
+  box-shadow: 0 0 0 3px rgba(232, 98, 42, 0.1);
+}
+
+.fp-input {
+  flex: 1;
+  height: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.875rem;
+  color: #1a1523;
+  padding-left: 2.6rem;
+  padding-right: 1rem;
+}
+
+.fp-input::placeholder {
+  color: #c4bdd0;
+}
+
+/* Submit button */
+.btn-primary {
+  background: linear-gradient(135deg, #e8622a 0%, #c4531f 100%);
+  box-shadow: 0 2px 10px rgba(232, 98, 42, 0.3);
+  position: relative;
+  overflow: hidden;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.btn-primary::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, #d4521c 0%, #aa3e12 100%);
+  opacity: 0;
+  transition: opacity 0.18s ease;
+  border-radius: inherit;
+}
+
+.btn-primary:not(:disabled):hover::before {
+  opacity: 1;
+}
+.btn-primary:not(:disabled):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 20px rgba(232, 98, 42, 0.38);
+}
+.btn-primary:not(:disabled):active {
+  transform: translateY(0);
+}
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Entrance */
+@keyframes fpFade {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.fp-fade {
+  animation: fpFade 0.45s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+/* Spinner */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+/* ********** Styling for Forgot Password ends here ********** */

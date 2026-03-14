@@ -84,7 +84,7 @@ export const errorMiddleware = (err, req, res, next) => {
     if (err instanceof ErrorHandler) {
         return res.status(err.statusCode).json({
             success: false,
-            message: `${err.message} ---------- I passed this error myself because this isn't a mongodb error!` || "I passed this error myself because this isn't a mongodb error!"
+            message: `Backend Response: ${err.message}`
         });
     }
 
