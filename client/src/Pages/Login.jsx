@@ -6,11 +6,31 @@ import { Input } from '../Components/Login/Input';
 import { useNavigate } from 'react-router-dom';
 
 // ── Helpers ─────────────────────────────────────────────────────
+const disposableDomains = [
+  'tempmail.com',
+  '10minutemail.com',
+  'mailinator.com',
+  'guerrillamail.com',
+  'yopmail.com',
+];
+
 const validate = (fields) => {
   const errs = {};
 
-  if (!fields.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fields.email)) {
-    errs.email = 'Enter a valid email address';
+  if (!fields.email) {
+    errs.email = 'Email is required';
+  } else {
+    const email = fields.email.trim().toLowerCase();
+    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!regex.test(email)) {
+      errs.email = 'Enter a valid email address';
+    } else {
+      const domain = email.split('@')[1];
+      if (disposableDomains.includes(domain)) {
+        errs.email = 'Disposable emails are not allowed';
+      }
+    }
   }
 
   if (!fields.password) {
@@ -25,7 +45,6 @@ function Login() {
   const [fields, setFields] = useState({ email: '', password: '' });
   const [showPw, setShowPw] = useState(false);
   const [errors, setErrors] = useState({});
-  const [submitted, setSubmitted] = useState(false);
   const [globalErr, setGlobalErr] = useState('');
   const navigate = useNavigate();
 
@@ -50,7 +69,6 @@ function Login() {
     try {
       setGlobalErr('');
       await loginUser(fields);
-      setSubmitted(true);
     } catch (error) {
       setGlobalErr(error?.message || 'Incorrect email or password.');
     }
