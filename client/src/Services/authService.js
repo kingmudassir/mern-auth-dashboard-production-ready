@@ -33,7 +33,8 @@ const authService = {
     },
 
     getUser: async () => {
-        return await api.get('/getuser');
+        const data = await api.get('/getuser')
+        return data.user
     },
 
     changePassword: async (data) => {
@@ -51,6 +52,10 @@ const authService = {
 
     getAllUsers: async () => {
         return await api.get('/admin/users');
+    },
+
+    checkAuth: async () => {
+        return await api.get('/check');
     },
 };
 

@@ -31,7 +31,7 @@ function UserProfile() {
           className="text-[1.6rem] font-extrabold text-[#1A1523] mb-2 leading-tight tracking-[-0.03em]"
           style={{ fontFamily: "'Syne', sans-serif" }}
         >
-          Welcome back, {user?.name || 'User'}!
+          Welcome back, {user?.name?.split(' ')[0] || 'User'}!
         </h2>
 
         <p

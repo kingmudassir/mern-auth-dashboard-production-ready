@@ -4,6 +4,7 @@ import { useLogin } from '../Hooks/useLogin';
 import { Field } from '../Components/Login/Field';
 import { Input } from '../Components/Login/Input';
 import { useNavigate } from 'react-router-dom';
+import authService from '../Services/authService';
 
 // ── Helpers ─────────────────────────────────────────────────────
 const disposableDomains = [
@@ -80,6 +81,28 @@ function Login() {
       navigate('/userprofile');
     }
   }, [isSuccess, navigate]);
+
+  const [checking, setChecking] = useState(true);
+
+  useEffect(() => {
+    const checkIfAlreadyLoggedIn = async () => {
+      try {
+        const data = await authService.checkAuth();
+        console.log('checkAuth response:', data); // <-- add this
+        if (data.alreadyLoggedIn) {
+          navigate(data.redirectTo || '/userprofile');
+        }
+      } catch (err) {
+        console.log('checkAuth failed:', err); // <-- and this
+      } finally {
+        setChecking(false);
+      }
+    };
+
+    checkIfAlreadyLoggedIn();
+  }, [navigate]);
+
+  if (checking) return null; // Prevent rendering login form while checking
 
   // ── Login form ─────────────────────────────────────────────────
   return (

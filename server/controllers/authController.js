@@ -234,7 +234,7 @@ export const verifyOTP = catchAsyncError(async (req, res, next) => {
     sendToken(existingUser, 200, "Account Verified.", res);
 });
 
-export const refreshAccessToken = async (req, res, next) => {
+export const refreshAccessToken = catchAsyncError(async (req, res, next) => {
 
     const { refreshToken } = req.cookies;
 
@@ -279,7 +279,7 @@ export const refreshAccessToken = async (req, res, next) => {
         newAccessToken,
         newRefreshToken
     });
-};
+});
 
 export async function sendVerificationCode(verificationCode, email) {
     try {

@@ -26,4 +26,10 @@ router.post('/refresh', refreshAccessToken)
 // Admin role
 router.get('/admin/users', isAuthenticated, authorizeRoles("admin"), getAllUsers)
 
+// route
+router.get('/check', redirectIfAuthenticated, (req, res) => {
+    // If middleware didn't redirect, user is not authenticated
+    res.status(200).json({ alreadyLoggedIn: false });
+});
+
 export default router
