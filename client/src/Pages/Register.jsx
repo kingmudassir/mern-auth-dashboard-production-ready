@@ -1,4 +1,5 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   User,
   Mail,
@@ -16,41 +17,9 @@ import {
   UserCheck,
   ShoppingBag,
 } from 'lucide-react';
-
-// ── Data ────────────────────────────────────────────────────────
-const CITIES = [
-  'Karachi',
-  'Lahore',
-  'Islamabad',
-  'Rawalpindi',
-  'Faisalabad',
-  'Peshawar',
-  'Quetta',
-  'Multan',
-  'Hyderabad',
-  'Sialkot',
-];
-
-const ACCOUNT_TYPES = [
-  {
-    id: 'buyer',
-    icon: ShoppingBag,
-    label: 'Buyer',
-    desc: 'I want to browse and buy cars',
-  },
-  {
-    id: 'seller',
-    icon: UserCheck,
-    label: 'Seller',
-    desc: 'I want to list my personal car',
-  },
-  {
-    id: 'dealer',
-    icon: Building2,
-    label: 'Dealer',
-    desc: 'I run a showroom or dealership',
-  },
-];
+import { Field } from '../Components/Login-Register/Field';
+import { Input } from '../Components/Login-Register/Input';
+import authService from '../Services/authService';
 
 // ── Helpers ─────────────────────────────────────────────────────
 const validate = (fields) => {
@@ -79,82 +48,83 @@ const pwStrength = (pw) => {
 const STRENGTH_LABEL = ['', 'Weak', 'Fair', 'Good', 'Strong'];
 const STRENGTH_COLOR = ['', '#E8622A', '#C9A84C', '#6C3CE1', '#22c55e'];
 
-// ── Field wrapper ────────────────────────────────────────────────
-function Field({ label, error, children }) {
+function RegisterSkeleton() {
   return (
-    <div className="flex flex-col gap-1.5">
-      <label
-        className="text-[0.72rem] font-semibold text-[#8A8390] uppercase tracking-wider"
-        style={{ fontFamily: "'DM Sans', sans-serif" }}
-      >
-        {label}
-      </label>
-      {children}
-      {error && (
-        <span
-          className="flex items-center gap-1 text-[0.75rem] text-[#E8622A]"
-          style={{ fontFamily: "'DM Sans', sans-serif" }}
-          role="alert"
-        >
-          <AlertCircle size={11} strokeWidth={2} aria-hidden="true" />
-          {error}
-        </span>
-      )}
-    </div>
-  );
-}
+    <div className="reg-bg relative min-h-screen flex items-center justify-center px-4 py-20">
+      <div className="reg-card relative z-10 w-full max-w-130 rounded-3xl p-8 md:p-10">
+        {/* Header */}
+        <div className="text-center mb-8 flex flex-col items-center gap-3">
+          {/* Logo */}
+          <div className="w-28 h-5 rounded-md bg-gray-200 animate-pulse mb-3" />
+          {/* Title */}
+          <div className="w-52 h-7 rounded-md bg-gray-200 animate-pulse" />
+          {/* Subtitle */}
+          <div className="w-44 h-4 rounded-md bg-gray-200 animate-pulse" />
+        </div>
 
-// ── Input ────────────────────────────────────────────────────────
-function Input({ icon: Icon, error, suffix, ...props }) {
-  return (
-    <div
-      className={`
-        relative flex items-center
-        border rounded-xl h-11 bg-[#FAFAF9]
-        transition-[border-color,box-shadow] duration-200
-        ${
-          error
-            ? 'border-[rgba(232,98,42,0.5)] focus-within:border-[#E8622A] focus-within:shadow-[0_0_0_3px_rgba(232,98,42,0.1)]'
-            : 'border-[#E8E3DC] focus-within:border-[rgba(108,60,225,0.4)] focus-within:shadow-[0_0_0_3px_rgba(108,60,225,0.08)] focus-within:bg-white'
-        }
-      `}
-    >
-      {Icon && (
-        <Icon
-          size={15}
-          strokeWidth={1.9}
-          className="absolute left-3.5 text-[#B0AABA] pointer-events-none"
-          aria-hidden="true"
-        />
-      )}
-      <input
-        className="
-          flex-1 h-full bg-transparent outline-none border-none
-          text-[0.875rem] text-[#1A1523] placeholder-[#C4BDD0]
-          pl-10 pr-4
-        "
-        style={{ fontFamily: "'DM Sans', sans-serif" }}
-        {...props}
-      />
-      {suffix}
+        <div className="flex flex-col gap-5">
+          {/* Full name */}
+          <div className="flex flex-col gap-1.5">
+            <div className="w-16 h-3 rounded bg-gray-200 animate-pulse" />
+            <div className="w-full h-11 rounded-xl bg-gray-200 animate-pulse" />
+          </div>
+
+          {/* Email + Phone side by side */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="flex flex-col gap-1.5">
+              <div className="w-10 h-3 rounded bg-gray-200 animate-pulse" />
+              <div className="w-full h-11 rounded-xl bg-gray-200 animate-pulse" />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <div className="w-10 h-3 rounded bg-gray-200 animate-pulse" />
+              <div className="w-full h-11 rounded-xl bg-gray-200 animate-pulse" />
+            </div>
+          </div>
+
+          {/* Password + strength meter */}
+          <div className="flex flex-col gap-1.5">
+            <div className="w-16 h-3 rounded bg-gray-200 animate-pulse" />
+            <div className="w-full h-11 rounded-xl bg-gray-200 animate-pulse" />
+            {/* Strength bars */}
+            <div className="flex gap-1 mt-1">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="h-1 flex-1 rounded-full bg-gray-200 animate-pulse" />
+              ))}
+            </div>
+          </div>
+
+          {/* Confirm password */}
+          <div className="flex flex-col gap-1.5">
+            <div className="w-28 h-3 rounded bg-gray-200 animate-pulse" />
+            <div className="w-full h-11 rounded-xl bg-gray-200 animate-pulse" />
+          </div>
+
+          {/* Terms text */}
+          <div className="flex flex-col items-center gap-1.5">
+            <div className="w-72 h-3 rounded bg-gray-200 animate-pulse" />
+            <div className="w-48 h-3 rounded bg-gray-200 animate-pulse" />
+          </div>
+
+          {/* Submit button */}
+          <div className="w-full h-12 rounded-xl bg-gray-200 animate-pulse mt-1" />
+        </div>
+      </div>
     </div>
   );
 }
 
 // ── Main component ───────────────────────────────────────────────
 function Register() {
-  const fileRef = useRef(null);
+  const navigate = useNavigate();
 
   const [fields, setFields] = useState({
     fullName: '',
     email: '',
-    phone: '',
-    city: '',
+
     password: '',
     confirm: '',
-    accountType: '',
   });
-  const [avatar, setAvatar] = useState(null);
+
   const [showPw, setShowPw] = useState(false);
   const [showCf, setShowCf] = useState(false);
   const [errors, setErrors] = useState({});
@@ -164,11 +134,6 @@ function Register() {
   const set = (key) => (e) => {
     setFields((p) => ({ ...p, [key]: e.target.value }));
     if (errors[key]) setErrors((p) => ({ ...p, [key]: '' }));
-  };
-
-  const handleAvatar = (e) => {
-    const file = e.target.files?.[0];
-    if (file) setAvatar(URL.createObjectURL(file));
   };
 
   const handleSubmit = async (e) => {
@@ -189,47 +154,30 @@ function Register() {
 
   // ── Success screen ───────────────────────────────────────────
   if (submitted) {
-    return (
-      <>
-        <div className="reg-bg min-h-screen flex items-center justify-center px-4 py-16">
-          <div className="success-pop bg-white border border-[#E8E3DC] rounded-3xl p-10 max-w-sm w-full text-center shadow-[0_8px_40px_rgba(26,21,35,0.08)]">
-            <div className="w-16 h-16 rounded-full bg-[rgba(108,60,225,0.1)] flex items-center justify-center mx-auto mb-5">
-              <CheckCircle2 size={30} strokeWidth={1.8} className="text-[#6C3CE1]" />
-            </div>
-            <h2
-              className="text-[1.6rem] font-extrabold text-[#1A1523] mb-2 leading-tight tracking-[-0.03em]"
-              style={{ fontFamily: "'Syne', sans-serif" }}
-            >
-              You're in!
-            </h2>
-            <p
-              className="text-[#8A8390] text-[0.9rem] leading-relaxed mb-7"
-              style={{ fontFamily: "'DM Sans', sans-serif" }}
-            >
-              Your account has been created. Welcome to Paiyya — let's find your perfect drive.
-            </p>
-            <a
-              href="/"
-              className="
-                inline-flex items-center justify-center gap-2 w-full
-                text-white text-[0.875rem] font-semibold
-                py-3 rounded-xl
-                transition-transform duration-200 hover:-translate-y-px
-              "
-              style={{
-                background: 'linear-gradient(135deg, #E8622A 0%, #C4531F 100%)',
-                boxShadow: '0 2px 12px rgba(232,98,42,0.3)',
-                fontFamily: "'DM Sans', sans-serif",
-              }}
-            >
-              Go to Homepage
-              <ArrowRight size={15} strokeWidth={2.2} />
-            </a>
-          </div>
-        </div>
-      </>
-    );
+    return <></>;
   }
+
+  const [checking, setChecking] = useState(true);
+
+  useEffect(() => {
+    const checkIfAlreadyLoggedIn = async () => {
+      try {
+        const data = await authService.checkAuth();
+        console.log('checkAuth response:', data);
+        if (data.alreadyLoggedIn) {
+          navigate('/userprofile');
+        }
+      } catch (err) {
+        console.log('checkAuth failed:', err);
+      } finally {
+        setChecking(false);
+      }
+    };
+
+    checkIfAlreadyLoggedIn();
+  }, [navigate]);
+
+  if (checking) return <RegisterSkeleton />; // Prevent rendering login form while checking
 
   // ── Form ─────────────────────────────────────────────────────
   return (

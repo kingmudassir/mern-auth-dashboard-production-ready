@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Mail, Lock, Eye, EyeOff, ArrowRight, AlertCircle } from 'lucide-react';
 import { useLogin } from '../Hooks/useLogin';
-import { Field } from '../Components/Login/Field';
-import { Input } from '../Components/Login/Input';
+import { Field } from '../Components/Login-Register/Field';
+import { Input } from '../Components/Login-Register/Input';
 import { useNavigate } from 'react-router-dom';
 import authService from '../Services/authService';
+import { validateLoginFields } from '../utilities/LoginValidator';
 
 // ── Helpers ─────────────────────────────────────────────────────
 const disposableDomains = [
@@ -41,6 +42,68 @@ const validate = (fields) => {
   return errs;
 };
 
+function LoginSkeleton() {
+  return (
+    <div className="login-bg relative min-h-screen flex items-center justify-center px-4 py-20">
+      <div className="login-card relative z-10 w-full max-w-110 rounded-3xl p-8 md:p-10">
+        {/* Header */}
+        <div className="text-center mb-8 flex flex-col items-center gap-3">
+          {/* Logo */}
+          <div className="w-28 h-5 rounded-md bg-gray-200 animate-pulse mb-3" />
+          {/* Title */}
+          <div className="w-44 h-7 rounded-md bg-gray-200 animate-pulse" />
+          {/* Subtitle */}
+          <div className="w-56 h-4 rounded-md bg-gray-200 animate-pulse" />
+        </div>
+
+        <div className="flex flex-col gap-5">
+          {/* Email field */}
+          <div className="flex flex-col gap-1.5">
+            <div className="w-10 h-3 rounded bg-gray-200 animate-pulse" />
+            <div className="w-full h-11 rounded-xl bg-gray-200 animate-pulse" />
+          </div>
+
+          {/* Password field */}
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center justify-between">
+              <div className="w-16 h-3 rounded bg-gray-200 animate-pulse" />
+              <div className="w-24 h-3 rounded bg-gray-200 animate-pulse" />
+            </div>
+            <div className="w-full h-11 rounded-xl bg-gray-200 animate-pulse" />
+          </div>
+
+          {/* Remember me */}
+          <div className="flex items-center gap-2.5">
+            <div className="w-4 h-4 rounded-sm bg-gray-200 animate-pulse" />
+            <div className="w-28 h-3 rounded bg-gray-200 animate-pulse" />
+          </div>
+
+          {/* Submit button */}
+          <div className="w-full h-12 rounded-xl bg-gray-200 animate-pulse mt-1" />
+
+          {/* Divider */}
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-px bg-gray-200 animate-pulse" />
+            <div className="w-24 h-3 rounded bg-gray-200 animate-pulse" />
+            <div className="flex-1 h-px bg-gray-200 animate-pulse" />
+          </div>
+
+          {/* Social buttons */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="h-11 rounded-xl bg-gray-200 animate-pulse" />
+            <div className="h-11 rounded-xl bg-gray-200 animate-pulse" />
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-center gap-1.5 mt-7">
+          <div className="w-48 h-3 rounded bg-gray-200 animate-pulse" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main component ───────────────────────────────────────────────
 function Login() {
   const [fields, setFields] = useState({ email: '', password: '' });
@@ -61,7 +124,8 @@ function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const errs = validate(fields);
+    // const errs = validate(fields);
+    const errs = validateLoginFields(fields);
     if (Object.keys(errs).length) {
       setErrors(errs);
       return;
@@ -90,7 +154,7 @@ function Login() {
         const data = await authService.checkAuth();
         console.log('checkAuth response:', data); // <-- add this
         if (data.alreadyLoggedIn) {
-          navigate(data.redirectTo || '/userprofile');
+          navigate('/userprofile');
         }
       } catch (err) {
         console.log('checkAuth failed:', err); // <-- and this
@@ -102,7 +166,7 @@ function Login() {
     checkIfAlreadyLoggedIn();
   }, [navigate]);
 
-  if (checking) return null; // Prevent rendering login form while checking
+  if (checking) return <LoginSkeleton />; // Prevent rendering login form while checking
 
   // ── Login form ─────────────────────────────────────────────────
   return (

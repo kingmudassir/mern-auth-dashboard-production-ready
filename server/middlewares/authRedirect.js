@@ -9,7 +9,6 @@ export const redirectIfAuthenticated = catchAsyncError(async (req, res, next) =>
     // No access token at all — check if refresh token exists
     if (!token) {
         if (!refreshToken) return next(); // Truly not logged in
-        // return await attemptRefresh(req, res, next);
         return await attemptRefresh(req, res, next);
     }
 
@@ -18,7 +17,8 @@ export const redirectIfAuthenticated = catchAsyncError(async (req, res, next) =>
         const existingUser = await User.findById(decoded.id);
 
         if (existingUser) {
-            return res.status(200).json({ alreadyLoggedIn: true, redirectTo: "/userprofile" });
+            // return res.status(200).json({ alreadyLoggedIn: true, redirectTo: "/userprofile" });
+            return res.status(200).json({ alreadyLoggedIn: true });
         }
 
         next();
@@ -68,7 +68,8 @@ async function attemptRefresh(req, res, next) {
         });
 
         // Refresh succeeded — tell frontend he's already authenticated
-        return res.status(200).json({ alreadyLoggedIn: true, redirectTo: "/userprofile" });
+        // return res.status(200).json({ alreadyLoggedIn: true, redirectTo: "/userprofile" });
+        return res.status(200).json({ alreadyLoggedIn: true });
 
     } catch (err) {
         next(); // Refresh failed — let them log in normally
