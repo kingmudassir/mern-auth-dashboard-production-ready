@@ -9,4 +9,4 @@ export const useUser = () => {
         staleTime: 5 * 60 * 1000,
         refetchOnWindowFocus: false
     })
-}
+} 

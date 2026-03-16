@@ -9,6 +9,7 @@ export const redirectIfAuthenticated = catchAsyncError(async (req, res, next) =>
     // No access token at all — check if refresh token exists
     if (!token) {
         if (!refreshToken) return next(); // Truly not logged in
+        // return await attemptRefresh(req, res, next);
         return await attemptRefresh(req, res, next);
     }
 
