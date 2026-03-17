@@ -5,6 +5,7 @@ import { User } from "../models/userSchema.js";
 import { sendEmail } from "../utilities/sendEmail.js";
 import crypto from "crypto";
 import { sendToken } from "../utilities/sendToken.js";
+import { validatePhone } from "../utilities/PhoneValidator.js";
 
 export const validateEmail = (rawEmail) => {
     if (!rawEmail || typeof rawEmail !== "string") {
@@ -68,8 +69,8 @@ export const validateEmail = (rawEmail) => {
     return null
 };
 
-const validate = (name, email, password) => {
-    if (!name || !email || !password) {
+const validate = (name, email, password, phone) => {
+    if (!name || !email || !password || !phone) {
         return "All fields are required."
     }
 
@@ -92,30 +93,44 @@ const validate = (name, email, password) => {
         return "Password must be 8+ chars with uppercase, lowercase, number, and symbol."
     }
 
+    const phoneError = validatePhone(phone);
+    if (phoneError) return phoneError;
+
     return null
 }
 
 export const register = catchAsyncError(async (req, res, next) => {
-    const { name, email, password } = req.body;
+    console.log("Controller Hit!")
+    const { name, email, password, phone } = req.body;
 
     // Validate input
-    const validationError = validate(name, email, password);
+    const validationError = validate(name, email, password, phone);
     if (validationError) {
         return next(new ErrorHandler(validationError, 400));
     }
 
-    // Check if user already exists
+    // Check if phone is already taken by a verified account
+    const existingPhone = await User.findOne({ phone, isAccountVerified: true });
+    if (existingPhone) {
+        return res.status(409).json({
+            success: false,
+            message: "An account with this phone number already exists."
+        });
+    }
+
+    // Check if email already exists
     const existingUser = await User.findOne({ email });
 
     if (existingUser) {
         if (existingUser.isAccountVerified) {
             return res.status(409).json({
                 success: false,
-                message: "Account already registered!"
+                message: "An account with this email already exists."
             });
         }
 
-        // User exists but email not verified → resend verification code
+        // User exists but email not verified → update phone in case it changed, resend code
+        existingUser.phone = phone;
         const verificationCode = existingUser.generateVerificationCode();
         await existingUser.save({ validateModifiedOnly: true });
 
@@ -126,7 +141,6 @@ export const register = catchAsyncError(async (req, res, next) => {
                 message: "Verification code resent!",
             });
         } catch (error) {
-            // Reset verification code on failure
             existingUser.emailVerificationCode = undefined;
             await existingUser.save({ validateModifiedOnly: true });
             return next(
@@ -139,7 +153,7 @@ export const register = catchAsyncError(async (req, res, next) => {
     }
 
     // User does not exist → create new user
-    const newUser = await User.create({ name, email, password });
+    const newUser = await User.create({ name, email, password, phone });
     const verificationCode = newUser.generateVerificationCode();
     await newUser.save({ validateModifiedOnly: true });
 
@@ -150,9 +164,8 @@ export const register = catchAsyncError(async (req, res, next) => {
             message: "Registration successful. Please verify your email.",
         });
     } catch (error) {
-        // If sending fails, cleanup verification code
         newUser.emailVerificationCode = undefined;
-        newUser.emailVerificationCodeExpire = undefined
+        newUser.emailVerificationCodeExpire = undefined;
         await newUser.save({ validateModifiedOnly: true });
         return next(
             new ErrorHandler(

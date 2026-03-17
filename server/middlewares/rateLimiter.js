@@ -13,7 +13,7 @@ export const loginLimiter = rateLimit({
 
 export const signupLimiter = rateLimit({
     windowMs: 60 * 60 * 1000,
-    limit: 5,
+    limit: 500,
     handler: (req, res) => {
         res.status(429).json({
         success: false,

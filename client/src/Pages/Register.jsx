@@ -7,33 +7,15 @@ import {
   Lock,
   Eye,
   EyeOff,
-  MapPin,
-  ChevronDown,
-  Camera,
   CheckCircle2,
   ArrowRight,
   AlertCircle,
-  Building2,
-  UserCheck,
-  ShoppingBag,
 } from 'lucide-react';
 import { Field } from '../Components/Login-Register/Field';
 import { Input } from '../Components/Login-Register/Input';
 import authService from '../Services/authService';
-
-// ── Helpers ─────────────────────────────────────────────────────
-const validate = (fields) => {
-  const errs = {};
-  if (!fields.fullName.trim()) errs.fullName = 'Full name is required';
-  if (!fields.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) errs.email = 'Enter a valid email address';
-  if (!fields.phone.match(/^(\+92|0)[0-9]{10}$/))
-    errs.phone = 'Enter a valid Pakistani number (e.g. 03001234567)';
-  if (!fields.city) errs.city = 'Please select your city';
-  if (fields.password.length < 8) errs.password = 'Password must be at least 8 characters';
-  if (fields.password !== fields.confirm) errs.confirm = 'Passwords do not match';
-  if (!fields.accountType) errs.accountType = 'Please select an account type';
-  return errs;
-};
+import { validateRegisterFields } from '../utilities/RegisterValidator';
+import { useRegister } from '../Hooks/useRegister';
 
 const pwStrength = (pw) => {
   if (!pw) return 0;
@@ -115,47 +97,55 @@ function RegisterSkeleton() {
 
 // ── Main component ───────────────────────────────────────────────
 function Register() {
+  const { mutateAsync: registerUser, isPending, isError, error, isSuccess, reset } = useRegister();
   const navigate = useNavigate();
 
   const [fields, setFields] = useState({
-    fullName: '',
+    name: '',
     email: '',
-
+    phone: '',
     password: '',
-    confirm: '',
   });
 
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
   const [showCf, setShowCf] = useState(false);
   const [errors, setErrors] = useState({});
-  const [submitted, setSubmitted] = useState(false);
-  const [loading, setLoading] = useState(false);
 
   const set = (key) => (e) => {
     setFields((p) => ({ ...p, [key]: e.target.value }));
     if (errors[key]) setErrors((p) => ({ ...p, [key]: '' }));
+
+    if (isError) {
+      reset();
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const errs = validate(fields);
+    const errs = validateRegisterFields(fields, confirmPassword);
+
     if (Object.keys(errs).length) {
       setErrors(errs);
       return;
     }
-    setLoading(true);
-    // Simulate API call
-    await new Promise((r) => setTimeout(r, 1400));
-    setLoading(false);
-    setSubmitted(true);
+
+    try {
+      await registerUser(fields);
+    } catch (err) {
+      // React Query already sets isError + error
+      // but catching prevents "Uncaught (in promise)"
+    }
   };
 
   const strength = pwStrength(fields.password);
 
   // ── Success screen ───────────────────────────────────────────
-  if (submitted) {
-    return <></>;
-  }
+  // useEffect(() => {
+  //   if (isSuccess) {
+  //     navigate('/verifyotp');
+  //   }
+  // }, [isSuccess, navigate]);
 
   const [checking, setChecking] = useState(true);
 
@@ -210,21 +200,44 @@ function Register() {
             </a>
           </p>
         </div>
+        {/* ── Global error banner ── */}
+
+        {isError && (
+          <div
+            className="shake flex items-start gap-2.5 bg-[rgba(232,98,42,0.07)] border border-[rgba(232,98,42,0.25)] rounded-xl px-4 py-3 mb-5"
+            role="alert"
+            aria-live="assertive"
+          >
+            <AlertCircle
+              size={15}
+              strokeWidth={2}
+              className="text-[#E8622A] shrink-0 mt-px"
+              aria-hidden="true"
+            />
+            <p
+              className="text-[0.8rem] text-[#C4531F] font-medium leading-snug"
+              style={{ fontFamily: "'DM Sans', sans-serif" }}
+            >
+              {error?.message || 'Something went wrong. Please try again.'}
+              {error?.stack}
+            </p>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} noValidate aria-label="Registration form">
           <div className="flex flex-col gap-5">
             {/* ── Full name ── */}
-            <Field label="Full Name" error={errors.fullName}>
+            <Field label="Full Name" error={errors.name}>
               <Input
                 icon={User}
                 type="text"
                 placeholder="Muhammad Ali Khan"
-                value={fields.fullName}
-                onChange={set('fullName')}
-                error={errors.fullName}
+                value={fields.name}
+                onChange={set('name')}
+                error={errors.name}
                 autoComplete="name"
                 aria-label="Full name"
-                aria-invalid={!!errors.fullName}
+                aria-invalid={!!errors.name}
               />
             </Field>
 
@@ -315,14 +328,14 @@ function Register() {
             </Field>
 
             {/* ── Confirm password ── */}
-            <Field label="Confirm Password" error={errors.confirm}>
+            <Field label="Confirm Password">
               <Input
                 icon={Lock}
                 type={showCf ? 'text' : 'password'}
                 placeholder="Re-enter your password"
-                value={fields.confirm}
-                onChange={set('confirm')}
-                error={errors.confirm}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                // error={errors.confirm}
                 autoComplete="new-password"
                 aria-label="Confirm password"
                 aria-invalid={!!errors.confirm}
@@ -342,14 +355,14 @@ function Register() {
                 }
               />
               {/* Match indicator */}
-              {fields.confirm && fields.password && (
+              {confirmPassword && fields.password && (
                 <span
-                  className={`flex items-center gap-1 text-[0.72rem] font-medium ${fields.confirm === fields.password ? 'text-green-500' : 'text-[#E8622A]'}`}
+                  className={`flex items-center gap-1 text-[0.72rem] font-medium ${confirmPassword === fields.password ? 'text-green-500' : 'text-[#E8622A]'}`}
                   style={{ fontFamily: "'DM Sans', sans-serif" }}
                   aria-live="polite"
                 >
                   <CheckCircle2 size={11} strokeWidth={2} aria-hidden="true" />
-                  {fields.confirm === fields.password
+                  {confirmPassword === fields.password
                     ? 'Passwords match'
                     : 'Passwords do not match'}
                 </span>
@@ -375,12 +388,12 @@ function Register() {
             {/* ── Submit ── */}
             <button
               type="submit"
-              disabled={loading}
+              disabled={isPending}
               className="btn-submit w-full flex items-center justify-center gap-2 text-white text-[0.9rem] font-semibold py-3.5 rounded-xl mt-1"
               style={{ fontFamily: "'DM Sans', sans-serif" }}
               aria-label="Create account"
             >
-              {loading ? (
+              {isPending ? (
                 <>
                   <span className="spinner" aria-hidden="true" />
                   <span className="relative z-10">Creating account…</span>
@@ -403,4 +416,5 @@ function Register() {
     </div>
   );
 }
+
 export default Register;

@@ -4,6 +4,7 @@ import { api } from "./api";
 const authService = {
     // ── Public routes ──
     register: async (data) => {
+        console.log("Hit (1)")
         return await api.post('/register', data);
     },
 

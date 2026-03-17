@@ -34,6 +34,20 @@ const userSchema = new mongoose.Schema(
             select: false
         },
 
+        phone: {
+            type: String,
+            required: [true, "Phone number is required"],
+            unique: true, // optional, if no two users can share the same number
+            trim: true,
+            validate: {
+                validator: function(v) {
+                // Accepts either +92XXXXXXXXXX or 03XXXXXXXXX
+                return /^(\+92|0)[0-9]{10}$/.test(v);
+                },
+                message: props => `${props.value} is not a valid Pakistani phone number!`
+            }
+        },
+
         role: {
             type: String,
             enum: ["user", "admin"],

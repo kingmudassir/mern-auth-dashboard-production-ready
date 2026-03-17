@@ -154,7 +154,10 @@ function VerifyOTP() {
   const navigate = useNavigate();
 
   // Passed from ForgotPassword via navigate('/verify-otp', { state: { contact, type } })
-  const contact = location.state?.contact ?? '';
+  // const contact = location.state?.contact ?? '';
+  // const type = location.state?.type ?? 'email';
+
+  const contact = location.state?.contact;
   const type = location.state?.type ?? 'email';
 
   const [otp, setOtp] = useState('');
@@ -204,9 +207,10 @@ function VerifyOTP() {
   }, [otp]);
 
   // ── If navigated here without state, bounce back ────────────────
-  useEffect(() => {
-    if (!contact) navigate('/forgotpassword', { replace: true });
-  }, []);
+  if (!contact) {
+    navigate(-1, { replace: true });
+    return null;
+  }
 
   // ── Success screen ───────────────────────────────────────────────
   if (success) {

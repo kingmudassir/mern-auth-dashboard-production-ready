@@ -4,6 +4,17 @@
 @import 'tailwindcss';
 /* ********** Styling for navbar starts here ********** */
 
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px #fafaf9 inset;
+  box-shadow: 0 0 0 1000px #fafaf9 inset;
+  -webkit-text-fill-color: #1a1523;
+  border-radius: 0.75rem; /* matches rounded-xl */
+  transition: background-color 5000s ease-in-out 0s;
+}
+
 :root {
   --paiyya-ink: #1a1523;
   --paiyya-surface: #ffffff;

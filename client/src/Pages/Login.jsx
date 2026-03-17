@@ -16,32 +16,6 @@ const disposableDomains = [
   'yopmail.com',
 ];
 
-const validate = (fields) => {
-  const errs = {};
-
-  if (!fields.email) {
-    errs.email = 'Email is required';
-  } else {
-    const email = fields.email.trim().toLowerCase();
-    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-    if (!regex.test(email)) {
-      errs.email = 'Enter a valid email address';
-    } else {
-      const domain = email.split('@')[1];
-      if (disposableDomains.includes(domain)) {
-        errs.email = 'Disposable emails are not allowed';
-      }
-    }
-  }
-
-  if (!fields.password) {
-    errs.password = 'Password is required';
-  }
-
-  return errs;
-};
-
 function LoginSkeleton() {
   return (
     <div className="login-bg relative min-h-screen flex items-center justify-center px-4 py-20">
