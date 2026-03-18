@@ -24,7 +24,7 @@ export const signupLimiter = rateLimit({
 
 export const otpLimiter = rateLimit({
     windowMs: 30 * 60 * 1000, 
-    limit: 3,                  
+    limit: 300,                  
     standardHeaders: "draft-8",
     legacyHeaders: false,
     handler: (req, res, next) => {

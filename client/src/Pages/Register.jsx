@@ -140,13 +140,6 @@ function Register() {
 
   const strength = pwStrength(fields.password);
 
-  // ── Success screen ───────────────────────────────────────────
-  // useEffect(() => {
-  //   if (isSuccess) {
-  //     navigate('/verifyotp');
-  //   }
-  // }, [isSuccess, navigate]);
-
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
@@ -219,7 +212,6 @@ function Register() {
               style={{ fontFamily: "'DM Sans', sans-serif" }}
             >
               {error?.message || 'Something went wrong. Please try again.'}
-              {error?.stack}
             </p>
           </div>
         )}

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Menu, X, ChevronRight, UserCircle, LogOut, User } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import authService from '../../Services/authService.js'; // adjust path
+import authService from '../../Services/authService.js';
 
 const AUTH_PAGES = ['/login', '/register', '/verifyotp'];
 
@@ -31,18 +31,27 @@ export default function Navbar() {
     };
   }, [isMobileOpen]);
 
-  // Check auth state
+  const [checking, setChecking] = useState(true);
+
   useEffect(() => {
-    const fetchUser = async () => {
+    const checkIfAlreadyLoggedIn = async () => {
       try {
-        const userData = await authService.getUser();
-        setUser(userData);
-      } catch {
+        const data = await authService.checkAuth();
+        if (data) {
+          const userData = await authService.getUser();
+          setUser(userData);
+        }
+      } catch (err) {
         setUser(null);
+      } finally {
+        setChecking(false);
       }
     };
-    fetchUser();
-  }, [location.pathname]); // re-check on route change
+
+    checkIfAlreadyLoggedIn();
+  }, [location.pathname]);
+
+  // if (checking) return null;
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -104,12 +113,12 @@ export default function Navbar() {
             {/* Desktop nav — hidden on auth pages */}
             {!isAuthPage && (
               <nav className="hidden md:flex items-center gap-1" aria-label="Primary navigation">
-                {user ? (
-                  /* ── Logged in: profile dropdown ── */
-                  <div className="relative" ref={dropdownRef}>
-                    <button
-                      onClick={() => setDropdownOpen((p) => !p)}
-                      className="
+                {checking ? null : user ? (
+                  <>
+                    <div className="relative" ref={dropdownRef}>
+                      <button
+                        onClick={() => setDropdownOpen((p) => !p)}
+                        className="
                         flex items-center gap-2
                         text-sm font-medium text-[#1A1523]
                         px-[1.1rem] py-2 rounded-full
@@ -118,27 +127,27 @@ export default function Navbar() {
                         hover:text-[#6C3CE1] hover:border-[rgba(108,60,225,0.22)] hover:bg-[rgba(108,60,225,0.05)]
                         cursor-pointer
                       "
-                      aria-label="Open profile menu"
-                      aria-expanded={dropdownOpen}
-                    >
-                      <UserCircle size={18} strokeWidth={1.8} />
-                      <span>{user.name?.split(' ')[0] ?? 'Profile'}</span>
-                    </button>
+                        aria-label="Open profile menu"
+                        aria-expanded={dropdownOpen}
+                      >
+                        <UserCircle size={18} strokeWidth={1.8} />
+                        <span>{user.name?.split(' ')[0] ?? 'Profile'}</span>
+                      </button>
 
-                    {dropdownOpen && (
-                      <div
-                        className="
+                      {dropdownOpen && (
+                        <div
+                          className="
                         absolute right-0 top-full mt-2
                         w-48 rounded-xl
                         bg-white border border-[#E8E3DC]
                         shadow-lg overflow-hidden
                         z-50
                       "
-                      >
-                        <a
-                          href="/userprofile"
-                          onClick={() => setDropdownOpen(false)}
-                          className="
+                        >
+                          <a
+                            href="/userprofile"
+                            onClick={() => setDropdownOpen(false)}
+                            className="
                             flex items-center gap-2.5
                             px-4 py-3
                             text-sm text-[#1A1523] font-medium
@@ -146,13 +155,13 @@ export default function Navbar() {
                             hover:bg-[rgba(108,60,225,0.05)] hover:text-[#6C3CE1]
                             transition-colors duration-150
                           "
-                        >
-                          <User size={15} strokeWidth={1.8} />
-                          User Profile
-                        </a>
-                        <button
-                          onClick={handleLogout}
-                          className="
+                          >
+                            <User size={15} strokeWidth={1.8} />
+                            User Profile
+                          </a>
+                          <button
+                            onClick={handleLogout}
+                            className="
                             w-full flex items-center gap-2.5
                             px-4 py-3
                             text-sm text-[#E53E3E] font-medium
@@ -160,13 +169,36 @@ export default function Navbar() {
                             transition-colors duration-150
                             cursor-pointer border-t border-[#E8E3DC]
                           "
-                        >
-                          <LogOut size={15} strokeWidth={1.8} />
-                          Log out
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                          >
+                            <LogOut size={15} strokeWidth={1.8} />
+                            Log out
+                          </button>
+                        </div>
+                      )}
+                    </div>{' '}
+                    <a
+                      href="/register"
+                      className="
+                        btn-register
+                        relative overflow-hidden
+                        inline-flex items-center gap-1
+                        text-sm font-semibold text-white
+                        px-5 py-[0.55rem] rounded-full
+                        no-underline whitespace-nowrap
+                        transition-transform duration-200
+                        hover:-translate-y-px active:translate-y-0
+                      "
+                      aria-label="Post your car listing"
+                    >
+                      <span className="relative z-10">Post Your Car</span>
+                      <ChevronRight
+                        size={13}
+                        strokeWidth={2.5}
+                        className="relative z-10"
+                        aria-hidden="true"
+                      />
+                    </a>
+                  </>
                 ) : (
                   /* ── Not logged in: original buttons ── */
                   <>
@@ -246,7 +278,7 @@ export default function Navbar() {
               aria-label="Mobile navigation"
             >
               <div className="max-w-7xl mx-auto px-6 pt-3 pb-4 flex flex-col gap-2">
-                {user ? (
+                {checking ? null : user ? (
                   <>
                     <a
                       href="/userprofile"
