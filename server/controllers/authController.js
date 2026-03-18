@@ -401,7 +401,6 @@ export const forgetPassword = catchAsyncError(async (req, res, next) => {
 
         throw new ErrorHandler(`Failed to send verification email: ${error.message}`, 500);
     }
-
 })
 
 export const changePassword = catchAsyncError(async (req, res, next) => {
@@ -469,7 +468,7 @@ export const login = catchAsyncError(async (req, res, next) => {
 
     // first check if user exists
     if (!existingUser) {
-        return next(new ErrorHandler("Incorrect email or password.", 401));
+        return next(new ErrorHandler("Email does not exist.", 401));
     }
 
     // check if user scheduled his account for deletion
@@ -493,11 +492,15 @@ export const logout = catchAsyncError(async (req, res, next) => {
     res.status(200)
     .cookie("token", "", {
         expires: new Date(Date.now()),
-        httpOnly: true
+        httpOnly: true,                
+        sameSite: "strict",
+        path: "/"
     })
     .cookie("refreshToken", "", {
         expires: new Date(Date.now()),
-        httpOnly: true,
+        httpOnly: true,                
+        sameSite: "strict",
+        path: "/"
     })
     .json({
         success: true,

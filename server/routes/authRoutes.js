@@ -15,7 +15,7 @@ router.post('/resendOTP', redirectIfAuthenticated, otpLimiter, resendOTP)
 router.post('/password/forgot', redirectIfAuthenticated, forgetPassword)
 router.put('/password/reset/:token', redirectIfAuthenticated, resetPassword)
 
-router.post('/logout', isAuthenticated, logout)
+router.post('/logout', logout)
 router.get('/getuser', isAuthenticated, getUser)
 router.put('/changePassword', isAuthenticated, changePassword)
 router.post('/deleteAccount', isAuthenticated, deleteAccount)

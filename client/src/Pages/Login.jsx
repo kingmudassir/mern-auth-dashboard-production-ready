@@ -3,18 +3,9 @@ import { Mail, Lock, Eye, EyeOff, ArrowRight, AlertCircle } from 'lucide-react';
 import { useLogin } from '../Hooks/useLogin';
 import { Field } from '../Components/Login-Register/Field';
 import { Input } from '../Components/Login-Register/Input';
-import { useNavigate } from 'react-router-dom';
+import { replace, useNavigate } from 'react-router-dom';
 import authService from '../Services/authService';
 import { validateLoginFields } from '../utilities/LoginValidator';
-
-// ── Helpers ─────────────────────────────────────────────────────
-const disposableDomains = [
-  'tempmail.com',
-  '10minutemail.com',
-  'mailinator.com',
-  'guerrillamail.com',
-  'yopmail.com',
-];
 
 function LoginSkeleton() {
   return (
@@ -83,22 +74,19 @@ function Login() {
   const [fields, setFields] = useState({ email: '', password: '' });
   const [showPw, setShowPw] = useState(false);
   const [errors, setErrors] = useState({});
-  const [globalErr, setGlobalErr] = useState('');
   const navigate = useNavigate();
 
   //Tanstack
-  const { mutateAsync: loginUser, isPending, isError, error, isSuccess } = useLogin();
+  const { mutateAsync: loginUser, isPending, isError, error, isSuccess, reset } = useLogin();
 
   const set = (key) => (e) => {
     setFields((p) => ({ ...p, [key]: e.target.value }));
     if (errors[key]) setErrors((p) => ({ ...p, [key]: '' }));
-    if (globalErr) setGlobalErr('');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // const errs = validate(fields);
     const errs = validateLoginFields(fields);
     if (Object.keys(errs).length) {
       setErrors(errs);
@@ -106,17 +94,16 @@ function Login() {
     }
 
     try {
-      setGlobalErr('');
-      await loginUser(fields);
+      const data = await loginUser(fields);
     } catch (error) {
-      setGlobalErr(error?.message || 'Incorrect email or password.');
+      //
     }
   };
 
   // ── Success screen ─────────────────────────────────────────────
   useEffect(() => {
     if (isSuccess) {
-      navigate('/userprofile');
+      navigate('/userprofile', { replace: true });
     }
   }, [isSuccess, navigate]);
 
@@ -128,7 +115,7 @@ function Login() {
         const data = await authService.checkAuth();
         console.log('checkAuth response:', data); // <-- add this
         if (data.alreadyLoggedIn) {
-          navigate('/userprofile');
+          navigate('/');
         }
       } catch (err) {
         console.log('checkAuth failed:', err); // <-- and this
@@ -181,7 +168,7 @@ function Login() {
           </div>
 
           {/* ── Global error banner ── */}
-          {globalErr && (
+          {isError && (
             <div
               className="shake flex items-start gap-2.5 bg-[rgba(232,98,42,0.07)] border border-[rgba(232,98,42,0.25)] rounded-xl px-4 py-3 mb-5"
               role="alert"
@@ -197,7 +184,7 @@ function Login() {
                 className="text-[0.8rem] text-[#C4531F] font-medium leading-snug"
                 style={{ fontFamily: "'DM Sans', sans-serif" }}
               >
-                {globalErr}
+                {error?.message}
               </p>
             </div>
           )}
@@ -211,7 +198,13 @@ function Login() {
                   type="email"
                   placeholder="you@example.com"
                   value={fields.email}
-                  onChange={set('email')}
+                  onChange={(e) => {
+                    set('email')(e);
+                    if (isError || isSuccess) {
+                      reset();
+                    }
+                    setContactErr('');
+                  }}
                   error={errors.email}
                   autoComplete="email"
                   aria-label="Email address"
@@ -241,7 +234,13 @@ function Login() {
                   type={showPw ? 'text' : 'password'}
                   placeholder="Your password"
                   value={fields.password}
-                  onChange={set('password')}
+                  onChange={(e) => {
+                    set('password')(e);
+                    if (isError || isSuccess) {
+                      reset();
+                    }
+                    setContactErr('');
+                  }}
                   error={errors.password}
                   autoComplete="current-password"
                   aria-label="Password"

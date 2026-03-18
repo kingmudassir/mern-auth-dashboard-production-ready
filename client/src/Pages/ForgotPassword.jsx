@@ -1,18 +1,26 @@
 import { useState } from 'react';
-import { Mail, Phone, ArrowRight, ArrowLeft, AlertCircle } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Mail, Phone, ArrowRight, ArrowLeft, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { useForgetPassword } from '../Hooks/useForgetPassword';
+import { validateEmail } from '../utilities/EmailValidator';
 
 // ── Validators ───────────────────────────────────────────────────
-const isEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 const isPhone = (v) => /^(\+92|0)[0-9]{10}$/.test(v);
 
 export default function ForgotPassword() {
-  const navigate = useNavigate();
+  const {
+    mutateAsync: requestPasswordReset,
+    isPending: isRequestingPasswordReset,
+    isError: isPasswordResetRequestError,
+    error: passwordResetRequestError,
+    isSuccess: isPasswordResetRequestSuccessful,
+    reset: resetPasswordResetState,
+  } = useForgetPassword();
+
+  const [passwordMessage, setPasswordMessage] = useState('');
 
   const [mode, setMode] = useState('email');
   const [contact, setContact] = useState('');
   const [contactErr, setContactErr] = useState('');
-  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -22,28 +30,30 @@ export default function ForgotPassword() {
       setContactErr(mode === 'email' ? 'Email address is required' : 'Phone number is required');
       return;
     }
-    if (mode === 'email' && !isEmail(contact)) {
-      setContactErr('Enter a valid email address');
-      return;
+    if (mode === 'email') {
+      const error = validateEmail(contact);
+      if (error) {
+        setContactErr(error);
+        return;
+      }
     }
     if (mode === 'phone' && !isPhone(contact)) {
       setContactErr('Enter a valid Pakistani number (e.g. 03001234567)');
       return;
     }
 
-    setLoading(true);
-    // Swap for: await axios.post('/api/auth/forgot-password', { contact, type: mode })
-    await new Promise((r) => setTimeout(r, 1300));
-    setLoading(false);
-
-    // Pass contact + mode to the OTP page via router state
-    navigate('/verifyotp', { state: { contact, type: mode } });
+    try {
+      const data = await requestPasswordReset({ email: contact });
+      setPasswordMessage(data.message);
+    } catch {
+      // error already handled via isPasswordResetRequestError
+    }
   };
 
   return (
     <>
       <div className="fp-bg relative min-h-screen flex items-center justify-center px-4 py-20">
-        <div className="fp-card fp-fade relative z-10 w-full max-w-[420px] rounded-3xl p-8 md:p-10">
+        <div className="fp-card fp-fade relative z-10 w-full max-w-105 rounded-3xl p-8 md:p-10">
           {/* ── Header ── */}
           <div className="text-center mb-7">
             <a
@@ -91,12 +101,56 @@ export default function ForgotPassword() {
               Forgot password?
             </h1>
             <p
-              className="text-[0.875rem] text-[#8A8390] leading-relaxed max-w-[290px] mx-auto"
+              className="text-[0.875rem] text-[#8A8390] leading-relaxed max-w-72.5 mx-auto"
               style={{ fontFamily: "'DM Sans', sans-serif" }}
             >
               Enter your email or phone number and we'll send you a verification code.
             </p>
           </div>
+
+          {/* ── Success banner ── */}
+          {isPasswordResetRequestSuccessful && (
+            <div
+              className="flex items-start gap-2.5 bg-[rgba(34,197,94,0.07)] border border-[rgba(34,197,94,0.25)] rounded-xl px-4 py-3 mb-5"
+              role="alert"
+              aria-live="assertive"
+            >
+              <CheckCircle2
+                size={15}
+                strokeWidth={2}
+                className="text-[#16a34a] shrink-0 mt-px"
+                aria-hidden="true"
+              />
+              <p
+                className="text-[0.8rem] text-[#16a34a] font-medium leading-snug"
+                style={{ fontFamily: "'DM Sans', sans-serif" }}
+              >
+                {passwordMessage || 'A new code has been sent!'}
+              </p>
+            </div>
+          )}
+
+          {/* ── Error banner ── */}
+          {isPasswordResetRequestError && (
+            <div
+              className="shake flex items-start gap-2.5 bg-[rgba(232,98,42,0.07)] border border-[rgba(232,98,42,0.25)] rounded-xl px-4 py-3 mb-5"
+              role="alert"
+              aria-live="assertive"
+            >
+              <AlertCircle
+                size={15}
+                strokeWidth={2}
+                className="text-[#E8622A] shrink-0 mt-px"
+                aria-hidden="true"
+              />
+              <p
+                className="text-[0.8rem] text-[#C4531F] font-medium leading-snug"
+                style={{ fontFamily: "'DM Sans', sans-serif" }}
+              >
+                {passwordResetRequestError?.message}
+              </p>
+            </div>
+          )}
 
           {/* ── Mode toggle ── */}
           <div
@@ -160,6 +214,9 @@ export default function ForgotPassword() {
                     value={contact}
                     onChange={(e) => {
                       setContact(e.target.value);
+                      if (isPasswordResetRequestError || isPasswordResetRequestSuccessful) {
+                        resetPasswordResetState();
+                      }
                       setContactErr('');
                     }}
                     placeholder={mode === 'email' ? 'you@example.com' : '03001234567'}
@@ -186,19 +243,19 @@ export default function ForgotPassword() {
 
               <button
                 type="submit"
-                disabled={loading}
+                disabled={isRequestingPasswordReset}
                 className="btn-primary w-full flex items-center justify-center gap-2 text-white text-[0.9rem] font-semibold py-3.5 rounded-xl"
                 style={{ fontFamily: "'DM Sans', sans-serif" }}
                 aria-label="Send verification code"
               >
-                {loading ? (
+                {isRequestingPasswordReset ? (
                   <>
                     <span className="spinner" aria-hidden="true" />
                     <span className="relative z-10">Sending code…</span>
                   </>
                 ) : (
                   <>
-                    <span className="relative z-10">Send Verification Code</span>
+                    <span className="relative z-10">Send Verification Link</span>
                     <ArrowRight
                       size={15}
                       strokeWidth={2.2}

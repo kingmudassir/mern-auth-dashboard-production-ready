@@ -18,11 +18,15 @@ export const isAuthenticated = catchAsyncError(async (req, res, next) => {
             res
             .cookie("token", "", {
                 expires: new Date(Date.now()),
-                httpOnly: true
+                httpOnly: true,
+                sameSite: "strict",
+                path: "/"
             })
             .cookie("refreshToken", "", {
                 expires: new Date(Date.now()),
-                httpOnly: true,
+                httpOnly: true,                
+                sameSite: "strict",
+                path: "/"
             })
             return next(new ErrorHandler("User no longer exists", 401));
         }

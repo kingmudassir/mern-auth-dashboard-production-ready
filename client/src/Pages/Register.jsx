@@ -148,7 +148,7 @@ function Register() {
         const data = await authService.checkAuth();
         console.log('checkAuth response:', data);
         if (data.alreadyLoggedIn) {
-          navigate('/userprofile');
+          navigate('/');
         }
       } catch (err) {
         console.log('checkAuth failed:', err);

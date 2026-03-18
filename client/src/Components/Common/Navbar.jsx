@@ -2,10 +2,20 @@ import { useState, useEffect, useRef } from 'react';
 import { Menu, X, ChevronRight, UserCircle, LogOut, User } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import authService from '../../Services/authService.js';
+import { useLogout } from '../../Hooks/useLogout.js';
+import { useUser } from '../../Hooks/useUser.js';
 
 const AUTH_PAGES = ['/login', '/register', '/verifyotp'];
 
 export default function Navbar() {
+  const {
+    mutateAsync: logout,
+    isPending: isLoggingOut,
+    isError: logoutErrorState,
+    error: logoutError,
+    isSuccess: isLogoutSuccessful,
+  } = useLogout();
+
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [user, setUser] = useState(null);
@@ -37,7 +47,9 @@ export default function Navbar() {
     const checkIfAlreadyLoggedIn = async () => {
       try {
         const data = await authService.checkAuth();
-        if (data) {
+        console.log('checkAuth response:', data);
+
+        if (data.alreadyLoggedIn) {
           const userData = await authService.getUser();
           setUser(userData);
         }
@@ -66,13 +78,12 @@ export default function Navbar() {
 
   const handleLogout = async () => {
     try {
-      await authService.logout();
-      setUser(null);
-      setDropdownOpen(false);
-      navigate('/');
+      await logout();
     } catch {
-      // handle error if needed
+      // silent — clear local state regardless
     }
+    setUser(null);
+    navigate('/');
   };
 
   return (

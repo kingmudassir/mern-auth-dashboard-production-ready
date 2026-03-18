@@ -3,7 +3,7 @@ import ErrorHandler from "./errors.js";
 
 export const loginLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    limit: 50,
+    limit: 500,
     standardHeaders: "draft-8",
     legacyHeaders: false,
     handler: (req, res, next) => {

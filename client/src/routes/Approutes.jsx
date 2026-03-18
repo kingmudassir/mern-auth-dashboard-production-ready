@@ -18,7 +18,7 @@ function Approutes() {
         <Route path="/userprofile" element={<UserProfile />} />
         <Route path="/forgotpassword" element={<ForgotPassword />} />
         <Route path="/verifyotp" element={<VerifyOTP />} />
-        <Route path="/resetPassword" element={<ResetPassword />} />
+        <Route path="/password/reset/:token" element={<ResetPassword />} />
       </Route>
     </Routes>
   );

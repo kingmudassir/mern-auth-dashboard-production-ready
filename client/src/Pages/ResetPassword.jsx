@@ -1,25 +1,8 @@
 import { useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Lock, Eye, EyeOff, ArrowRight, AlertCircle, CheckCircle2 } from 'lucide-react';
-
-// ─────────────────────────────────────────────────────────────────
-// 💡 TANSTACK MUTATION INTEGRATION POINT
-//
-//  const resetPasswordMutation = useMutation({
-//    mutationFn: ({ contact, otp, password }) =>
-//      axios.post('/api/auth/reset-password', { contact, otp, password }),
-//    onSuccess: () => setDone(true),
-//    onError: (err) => setGlobalErr(
-//      err.response?.data?.message || 'Something went wrong. Please try again.'
-//    ),
-//  });
-//
-//  Then replace the simulate() call in handleSubmit with:
-//  resetPasswordMutation.mutate({ contact, password: fields.password })
-//
-//  And replace `loading` useState with:
-//  const loading = resetPasswordMutation.isPending;
-// ─────────────────────────────────────────────────────────────────
+import { useResetPassword } from '../Hooks/useResetPassword';
+import { validatePasswordStrict } from '../utilities/PasswordValidator';
 
 // ── Password strength ────────────────────────────────────────────
 const pwStrength = (pw) => {
@@ -38,9 +21,11 @@ const STRENGTH_COLOR = ['', '#E8622A', '#C9A84C', '#6C3CE1', '#22c55e'];
 // ── Validator ────────────────────────────────────────────────────
 const validate = ({ password, confirm }) => {
   const errs = {};
-  if (password.length < 8) errs.password = 'Password must be at least 8 characters';
-  if (password !== confirm) errs.confirm = 'Passwords do not match';
+  const pwError = validatePasswordStrict(password);
+  if (pwError) errs.password = pwError;
   if (!confirm) errs.confirm = 'Please confirm your password';
+  else if (confirm !== password) errs.confirm = 'Passwords do not match';
+
   return errs;
 };
 
@@ -114,19 +99,24 @@ function PasswordInput({ error, show, onToggle, ...props }) {
 
 // ── Main component ───────────────────────────────────────────────
 function ResetPassword() {
-  const location = useLocation();
+  const { token } = useParams();
   const navigate = useNavigate();
-
-  // Passed from VerifyOTP — extend if your backend needs a token
-  const contact = location.state?.contact ?? '';
-
   const [fields, setFields] = useState({ password: '', confirm: '' });
   const [showPw, setShowPw] = useState(false);
   const [showCf, setShowCf] = useState(false);
   const [errors, setErrors] = useState({});
   const [globalErr, setGlobalErr] = useState('');
-  const [loading, setLoading] = useState(false); // replace with mutation.isPending
-  const [done, setDone] = useState(false);
+
+  const {
+    mutateAsync: requestPasswordReset,
+    isPending: isRequestingPasswordReset,
+    isError: isPasswordResetRequestError,
+    error: passwordResetRequestError,
+    isSuccess: isPasswordResetRequestSuccessful,
+    reset: resetPasswordResetState,
+  } = useResetPassword();
+
+  const [passwordMessage, setPasswordMessage] = useState('');
 
   const set = (key) => (e) => {
     setFields((p) => ({ ...p, [key]: e.target.value }));
@@ -142,20 +132,22 @@ function ResetPassword() {
       return;
     }
 
-    setLoading(true);
-    setGlobalErr('');
-
-    // ← REPLACE THIS BLOCK with: resetPasswordMutation.mutate({ contact, password: fields.password })
-    await new Promise((r) => setTimeout(r, 1300));
-    setLoading(false);
-    setDone(true);
-    // ──────────────────────────────────────────────────────────────
+    try {
+      const data = await requestPasswordReset({
+        token,
+        password: fields.password,
+        confirmPassword: fields.confirm,
+      });
+      setPasswordMessage(data.message);
+    } catch {
+      // error already handled via isPasswordResetRequestError
+    }
   };
 
   const strength = pwStrength(fields.password);
 
   // ── Success screen ───────────────────────────────────────────────
-  if (done) {
+  if (isPasswordResetRequestSuccessful) {
     return (
       <>
         <style>{STYLES}</style>
@@ -177,10 +169,11 @@ function ResetPassword() {
               className="text-[#8A8390] text-[0.9rem] leading-relaxed mb-7 max-w-[270px] mx-auto"
               style={{ fontFamily: "'DM Sans', sans-serif" }}
             >
-              Your password has been reset successfully. Log in with your new credentials.
+              {/* Your password has been reset successfully. Log in with your new credentials. */}
+              {passwordMessage}
             </p>
-            <a
-              href="/login"
+            <button
+              onClick={() => navigate('/login', { replace: true })}
               className="inline-flex items-center justify-center gap-2 w-full text-white text-[0.875rem] font-semibold py-3.5 rounded-xl transition-transform duration-200 hover:-translate-y-px"
               style={{
                 background: 'linear-gradient(135deg, #E8622A 0%, #C4531F 100%)',
@@ -190,7 +183,7 @@ function ResetPassword() {
             >
               <span>Go to Login</span>
               <ArrowRight size={15} strokeWidth={2.2} />
-            </a>
+            </button>
           </div>
         </div>
       </>
@@ -257,7 +250,7 @@ function ResetPassword() {
           </div>
 
           {/* ── Global error ── */}
-          {globalErr && (
+          {isPasswordResetRequestError && (
             <div
               className="shake flex items-start gap-2.5 bg-[rgba(232,98,42,0.07)] border border-[rgba(232,98,42,0.25)] rounded-xl px-4 py-3 mb-5"
               role="alert"
@@ -266,14 +259,14 @@ function ResetPassword() {
               <AlertCircle
                 size={15}
                 strokeWidth={2}
-                className="text-[#E8622A] flex-shrink-0 mt-[1px]"
+                className="text-[#E8622A] shrink-0 mt-px"
                 aria-hidden="true"
               />
               <p
                 className="text-[0.8rem] text-[#C4531F] font-medium leading-snug"
                 style={{ fontFamily: "'DM Sans', sans-serif" }}
               >
-                {globalErr}
+                {passwordResetRequestError?.message}
               </p>
             </div>
           )}
@@ -285,7 +278,13 @@ function ResetPassword() {
                 <PasswordInput
                   placeholder="Min. 8 characters"
                   value={fields.password}
-                  onChange={set('password')}
+                  onChange={(e) => {
+                    set('password')(e);
+
+                    if (isPasswordResetRequestError) {
+                      resetPasswordResetState();
+                    }
+                  }}
                   show={showPw}
                   onToggle={() => setShowPw((p) => !p)}
                   error={errors.password}
@@ -389,12 +388,12 @@ function ResetPassword() {
               {/* ── Submit ── */}
               <button
                 type="submit"
-                disabled={loading}
+                disabled={isRequestingPasswordReset}
                 className="btn-primary w-full flex items-center justify-center gap-2 text-white text-[0.9rem] font-semibold py-3.5 rounded-xl mt-1"
                 style={{ fontFamily: "'DM Sans', sans-serif" }}
                 aria-label="Reset password"
               >
-                {loading ? (
+                {isRequestingPasswordReset ? (
                   <>
                     <span className="spinner" aria-hidden="true" />
                     <span className="relative z-10">Updating password…</span>

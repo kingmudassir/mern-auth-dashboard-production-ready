@@ -9,7 +9,6 @@ export const api = {
 
     post: async (url, data, config = {}) => {
         // console.log("API.js: POST route hit");
-        console.log("Hit (2)")
         const response = await axiosInstance.post(url, data, config)
         return response.data
     },

@@ -4,6 +4,7 @@ import { ArrowLeft, AlertCircle, CheckCircle2, ArrowRight } from 'lucide-react';
 import { InputOTP } from '../Components/OTP/InputOTP';
 import { useResendOTP } from '../Hooks/useResendOTP';
 import { useVerifyOTP } from '../Hooks/useVerifyOTP';
+import authService from '../Services/authService';
 
 // ── Mask contact for display ─────────────────────────────────────
 const maskContact = (value = '', type = 'email') => {
@@ -110,11 +111,30 @@ function VerifyOTP() {
   }, [otp]);
 
   // ── If navigated here without state, bounce back ────────────────
-  if (!contact) {
-    navigate('/register', { replace: true });
-    return null;
-  }
+  const [checking, setChecking] = useState(true);
 
+  useEffect(() => {
+    const checkIfAlreadyLoggedIn = async () => {
+      try {
+        const data = await authService.checkAuth();
+        console.log('checkAuth response:', data); // <-- add this
+        if (data.alreadyLoggedIn) {
+          navigate('/');
+        } else if (!contact) {
+          navigate('/register', { replace: true });
+          return null;
+        }
+      } catch (err) {
+        console.log('checkAuth failed:', err); // <-- and this
+      } finally {
+        setChecking(false);
+      }
+    };
+
+    checkIfAlreadyLoggedIn();
+  }, [navigate]);
+
+  if (checking) return null;
   // ── OTP entry screen ─────────────────────────────────────────────
   return (
     <>

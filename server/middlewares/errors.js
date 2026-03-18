@@ -84,7 +84,7 @@ export const errorMiddleware = (err, req, res, next) => {
     if (err instanceof ErrorHandler) {
         return res.status(err.statusCode).json({
             success: false,
-            message: `Backend Response: ${err.message}`
+            message: `${err.message}`
         });
     }
 
@@ -106,7 +106,7 @@ export const errorMiddleware = (err, req, res, next) => {
     // Fallback → unknown error
     return res.status(500).json({
             success: false,
-            message: `${err.message} ---------- Internal Server Error: I resorted to the fallback in errors.js`,
+            message: `${err.message} ---------- Internal Server Error.`,
             stack: err.stack
         })
 };
