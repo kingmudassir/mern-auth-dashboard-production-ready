@@ -146,7 +146,7 @@ function Register() {
     const checkIfAlreadyLoggedIn = async () => {
       try {
         const data = await authService.checkAuth();
-        console.log('checkAuth response:', data);
+        console.log('Register: checkAuth response:', data);
         if (data.alreadyLoggedIn) {
           navigate('/');
         }

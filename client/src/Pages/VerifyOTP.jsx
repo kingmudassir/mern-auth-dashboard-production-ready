@@ -54,6 +54,44 @@ function ResendButton({ onResend, seconds = 60, resendPending, resetVerify }) {
     </button>
   );
 }
+//Skeleton Loader
+function VerifyOTPSkeleton() {
+  return (
+    <div className="fp-bg relative min-h-screen flex items-center justify-center px-4 py-20">
+      <div className="fp-card relative z-10 w-full max-w-105 rounded-3xl p-8 md:p-10">
+        {/* Header */}
+        <div className="text-center mb-7 flex flex-col items-center gap-3">
+          {/* Logo */}
+          <div className="w-28 h-5 rounded-md bg-gray-200 animate-pulse mb-2" />
+
+          {/* Icon badge */}
+          <div className="w-14 h-14 rounded-2xl bg-gray-200 animate-pulse mb-2" />
+
+          {/* Title */}
+          <div className="w-52 h-7 rounded-md bg-gray-200 animate-pulse" />
+
+          {/* Subtitle line 1 */}
+          <div className="w-64 h-4 rounded bg-gray-200 animate-pulse" />
+          {/* Subtitle line 2 */}
+          <div className="w-48 h-4 rounded bg-gray-200 animate-pulse" />
+        </div>
+
+        {/* OTP boxes — 6 digits */}
+        <div className="flex items-center justify-center gap-2 mb-5">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div key={i} className="w-11 h-13 rounded-xl bg-gray-200 animate-pulse" />
+          ))}
+        </div>
+
+        {/* Resend + back row */}
+        <div className="flex items-center justify-between mt-2">
+          <div className="w-24 h-4 rounded bg-gray-200 animate-pulse" />
+          <div className="w-20 h-4 rounded bg-gray-200 animate-pulse" />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ── Main component ───────────────────────────────────────────────
 function VerifyOTP() {
@@ -80,9 +118,6 @@ function VerifyOTP() {
 
   const contact = location.state?.contact;
   const type = location.state?.type ?? 'email';
-
-  console.log('Contact:', contact);
-  console.log('Type:', type);
 
   const [otp, setOtp] = useState('');
   const [otpErr, setOtpErr] = useState('');
@@ -117,7 +152,7 @@ function VerifyOTP() {
     const checkIfAlreadyLoggedIn = async () => {
       try {
         const data = await authService.checkAuth();
-        console.log('checkAuth response:', data); // <-- add this
+        console.log('VerifyOTP: checkAuth response:', data); // <-- add this
         if (data.alreadyLoggedIn) {
           navigate('/');
         } else if (!contact) {
@@ -132,9 +167,9 @@ function VerifyOTP() {
     };
 
     checkIfAlreadyLoggedIn();
-  }, [navigate]);
+  }, []);
 
-  if (checking) return null;
+  if (checking) return <VerifyOTPSkeleton />;
   // ── OTP entry screen ─────────────────────────────────────────────
   return (
     <>
@@ -208,7 +243,7 @@ function VerifyOTP() {
             >
               We sent a 6-digit code to{' '}
               <span className="font-semibold text-[#1A1523]">{maskContact(contact, type)}</span>. It
-              expires in 10 minutes.
+              expires in 1 minute.
             </p>
           </div>
 
@@ -305,7 +340,7 @@ function VerifyOTP() {
             </button>{' '}
             <ResendButton
               onResend={resend}
-              seconds={5}
+              seconds={60}
               resendPending={resendPending}
               isErrorVerify={isErrorVerify}
               resetVerify={resetVerify}

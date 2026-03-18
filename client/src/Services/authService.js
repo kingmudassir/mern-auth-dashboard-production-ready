@@ -58,6 +58,22 @@ const authService = {
     checkAuth: async () => {
         return await api.get('/check');
     },
+
+    updateProfile: async (data) => {
+        return await api.put('/updateProfile', data);
+    },
+
+    updateProfile: async (data) => {
+        return await api.put('/updateProfile', data);
+    },
+
+    requestEmailChange: async (data) => {
+        return await api.put('/requestEmailChange', data);
+    },
+
+    confirmEmailChange: async (token) => {
+    return await api.get(`/confirmEmailChange?token=${token}`);
+},
 };
 
 export default authService;

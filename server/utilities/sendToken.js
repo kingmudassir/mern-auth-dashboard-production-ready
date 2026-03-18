@@ -1,9 +1,13 @@
-export const sendToken = async (user, statusCode, message, res) => {
+export const sendToken = async (user, statusCode, message, res, rememberMe = false) => {
 
     const token = user.generateAccessToken();
     const refreshToken = user.generateRefreshToken();
 
     await user.save({ validateModifiedOnly: true });
+    
+    const refreshTokenExpire = rememberMe
+    ? 30 * 24 * 60 * 60 * 1000  // 30 days
+    : 24 * 60 * 60 * 1000;       // 1 day
 
     res
         .status(statusCode)
@@ -18,7 +22,7 @@ export const sendToken = async (user, statusCode, message, res) => {
 
         // Refresh token cookie
         .cookie("refreshToken", refreshToken, {
-            expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+            expires: new Date(Date.now() + refreshTokenExpire),
             httpOnly: true,
             sameSite: "strict",
             path: "/"

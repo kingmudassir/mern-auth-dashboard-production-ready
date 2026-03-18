@@ -74,6 +74,8 @@ function Login() {
   const [fields, setFields] = useState({ email: '', password: '' });
   const [showPw, setShowPw] = useState(false);
   const [errors, setErrors] = useState({});
+  const [rememberMe, setRememberMe] = useState(false);
+
   const navigate = useNavigate();
 
   //Tanstack
@@ -94,7 +96,7 @@ function Login() {
     }
 
     try {
-      const data = await loginUser(fields);
+      await loginUser({ ...fields, rememberMe });
     } catch (error) {
       //
     }
@@ -203,7 +205,6 @@ function Login() {
                     if (isError || isSuccess) {
                       reset();
                     }
-                    setContactErr('');
                   }}
                   error={errors.email}
                   autoComplete="email"
@@ -239,7 +240,6 @@ function Login() {
                     if (isError || isSuccess) {
                       reset();
                     }
-                    setContactErr('');
                   }}
                   error={errors.password}
                   autoComplete="current-password"
@@ -275,18 +275,23 @@ function Login() {
               {/* ── Remember me ── */}
               <label className="flex items-center gap-2.5 cursor-pointer group">
                 <div className="relative shrink-0">
-                  <input type="checkbox" className="peer sr-only" aria-label="Keep me logged in" />
+                  <input
+                    type="checkbox"
+                    className=" sr-only"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    aria-label="Keep me logged in"
+                  />
                   <div
                     className="
                       w-4 h-4 rounded-sm border border-[#E8E3DC] bg-[#FAFAF9]
-                      peer-checked:bg-[#6C3CE1] peer-checked:border-[#6C3CE1]
-                      peer-focus-visible:shadow-[0_0_0_3px_rgba(108,60,225,0.18)]
-                      transition-[background-color,border-color] duration-150
+                    group-has-[input:checked]:bg-[#6C3CE1]
+                    group-has-[input:checked]:border-[#6C3CE1]
                       flex items-center justify-center
                     "
                   >
                     <svg
-                      className="hidden peer-checked:block w-2.5 h-2.5 text-white"
+                      className="hidden group-has-[input:checked]:block w-2.5 h-2.5 "
                       viewBox="0 0 10 8"
                       fill="none"
                       aria-hidden="true"

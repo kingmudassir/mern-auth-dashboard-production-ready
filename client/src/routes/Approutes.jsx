@@ -7,6 +7,7 @@ import UserProfile from '../Pages/UserProfile';
 import ForgotPassword from '../Pages/ForgotPassword';
 import VerifyOTP from '../Pages/VerifyOTP';
 import ResetPassword from '../Pages/ResetPassword';
+import Profile from '../Pages/Profile';
 
 function Approutes() {
   return (
@@ -19,6 +20,7 @@ function Approutes() {
         <Route path="/forgotpassword" element={<ForgotPassword />} />
         <Route path="/verifyotp" element={<VerifyOTP />} />
         <Route path="/password/reset/:token" element={<ResetPassword />} />
+        <Route path="/profile" element={<Profile />} />
       </Route>
     </Routes>
   );

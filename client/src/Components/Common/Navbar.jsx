@@ -25,7 +25,6 @@ export default function Navbar() {
   const navigate = useNavigate();
 
   const isAuthPage = AUTH_PAGES.includes(location.pathname);
-
   // Scroll listener
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 10);
@@ -47,7 +46,7 @@ export default function Navbar() {
     const checkIfAlreadyLoggedIn = async () => {
       try {
         const data = await authService.checkAuth();
-        console.log('checkAuth response:', data);
+        console.log('Navbar: checkAuth response:', data);
 
         if (data.alreadyLoggedIn) {
           const userData = await authService.getUser();
@@ -156,7 +155,7 @@ export default function Navbar() {
                       "
                         >
                           <a
-                            href="/userprofile"
+                            href="/profile"
                             onClick={() => setDropdownOpen(false)}
                             className="
                             flex items-center gap-2.5

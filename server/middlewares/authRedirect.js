@@ -33,25 +33,20 @@ export const redirectIfAuthenticated = catchAsyncError(async (req, res, next) =>
 
 async function attemptRefresh(req, res, next) {
     const { refreshToken } = req.cookies;
-
     if (!refreshToken) return next();
 
     try {
-        const hashedToken = crypto
-            .createHash("sha256")
-            .update(refreshToken)
-            .digest("hex");
+        const hashedToken = crypto.createHash("sha256").update(refreshToken).digest("hex");
 
         const existingUser = await User.findOne({
             refreshToken: hashedToken,
             refreshTokenExpire: { $gt: Date.now() }
         });
 
-        if (!existingUser) return next(); // Invalid refresh token — let them log in
+        if (!existingUser) return next();
 
+        // ── Only rotate access token, keep existing refresh token ──
         const newAccessToken = existingUser.generateAccessToken();
-        const newRefreshToken = existingUser.generateRefreshToken();
-        await existingUser.save({ validateModifiedOnly: true });
 
         res.cookie("token", newAccessToken, {
             httpOnly: true,
@@ -60,18 +55,9 @@ async function attemptRefresh(req, res, next) {
             path: "/"
         });
 
-        res.cookie("refreshToken", newRefreshToken, {
-            httpOnly: true,
-            expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-            sameSite: "strict",
-            path: "/"
-        });
-
-        // Refresh succeeded — tell frontend he's already authenticated
-        // return res.status(200).json({ alreadyLoggedIn: true, redirectTo: "/userprofile" });
         return res.status(200).json({ alreadyLoggedIn: true });
 
     } catch (err) {
-        next(); // Refresh failed — let them log in normally
+        next();
     }
 }

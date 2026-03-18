@@ -1,10 +1,55 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Mail, Phone, ArrowRight, ArrowLeft, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useForgetPassword } from '../Hooks/useForgetPassword';
 import { validateEmail } from '../utilities/EmailValidator';
+import { useNavigate } from 'react-router-dom';
+import authService from '../Services/authService';
 
 // ── Validators ───────────────────────────────────────────────────
 const isPhone = (v) => /^(\+92|0)[0-9]{10}$/.test(v);
+
+function ForgotPasswordSkeleton() {
+  return (
+    <div className="fp-bg relative min-h-screen flex items-center justify-center px-4 py-20">
+      <div className="fp-card relative z-10 w-full max-w-105 rounded-3xl p-8 md:p-10">
+        {/* Header */}
+        <div className="text-center mb-7 flex flex-col items-center gap-3">
+          {/* Logo */}
+          <div className="w-28 h-5 rounded-md bg-gray-200 animate-pulse mb-2" />
+          {/* Icon badge */}
+          <div className="w-14 h-14 rounded-2xl bg-gray-200 animate-pulse mb-2" />
+          {/* Title */}
+          <div className="w-44 h-7 rounded-md bg-gray-200 animate-pulse" />
+          {/* Subtitle */}
+          <div className="w-64 h-4 rounded bg-gray-200 animate-pulse" />
+          <div className="w-52 h-4 rounded bg-gray-200 animate-pulse" />
+        </div>
+
+        {/* Mode toggle */}
+        <div className="flex gap-1 bg-[#F2EEE9] p-1 rounded-xl mb-5">
+          <div className="flex-1 h-9 rounded-lg bg-gray-200 animate-pulse" />
+          <div className="flex-1 h-9 rounded-lg bg-gray-200 animate-pulse" />
+        </div>
+
+        <div className="flex flex-col gap-4">
+          {/* Input field */}
+          <div className="flex flex-col gap-1.5">
+            <div className="w-24 h-3 rounded bg-gray-200 animate-pulse" />
+            <div className="w-full h-11 rounded-xl bg-gray-200 animate-pulse" />
+          </div>
+
+          {/* Submit button */}
+          <div className="w-full h-12 rounded-xl bg-gray-200 animate-pulse" />
+        </div>
+
+        {/* Back to login */}
+        <div className="flex justify-center mt-6">
+          <div className="w-24 h-4 rounded bg-gray-200 animate-pulse" />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function ForgotPassword() {
   const {
@@ -21,7 +66,7 @@ export default function ForgotPassword() {
   const [mode, setMode] = useState('email');
   const [contact, setContact] = useState('');
   const [contactErr, setContactErr] = useState('');
-
+  const navigate = useNavigate();
   const handleSubmit = async (e) => {
     e.preventDefault();
     setContactErr('');
@@ -49,6 +94,28 @@ export default function ForgotPassword() {
       // error already handled via isPasswordResetRequestError
     }
   };
+
+  const [checking, setChecking] = useState(true);
+
+  useEffect(() => {
+    const checkIfAlreadyLoggedIn = async () => {
+      try {
+        const data = await authService.checkAuth();
+        console.log('checkAuth response:', data); // <-- add this
+        if (data.alreadyLoggedIn) {
+          navigate('/');
+        }
+      } catch (err) {
+        console.log('checkAuth failed:', err); // <-- and this
+      } finally {
+        setChecking(false);
+      }
+    };
+
+    checkIfAlreadyLoggedIn();
+  }, [navigate]);
+
+  if (checking) return <ForgotPasswordSkeleton />; // Prevent rendering login form while checking
 
   return (
     <>

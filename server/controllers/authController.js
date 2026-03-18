@@ -266,6 +266,8 @@ export const refreshAccessToken = catchAsyncError(async (req, res, next) => {
 
     if (!existingUser)
         return next(new ErrorHandler("Invalid refresh token", 401));
+    
+    const remainingExpiry = existingUser.refreshTokenExpire;
 
     const newAccessToken = existingUser.generateAccessToken();
     const newRefreshToken = existingUser.generateRefreshToken();
@@ -282,7 +284,7 @@ export const refreshAccessToken = catchAsyncError(async (req, res, next) => {
 
     res.cookie("refreshToken", newRefreshToken, {
         httpOnly: true,
-        expires: new Date(Date.now() + 30*24*60*60*1000),
+        expires: new Date(remainingExpiry),
         sameSite: "strict",
         path: "/"
     });
@@ -453,7 +455,7 @@ export const changePassword = catchAsyncError(async (req, res, next) => {
 });
 
 export const login = catchAsyncError(async (req, res, next) => {
-    const { email, password } = req.body
+    const { email, password, rememberMe } = req.body
 
     const emailError = validateEmail(email);
 
@@ -485,7 +487,7 @@ export const login = catchAsyncError(async (req, res, next) => {
         return next(new ErrorHandler("Incorrect email or password.", 401));
     }
 
-    sendToken(existingUser, 200, "User logged in successfully.", res);
+    sendToken(existingUser, 200, "User logged in successfully.", res, rememberMe);
 })
 
 export const logout = catchAsyncError(async (req, res, next) => {
@@ -616,3 +618,133 @@ function generateResetPasswordEmailTemplate(resetPasswordUrl) {
     </div>
     `;
 }
+
+function generateEmailChangeTemplate(confirmUrl) {
+    return `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px; background-color: #f9f9f9;">
+            <h2 style="color: #6C3CE1; text-align: center;">Confirm Email Change</h2>
+            <p style="font-size: 16px; color: #333;">Dear User,</p>
+            <p style="font-size: 16px; color: #333;">Click the button below to confirm your new email address. This link expires in 15 minutes.</p>
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="${confirmUrl}" style="display: inline-block; font-size: 16px; font-weight: bold; color: #fff; background-color: #6C3CE1; padding: 12px 28px; border-radius: 6px; text-decoration: none;">
+                    Confirm New Email
+                </a>
+            </div>
+            <p style="font-size: 14px; color: #666;">If you did not request this change, please ignore this email. Your current email will remain unchanged.</p>
+            <footer style="margin-top: 20px; text-align: center; font-size: 12px; color: #aaa;">
+                <p>Thank you,<br>Paiyya Team</p>
+                <p>This is an automated message. Please do not reply.</p>
+            </footer>
+        </div>
+    `;
+}
+
+export const updateProfile = catchAsyncError(async (req, res, next) => {
+    const { name, phone } = req.body;
+    const user = req.user;
+    let updated = false;
+
+    // ── Name ─────────────────────────────────────────────────────
+    if (name !== undefined) {
+        if (!name.trim()) {
+            return next(new ErrorHandler("Name cannot be empty.", 400));
+        }
+
+        const trimmedName = name.trim();
+
+        if (trimmedName.length < 2 || trimmedName.length > 50) {
+            return next(new ErrorHandler("Name must be between 2 and 50 characters.", 400));
+        }
+
+        if (!/^[a-zA-Z]{2,}(?:[\s'-][a-zA-Z]{2,})*$/.test(trimmedName)) {
+            return next(new ErrorHandler("Name can only contain letters, spaces, hyphens, and apostrophes.", 400));
+        }
+
+        if (user.name !== trimmedName) {
+            user.name = trimmedName;
+            updated = true;
+        }
+    }
+
+    // ── Phone ─────────────────────────────────────────────────────
+    if (phone !== undefined) {
+        const trimmedPhone = phone.trim();
+        const phoneError = validatePhone(trimmedPhone);
+        if (phoneError) return next(new ErrorHandler(phoneError, 400));
+
+        if (user.phone !== trimmedPhone) {
+            user.phone = trimmedPhone;
+            updated = true;
+        }
+    }
+
+    if (!updated) {
+        return next(new ErrorHandler("No changes detected.", 400));
+    }
+
+    await user.save({ validateModifiedOnly: true });
+
+    res.status(200).json({
+        success: true,
+        message: "Profile updated successfully.",
+        user: {
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            phone: user.phone,
+            role: user.role,
+        }
+    });
+});
+
+export const requestEmailChange = catchAsyncError(async (req, res, next) => {
+    const { newEmail } = req.body;
+
+    if (!newEmail || !newEmail.trim()) {
+        return next(new ErrorHandler("New email is required.", 400));
+    }
+
+    const emailError = validateEmail(newEmail);
+    if (emailError) {
+        return next(new ErrorHandler(emailError, 400));
+    }
+
+    const user = req.user;
+
+    if (user.email === newEmail.toLowerCase().trim()) {
+        return next(new ErrorHandler("New email must be different from current email.", 400));
+    }
+
+    // Check if new email is already taken
+    const existingUser = await User.findOne({ email: newEmail.toLowerCase().trim() });
+    if (existingUser) {
+        return next(new ErrorHandler("An account with this email already exists.", 409));
+    }
+
+    // Generate token
+    const rawToken = crypto.randomBytes(32).toString("hex");
+    const hashedToken = crypto.createHash("sha256").update(rawToken).digest("hex");
+
+    // Need full user document to save — req.user is a lean selected document
+    const fullUser = await User.findById(user._id);
+    fullUser.pendingEmail = newEmail.toLowerCase().trim();
+    fullUser.emailChangeToken = hashedToken;
+    fullUser.emailChangeTokenExpire = Date.now() + 15 * 60 * 1000; // 15 minutes
+    await fullUser.save({ validateModifiedOnly: true });
+
+    const confirmUrl = `${process.env.FRONTEND_URL}/confirm-email-change?token=${rawToken}`;
+
+    try {
+        await sendEmailChangeLink(confirmUrl, newEmail);
+        return res.status(200).json({
+            success: true,
+            message: "A verification link has been sent to your new email address.",
+        });
+    } catch (error) {
+        fullUser.pendingEmail = undefined;
+        fullUser.emailChangeToken = undefined;
+        fullUser.emailChangeTokenExpire = undefined;
+        await fullUser.save({ validateModifiedOnly: true });
+        return next(new ErrorHandler("Failed to send verification email. Please try again.", 500));
+    }
+});

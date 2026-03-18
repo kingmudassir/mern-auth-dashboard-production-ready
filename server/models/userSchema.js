@@ -100,7 +100,21 @@ const userSchema = new mongoose.Schema(
         deletionPausedUntil: {
             type: Date,
             default: undefined
-        }
+        },
+
+        pendingEmail: {
+            type: String,
+            lowercase: true,
+            trim: true,
+        },
+
+        emailChangeToken: {
+            type: String,
+        },
+
+        emailChangeTokenExpire: {
+            type: Date,
+        },
     },
     {
         timestamps: true
@@ -115,6 +129,7 @@ userSchema.pre("save", async function () {
 
     try {
         this.password = await bcrypt.hash(this.password, 12);
+        next();
     } catch (error) {
         next(error);
     }
@@ -179,16 +194,10 @@ userSchema.methods.generateAccessToken = function () {
 // Generate and store hashed refresh token
 // Returns raw token to be sent to client (httpOnly cookie)
 // =========================
-userSchema.methods.generateRefreshToken = function () {
+userSchema.methods.generateRefreshToken = function (expireMs = 30 * 24 * 60 * 60 * 1000) {
     const rawToken = crypto.randomBytes(64).toString("hex");
-
-    this.refreshToken = crypto
-        .createHash("sha256")
-        .update(rawToken)
-        .digest("hex");
-
-    this.refreshTokenExpire = Date.now() + 30*24*60*60*1000; // 30 days
-
+    this.refreshToken = crypto.createHash("sha256").update(rawToken).digest("hex");
+    this.refreshTokenExpire = Date.now() + expireMs;
     return rawToken;
 };
 
