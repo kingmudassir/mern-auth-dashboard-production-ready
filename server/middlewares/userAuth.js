@@ -46,7 +46,7 @@ async function attemptRefresh(req, res, next) {
         const existingUser = await User.findOne({
             refreshToken: hashedToken,
             refreshTokenExpire: { $gt: Date.now() }
-        }).select("-password -refreshToken -resetPasswordToken -resetPasswordExpire -__v -updatedAt");
+        }).select("-password -refreshToken -resetPasswordToken -__v -updatedAt");
 
         console.log('hashedToken:', hashedToken);
         console.log('existingUser:', existingUser);

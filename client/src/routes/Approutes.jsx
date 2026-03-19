@@ -8,6 +8,7 @@ import ForgotPassword from '../Pages/ForgotPassword';
 import VerifyOTP from '../Pages/VerifyOTP';
 import ResetPassword from '../Pages/ResetPassword';
 import Profile from '../Pages/Profile';
+import ConfirmEmailChange from '../Pages/ConfirmEmailChange';
 
 function Approutes() {
   return (
@@ -21,6 +22,7 @@ function Approutes() {
         <Route path="/verifyotp" element={<VerifyOTP />} />
         <Route path="/password/reset/:token" element={<ResetPassword />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/confirm-email-change" element={<ConfirmEmailChange />} />
       </Route>
     </Routes>
   );

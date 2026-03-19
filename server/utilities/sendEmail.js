@@ -11,7 +11,7 @@ export const sendEmail = async ({email, subject, message}) => {
     })
 
     const options = {
-        from: process.env.SMTP_MAIL,
+        from: `Paiyya <${process.env.SMTP_MAIL}>`,
         to: email, 
         subject,
         html: message

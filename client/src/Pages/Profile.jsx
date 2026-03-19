@@ -18,10 +18,14 @@ import {
 import { useUser } from '../Hooks/useUser';
 import { useUpdateProfile } from '../Hooks/useUpdateProfile';
 import authService from '../Services/authService';
-import { useNavigate } from 'react-router-dom';
+import { replace, useNavigate } from 'react-router-dom';
 import { validatePhone } from '../utilities/PhoneValidator';
 import { useEmailChange } from '../Hooks/useEmailChange';
 import { validateEmail } from '../utilities/EmailValidator';
+import { useChangePassword } from '../Hooks/useChangePassword';
+import { validatePasswordStrict } from '../utilities/PasswordValidator';
+import { useLogout } from '../Hooks/useLogout';
+import { useDeleteAccount } from '../Hooks/useDeleteAccount';
 
 // ── Helpers ──────────────────────────────────────────────────────
 const isEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
@@ -384,19 +388,17 @@ function AvatarPane({ user }) {
 // PersonalInfoCard
 // ─────────────────────────────────────────────────────────────────
 function PersonalInfoCard({ user }) {
-  const [name, setName] = useState(user?.name ?? '');
+  const [name, setName] = useState('');
   const [phone, setPhone] = useState(user?.phone ?? '');
   const [errors, setErrors] = useState({});
-  const [loading, setLoading] = useState(false);
-  const [toast, setToast] = useState('');
 
   const {
-    mutateAsync: updateProfile,
+    mutate: updateProfile,
     isPending: isUpdatingProfile,
     isError: isUpdateProfileError,
     isSuccess: isUpdateProfileSuccessful,
     error: updateProfileError,
-    reset: resetUpdateProfileState,
+    reset: resetUpdateProfile,
   } = useUpdateProfile();
 
   const validate = () => {
@@ -407,20 +409,14 @@ function PersonalInfoCard({ user }) {
     return e;
   };
 
-  const handleSave = async (ev) => {
+  const handleSave = (ev) => {
     ev.preventDefault();
     const e = validate();
     if (Object.keys(e).length) {
       setErrors(e);
       return;
     }
-    try {
-      await updateProfile({ name: name, phone: phone });
-      setToast('Personal info updated');
-      setTimeout(() => setToast(''), 6000);
-    } catch (error) {
-      //
-    }
+    updateProfile({ name, phone });
   };
 
   return (
@@ -440,6 +436,7 @@ function PersonalInfoCard({ user }) {
                 onChange={(e) => {
                   setName(e.target.value);
                   setErrors((p) => ({ ...p, name: '' }));
+                  resetUpdateProfile();
                 }}
                 error={errors.name}
                 aria-label="Full name"
@@ -453,11 +450,12 @@ function PersonalInfoCard({ user }) {
               <TextInput
                 icon={Phone}
                 type="tel"
-                placeholder={user?.phone ?? ''}
+                placeholder={user?.phone ?? '03001234567'}
                 value={phone}
                 onChange={(e) => {
                   setPhone(e.target.value);
                   setErrors((p) => ({ ...p, phone: '' }));
+                  resetUpdateProfile();
                 }}
                 error={errors.phone}
                 aria-label="Phone number"
@@ -468,7 +466,14 @@ function PersonalInfoCard({ user }) {
 
           <div className="flex items-center gap-3 flex-wrap">
             <SaveBtn loading={isUpdatingProfile} />
-            {toast && <Toast msg={toast} />}
+
+            {isUpdateProfileSuccessful && (
+              <Toast msg="Personal info updated successfully" type="success" />
+            )}
+
+            {isUpdateProfileError && (
+              <Toast msg={updateProfileError?.message || 'Something went wrong.'} type="error" />
+            )}
           </div>
         </div>
       </form>
@@ -569,42 +574,63 @@ function PasswordCard() {
   const [fields, setFields] = useState({ current: '', next: '', confirm: '' });
   const [show, setShow] = useState({ current: false, next: false, confirm: false });
   const [errors, setErrors] = useState({});
-  const [loading, setLoading] = useState(false);
-  const [toast, setToast] = useState({ msg: '', type: 'success' });
+
+  const {
+    mutate: changePassword,
+    isPending,
+    isError,
+    isSuccess,
+    error,
+    reset,
+  } = useChangePassword();
 
   const strength = pwStrength(fields.next);
 
   const set = (key) => (e) => {
     setFields((p) => ({ ...p, [key]: e.target.value }));
     setErrors((p) => ({ ...p, [key]: '' }));
+    reset();
   };
 
   const toggle = (key) => setShow((p) => ({ ...p, [key]: !p[key] }));
 
   const validate = () => {
     const e = {};
+
     if (!fields.current) e.current = 'Current password is required';
-    if (fields.next.length < 8) e.next = 'Password must be at least 8 characters';
-    if (fields.next !== fields.confirm) e.confirm = 'Passwords do not match';
-    if (!fields.confirm) e.confirm = 'Please confirm your new password';
+
+    const passwordError = validatePasswordStrict(fields.next);
+    if (passwordError) e.next = passwordError;
+
+    if (!fields.confirm) {
+      e.confirm = 'Please confirm your new password';
+    } else if (fields.next !== fields.confirm) {
+      e.confirm = 'Passwords do not match';
+    }
+
     return e;
   };
 
-  const handleSave = async (ev) => {
+  const handleSave = (ev) => {
     ev.preventDefault();
     const e = validate();
     if (Object.keys(e).length) {
       setErrors(e);
       return;
     }
-    setLoading(true);
 
-    // ← REPLACE with: changePasswordMutation.mutate({ currentPassword: fields.current, newPassword: fields.next })
-    await new Promise((r) => setTimeout(r, 1100));
-    setLoading(false);
-    setFields({ current: '', next: '', confirm: '' });
-    setToast({ msg: 'Password changed successfully', type: 'success' });
-    setTimeout(() => setToast({ msg: '', type: 'success' }), 3500);
+    changePassword(
+      {
+        currentPassword: fields.current,
+        newPassword: fields.next,
+        confirmNewPassword: fields.confirm,
+      },
+      {
+        onSuccess: () => {
+          setFields({ current: '', next: '', confirm: '' });
+        },
+      }
+    );
   };
 
   return (
@@ -649,7 +675,7 @@ function PasswordCard() {
                     {[1, 2, 3, 4].map((i) => (
                       <div
                         key={i}
-                        className="flex-1 h-[3px] rounded-full transition-colors duration-200"
+                        className="flex-1 h-0.75 rounded-full transition-colors duration-200"
                         style={{ background: i <= strength ? STRENGTH_COLOR[strength] : '#E8E3DC' }}
                       />
                     ))}
@@ -692,8 +718,11 @@ function PasswordCard() {
           </div>
 
           <div className="flex items-center gap-3 flex-wrap">
-            <SaveBtn loading={loading} label="Change Password" />
-            {toast.msg && <Toast msg={toast.msg} type={toast.type} />}
+            <SaveBtn loading={isPending} label="Change Password" />
+
+            {isSuccess && <Toast msg="Password changed successfully" type="success" />}
+
+            {isError && <Toast msg={error?.message || 'Something went wrong.'} type="error" />}
           </div>
         </div>
       </form>
@@ -706,21 +735,43 @@ function PasswordCard() {
 // ─────────────────────────────────────────────────────────────────
 function DangerZoneCard() {
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [confirmText, setConfirmText] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [showDeletePw, setShowDeletePw] = useState(false);
+  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
+
+  const navigate = useNavigate();
+
+  const { mutateAsync: logout, isPending: isLoggingOut } = useLogout();
+  const {
+    mutateAsync: deleteAccount,
+    isPending: isDeleting,
+    isError,
+    error,
+    reset,
+  } = useDeleteAccount();
 
   const handleDeleteAccount = async () => {
-    if (confirmText !== 'DELETE') return;
-    setLoading(true);
-    // ← REPLACE with: deleteAccountMutation.mutate()
-    await new Promise((r) => setTimeout(r, 1200));
-    setLoading(false);
-    // then: navigate('/') or logout
+    if (!deletePassword) return;
+
+    try {
+      await deleteAccount({ currentPassword: deletePassword });
+      setConfirmOpen(false);
+      setDeletePassword('');
+      setShowDeletePw(false);
+      navigate('/', { replace: true });
+    } catch {
+      // error shown via isError/error
+    }
   };
 
-  const handleLogout = () => {
-    // ← REPLACE with: logout() from your auth context / mutation
-    window.location.href = '/login';
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch {
+      // silent — clear local state regardless
+    }
+    setLogoutConfirmOpen(false);
+    navigate('/', { replace: true });
   };
 
   return (
@@ -728,6 +779,60 @@ function DangerZoneCard() {
       className="rounded-2xl p-6 flex flex-col gap-5"
       style={{ background: '#FFFAF9', border: '1.5px solid rgba(232,98,42,0.18)' }}
     >
+      {/* Logout confirm modal */}
+      {logoutConfirmOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center px-4"
+          style={{ background: 'rgba(26,21,35,0.5)', backdropFilter: 'blur(4px)' }}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Confirm logout"
+        >
+          <div
+            className="bg-white rounded-2xl p-7 w-full max-w-sm shadow-[0_20px_60px_rgba(26,21,35,0.2)]"
+            style={{ border: '1.5px solid #E8E3DC' }}
+          >
+            <div className="w-11 h-11 rounded-xl bg-[rgba(108,60,225,0.08)] flex items-center justify-center mb-4">
+              <LogOut size={18} strokeWidth={2} className="text-[#6C3CE1]" aria-hidden="true" />
+            </div>
+            <h3
+              className="text-[1.1rem] font-extrabold text-[#1A1523] mb-1.5 tracking-[-0.025em]"
+              style={{ fontFamily: "'Syne', sans-serif" }}
+            >
+              Log out?
+            </h3>
+            <p
+              className="text-[0.8rem] text-[#8A8390] leading-relaxed mb-5"
+              style={{ fontFamily: "'DM Sans', sans-serif" }}
+            >
+              You'll be signed out of your account on this device.
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setLogoutConfirmOpen(false)}
+                className="flex-1 text-[0.82rem] font-medium text-[#8A8390] border border-[#E8E3DC] py-2.5 rounded-xl hover:border-[#C4B8B0] hover:text-[#1A1523] transition-colors duration-150"
+                style={{ fontFamily: "'DM Sans', sans-serif" }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleLogout}
+                disabled={isLoggingOut}
+                className="flex-1 text-[0.82rem] font-semibold text-white py-2.5 rounded-xl transition-opacity duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
+                style={{
+                  fontFamily: "'DM Sans', sans-serif",
+                  background: 'linear-gradient(135deg, #6C3CE1 0%, #5429C4 100%)',
+                }}
+              >
+                {isLoggingOut ? 'Logging out…' : 'Log out'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-col gap-0.5">
         <h2
           className="text-[1rem] font-bold text-[#1A1523] tracking-[-0.02em]"
@@ -747,7 +852,7 @@ function DangerZoneCard() {
         {/* Log out */}
         <div className="flex items-center justify-between gap-4 p-4 rounded-xl bg-white border border-[#E8E3DC]">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-[#F2EEE9] flex items-center justify-center flex-shrink-0">
+            <div className="w-8 h-8 rounded-lg bg-[#F2EEE9] flex items-center justify-center shrink-0">
               <LogOut size={14} strokeWidth={2} className="text-[#8A8390]" aria-hidden="true" />
             </div>
             <div>
@@ -767,8 +872,8 @@ function DangerZoneCard() {
           </div>
           <button
             type="button"
-            onClick={handleLogout}
-            className="text-[0.78rem] font-medium text-[#8A8390] border border-[#E8E3DC] px-3.5 py-2 rounded-lg hover:border-[#C4B8B0] hover:text-[#1A1523] transition-colors duration-150 whitespace-nowrap flex-shrink-0"
+            onClick={() => setLogoutConfirmOpen(true)}
+            className="text-[0.78rem] font-medium text-[#8A8390] border border-[#E8E3DC] px-3.5 py-2 rounded-lg hover:border-[#C4B8B0] hover:text-[#1A1523] transition-colors duration-150 whitespace-nowrap shrink-0"
             style={{ fontFamily: "'DM Sans', sans-serif" }}
           >
             Log out
@@ -778,7 +883,7 @@ function DangerZoneCard() {
         {/* Delete account */}
         <div className="flex items-center justify-between gap-4 p-4 rounded-xl bg-white border border-[rgba(232,98,42,0.2)]">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-[rgba(232,98,42,0.08)] flex items-center justify-center flex-shrink-0">
+            <div className="w-8 h-8 rounded-lg bg-[rgba(232,98,42,0.08)] flex items-center justify-center shrink-0">
               <Trash2 size={14} strokeWidth={2} className="text-[#E8622A]" aria-hidden="true" />
             </div>
             <div>
@@ -799,7 +904,7 @@ function DangerZoneCard() {
           <button
             type="button"
             onClick={() => setConfirmOpen(true)}
-            className="text-[0.78rem] font-medium text-[#E8622A] border border-[rgba(232,98,42,0.3)] bg-[rgba(232,98,42,0.05)] px-3.5 py-2 rounded-lg hover:bg-[rgba(232,98,42,0.1)] transition-colors duration-150 whitespace-nowrap flex-shrink-0"
+            className="text-[0.78rem] font-medium text-[#E8622A] border border-[rgba(232,98,42,0.3)] bg-[rgba(232,98,42,0.05)] px-3.5 py-2 rounded-lg hover:bg-[rgba(232,98,42,0.1)] transition-colors duration-150 whitespace-nowrap shrink-0"
             style={{ fontFamily: "'DM Sans', sans-serif" }}
           >
             Delete
@@ -807,7 +912,7 @@ function DangerZoneCard() {
         </div>
       </div>
 
-      {/* Confirm modal */}
+      {/* Confirm delete modal */}
       {confirmOpen && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center px-4"
@@ -833,24 +938,66 @@ function DangerZoneCard() {
               className="text-[0.8rem] text-[#8A8390] leading-relaxed mb-5"
               style={{ fontFamily: "'DM Sans', sans-serif" }}
             >
-              This will permanently delete your account, listings, and all data. Type{' '}
-              <span className="font-bold text-[#1A1523]">DELETE</span> to confirm.
+              This will permanently delete your account, listings, and all data. Enter your current
+              password to confirm.
             </p>
-            <input
-              type="text"
-              value={confirmText}
-              onChange={(e) => setConfirmText(e.target.value)}
-              placeholder="Type DELETE"
-              className="w-full border border-[#E8E3DC] rounded-xl h-10 px-3.5 text-[0.875rem] text-[#1A1523] bg-[#FAFAF9] outline-none mb-4 focus:border-[rgba(232,98,42,0.4)] focus:shadow-[0_0_0_3px_rgba(232,98,42,0.08)] transition-[border-color,box-shadow] duration-200"
-              style={{ fontFamily: "'DM Sans', sans-serif" }}
-              aria-label="Type DELETE to confirm"
-            />
+
+            {/* Password input */}
+            <div
+              className="relative flex items-center border border-[#E8E3DC] rounded-xl h-11 bg-[#FAFAF9] mb-4
+                   focus-within:border-[rgba(232,98,42,0.4)] focus-within:shadow-[0_0_0_3px_rgba(232,98,42,0.08)]
+                   transition-[border-color,box-shadow] duration-200"
+            >
+              <Lock
+                size={14}
+                strokeWidth={1.9}
+                className="absolute left-3.5 text-[#C4BDD0] pointer-events-none"
+                aria-hidden="true"
+              />
+              <input
+                type={showDeletePw ? 'text' : 'password'}
+                value={deletePassword}
+                onChange={(e) => {
+                  setDeletePassword(e.target.value);
+                  if (isError) reset();
+                }}
+                placeholder="Current password"
+                className="flex-1 h-full bg-transparent outline-none border-none text-[0.875rem] text-[#1A1523] placeholder-[#C4BDD0] pl-10 pr-11"
+                style={{ fontFamily: "'DM Sans', sans-serif" }}
+                autoComplete="current-password"
+                aria-label="Current password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowDeletePw((p) => !p)}
+                className="absolute right-3.5 text-[#C4BDD0] hover:text-[#8A8390] transition-colors duration-150"
+                aria-label={showDeletePw ? 'Hide password' : 'Show password'}
+              >
+                {showDeletePw ? (
+                  <EyeOff size={14} strokeWidth={1.9} aria-hidden="true" />
+                ) : (
+                  <Eye size={14} strokeWidth={1.9} aria-hidden="true" />
+                )}
+              </button>
+            </div>
+
+            {isError && (
+              <p
+                className="text-[0.78rem] text-[#E8622A] font-medium mb-4"
+                style={{ fontFamily: "'DM Sans', sans-serif" }}
+              >
+                {error?.message || 'Something went wrong. Please try again.'}
+              </p>
+            )}
+
             <div className="flex gap-2">
               <button
                 type="button"
                 onClick={() => {
                   setConfirmOpen(false);
-                  setConfirmText('');
+                  setDeletePassword('');
+                  setShowDeletePw(false);
+                  reset();
                 }}
                 className="flex-1 text-[0.82rem] font-medium text-[#8A8390] border border-[#E8E3DC] py-2.5 rounded-xl hover:border-[#C4B8B0] hover:text-[#1A1523] transition-colors duration-150"
                 style={{ fontFamily: "'DM Sans', sans-serif" }}
@@ -860,14 +1007,14 @@ function DangerZoneCard() {
               <button
                 type="button"
                 onClick={handleDeleteAccount}
-                disabled={confirmText !== 'DELETE' || loading}
+                disabled={!deletePassword || isDeleting}
                 className="flex-1 text-[0.82rem] font-semibold text-white py-2.5 rounded-xl transition-opacity duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
                 style={{
                   fontFamily: "'DM Sans', sans-serif",
                   background: 'linear-gradient(135deg, #E8622A 0%, #C4531F 100%)',
                 }}
               >
-                {loading ? 'Deleting…' : 'Delete Account'}
+                {isDeleting ? 'Deleting…' : 'Delete Account'}
               </button>
             </div>
           </div>
@@ -965,10 +1112,7 @@ function ProfileSkeleton() {
                 {/* Strength bars */}
                 <div className="flex gap-1 mt-1">
                   {[1, 2, 3, 4].map((i) => (
-                    <div
-                      key={i}
-                      className="h-[3px] flex-1 rounded-full bg-gray-200 animate-pulse"
-                    />
+                    <div key={i} className="h-0.75 flex-1 rounded-full bg-gray-200 animate-pulse" />
                   ))}
                 </div>
               </div>
@@ -1041,12 +1185,10 @@ export default function Profile() {
     const checkIfAlreadyLoggedIn = async () => {
       try {
         const data = await authService.checkAuth();
-        console.log('Profile: checkAuth response:', data); // <-- add this
         if (!data.alreadyLoggedIn) {
           navigate('/');
         }
       } catch (err) {
-        console.log('checkAuth failed:', err); // <-- and this
       } finally {
         setChecking(false);
       }

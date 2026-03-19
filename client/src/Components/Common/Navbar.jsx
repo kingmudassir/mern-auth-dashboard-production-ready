@@ -1,24 +1,23 @@
 import { useState, useEffect, useRef } from 'react';
 import { Menu, X, ChevronRight, UserCircle, LogOut, User } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import authService from '../../Services/authService.js';
 import { useLogout } from '../../Hooks/useLogout.js';
 import { useUser } from '../../Hooks/useUser.js';
 
-const AUTH_PAGES = ['/login', '/register', '/verifyotp'];
+const AUTH_PAGES = [
+  '/login',
+  '/register',
+  '/verifyotp',
+  '/forgotpassword',
+  '/confirm-email-change',
+];
 
 export default function Navbar() {
-  const {
-    mutateAsync: logout,
-    isPending: isLoggingOut,
-    isError: logoutErrorState,
-    error: logoutError,
-    isSuccess: isLogoutSuccessful,
-  } = useLogout();
+  const { mutateAsync: logout } = useLogout();
 
+  const { data: user, isLoading: checking } = useUser();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const [user, setUser] = useState(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
   const location = useLocation();
@@ -40,30 +39,6 @@ export default function Navbar() {
     };
   }, [isMobileOpen]);
 
-  const [checking, setChecking] = useState(true);
-
-  useEffect(() => {
-    const checkIfAlreadyLoggedIn = async () => {
-      try {
-        const data = await authService.checkAuth();
-        console.log('Navbar: checkAuth response:', data);
-
-        if (data.alreadyLoggedIn) {
-          const userData = await authService.getUser();
-          setUser(userData);
-        }
-      } catch (err) {
-        setUser(null);
-      } finally {
-        setChecking(false);
-      }
-    };
-
-    checkIfAlreadyLoggedIn();
-  }, [location.pathname]);
-
-  // if (checking) return null;
-
   // Close dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -79,9 +54,8 @@ export default function Navbar() {
     try {
       await logout();
     } catch {
-      // silent — clear local state regardless
+      // silent
     }
-    setUser(null);
     navigate('/');
   };
 

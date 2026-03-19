@@ -1,15 +1,12 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import authService from '../Services/authService';
 
-export const useLogout = () => {
+export const useDeleteAccount = () => {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: authService.logout,
+        mutationFn: authService.deleteAccount,
         onSuccess: () => {
-            queryClient.setQueryData(['user'], null);
-        },
-        onError: () => {
             queryClient.setQueryData(['user'], null);
         }
     });

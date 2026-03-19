@@ -4,7 +4,6 @@ import { api } from "./api";
 const authService = {
     // ── Public routes ──
     register: async (data) => {
-        console.log("Hit (1)")
         return await api.post('/register', data);
     },
 
@@ -38,14 +37,6 @@ const authService = {
         return data.user
     },
 
-    changePassword: async (data) => {
-        return await api.put('/changePassword', data);
-    },
-
-    deleteAccount: async () => {
-        return await api.post('/deleteAccount');
-    },
-
     // ── Testing / Admin routes ──
     refreshAccessToken: async () => {
         return await api.post('/refresh');
@@ -72,8 +63,16 @@ const authService = {
     },
 
     confirmEmailChange: async (token) => {
-    return await api.get(`/confirmEmailChange?token=${token}`);
-},
+        return await api.get(`/confirm-email-change?token=${token}`);
+    },
+
+    changePassword: async (data) => {
+        return await api.put('/password/change', data);
+    },
+
+    deleteAccount: async (data) => {
+        return await api.delete('/deleteAccount', { data });
+    },
 };
 
 export default authService;

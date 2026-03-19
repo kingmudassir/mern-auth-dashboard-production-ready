@@ -5,93 +5,23 @@ import { User } from "../models/userSchema.js";
 import { sendEmail } from "../utilities/sendEmail.js";
 import crypto from "crypto";
 import { sendToken } from "../utilities/sendToken.js";
-import { validatePhone } from "../utilities/PhoneValidator.js";
-
-export const validateEmail = (rawEmail) => {
-    if (!rawEmail || typeof rawEmail !== "string") {
-        return "Email is required."
-    }
-
-    // Normalize first (lowercase, remove dots where applicable, etc.)
-    const email = validator.normalizeEmail(rawEmail, {
-        gmail_remove_dots: false,
-        gmail_remove_subaddress: false,
-        outlookdotcom_remove_subaddress: false,
-        yahoo_remove_subaddress: false,
-        icloud_remove_subaddress: false,
-    });
-
-    if (!email) {
-        return "Invalid email."
-    }
-
-    // Hard limits from RFC
-    if (email.length > 254) {
-        return "Email too long."
-    }
-
-    const [local, domain] = email.split("@");
-
-    if (!local || !domain) {
-        return "Invalid email structure."
-    }
-
-    if (local.length > 64) {
-        return "Invalid email."
-    }
-
-    // Format + domain rules
-    const isValid = validator.isEmail(email, {
-        require_tld: true,
-        allow_utf8_local_part: false,
-        allow_ip_domain: false,
-        domain_specific_validation: true,
-        blacklisted_chars: "()<>,;:\\\"[]",
-    });
-
-    if (!isValid) {
-        return "Invalid email."
-    }
-
-    // Disposable domain blocking (basic but effective)
-    const disposableDomains = [
-        "tempmail.com",
-        "10minutemail.com",
-        "mailinator.com",
-        "guerrillamail.com",
-        "yopmail.com",
-    ];
-
-    if (disposableDomains.includes(domain)) {
-        return "Disposable emails are not allowed."
-    }
-
-    return null
-};
+import { validatePhone } from "../utilities/Validators/PhoneValidator.js";
+import { sendEmailChangeLink } from "../utilities/sendEmailChange.js";
+import { validatePasswordStrict } from "../utilities/Validators/PasswordValidator.js"
+import { validateEmail } from "../utilities/Validators/EmailValidator.js";
+import { validateName } from "../utilities/Validators/NameValidator.js";
 
 const validate = (name, email, password, phone) => {
-    if (!name || !email || !password || !phone) {
-        return "All fields are required."
-    }
-
-    if (name.length < 2 || name.length > 50 || !/^[a-zA-Z]{2,}(?:[\s'-][a-zA-Z]{2,})*$/.test(name) ) {
-        return "Invalid name."
-    }
+    const nameError = validateName(name);
+    if (nameError) return nameError;
 
     const emailResult = validateEmail(email);
     if (typeof emailResult === "string") {
         return emailResult;
     }
 
-    if (!validator.isStrongPassword(password, {
-        minLength: 8,
-        minLowercase: 1,
-        minUppercase: 1,
-        minNumbers: 1,
-        minSymbols: 1,
-    })) {
-        return "Password must be 8+ chars with uppercase, lowercase, number, and symbol."
-    }
+    const passwordError = validatePasswordStrict(password);
+    if (passwordError) return passwordError;
 
     const phoneError = validatePhone(phone);
     if (phoneError) return phoneError;
@@ -100,7 +30,6 @@ const validate = (name, email, password, phone) => {
 }
 
 export const register = catchAsyncError(async (req, res, next) => {
-    console.log("Controller Hit!")
     const { name, email, password, phone } = req.body;
 
     // Validate input
@@ -297,13 +226,8 @@ export const refreshAccessToken = catchAsyncError(async (req, res, next) => {
 });
 
 export async function sendVerificationCode(verificationCode, email) {
-    try {
-        const message = generateEmailTemplate(verificationCode);
-
-        await sendEmail({ email, subject: "Your verification code: ", message });
-    } catch (error) {
-        throw new ErrorHandler(`Failed to send verification email: ${error.message}`, 500);
-    }
+    const message = generateEmailTemplate(verificationCode);
+    await sendEmail({ email, subject: "Your verification code", message });
 }
 
 export const resetPassword = catchAsyncError(async (req, res, next) => {
@@ -316,18 +240,8 @@ export const resetPassword = catchAsyncError(async (req, res, next) => {
     if (!password || !confirmPassword)
         return next(new ErrorHandler("Password fields are required", 400));
 
-    if (!validator.isStrongPassword(password, {
-        minLength: 8,
-        minLowercase: 1,
-        minUppercase: 1,
-        minNumbers: 1,
-        minSymbols: 1,
-    })) {
-        return next(new ErrorHandler(
-            "Password must be 8+ chars with uppercase, lowercase, number, and symbol.",
-            400
-        ));
-    }
+    const passwordError = validatePasswordStrict(password);
+    if (passwordError) return next(new ErrorHandler(passwordError, 400));
 
     if (password !== confirmPassword)
         return next(new ErrorHandler("Passwords do not match", 400));
@@ -378,7 +292,7 @@ export const forgetPassword = catchAsyncError(async (req, res, next) => {
     }
 
     const generateResetPasswordToken = existingUser.generateResetPasswordToken()
-    await existingUser.save({ validateModifiedOnly: false })
+    await existingUser.save({ validateModifiedOnly: true })
 
     const resetPasswordUrl = `${process.env.FRONTEND_URL}/password/reset/${generateResetPasswordToken}`;
     const message = generateResetPasswordEmailTemplate(resetPasswordUrl);
@@ -399,60 +313,11 @@ export const forgetPassword = catchAsyncError(async (req, res, next) => {
 
         existingUser.resetPasswordToken = undefined;
         existingUser.resetPasswordExpire = undefined;
-        await existingUser.save({ validateBeforeSave: false });
+        await existingUser.save({ validateModifiedOnly: true });
 
         throw new ErrorHandler(`Failed to send verification email: ${error.message}`, 500);
     }
 })
-
-export const changePassword = catchAsyncError(async (req, res, next) => {
-    const { currentPassword, newPassword, confirmPassword } = req.body;
-
-    if (!currentPassword || !newPassword || !confirmPassword) {
-        return next(new ErrorHandler("All password fields are required.", 400));
-    }
-
-    const user = await User.findById(req.user._id).select("+password");
-    if (!user) {
-        return next(new ErrorHandler("User not found.", 404));
-    }
-
-    // Verify current password
-    const isMatch = await user.comparePassword(currentPassword);
-    if (!isMatch) {
-        return next(new ErrorHandler("Current password is incorrect.", 401));
-    }
-
-    // Check new password matches confirmation
-    if (newPassword !== confirmPassword) {
-        return next(new ErrorHandler("New passwords do not match.", 400));
-    }
-
-    // Strong password validation
-    if (!validator.isStrongPassword(newPassword, {
-        minLength: 8,
-        minLowercase: 1,
-        minUppercase: 1,
-        minNumbers: 1,
-        minSymbols: 1,
-    })) {
-        return next(new ErrorHandler(
-            "New password must be at least 8 characters and include uppercase, lowercase, number, and symbol.",
-            400
-        ));
-    }
-
-    // Update password
-    user.password = newPassword;
-
-    // Save only the modified field (hash will run via pre-save hook)
-    await user.save({ validateModifiedOnly: true });
-
-    res.status(200).json({
-        success: true,
-        message: "Password changed successfully."
-    });
-});
 
 export const login = catchAsyncError(async (req, res, next) => {
     const { email, password, rememberMe } = req.body
@@ -463,6 +328,10 @@ export const login = catchAsyncError(async (req, res, next) => {
         return next(new ErrorHandler(emailError, 400));
     }
 
+    if (!password) {
+        return next(new ErrorHandler("Incorrect email or password.", 401));
+    }
+
     const existingUser = await User.findOne({
         email,
         isAccountVerified: true
@@ -470,7 +339,7 @@ export const login = catchAsyncError(async (req, res, next) => {
 
     // first check if user exists
     if (!existingUser) {
-        return next(new ErrorHandler("Email does not exist.", 401));
+        return next(new ErrorHandler("Incorrect email or password", 401));
     }
 
     // check if user scheduled his account for deletion
@@ -491,15 +360,22 @@ export const login = catchAsyncError(async (req, res, next) => {
 })
 
 export const logout = catchAsyncError(async (req, res, next) => {
+    const user = await User.findById(req.user._id);
+    if (user) {
+        user.refreshToken = undefined;
+        user.refreshTokenExpire = undefined;
+        await user.save({ validateModifiedOnly: true });
+    }
+
     res.status(200)
     .cookie("token", "", {
-        expires: new Date(Date.now()),
+        expires: new Date(0),
         httpOnly: true,                
         sameSite: "strict",
         path: "/"
     })
     .cookie("refreshToken", "", {
-        expires: new Date(Date.now()),
+        expires: new Date(0),
         httpOnly: true,                
         sameSite: "strict",
         path: "/"
@@ -533,33 +409,54 @@ export const getAllUsers = catchAsyncError(async (req, res, next) => {
 export const deleteAccount = catchAsyncError(async (req, res, next) => {
     const { currentPassword } = req.body
 
-    const now = new Date()
+    if (!currentPassword) {
+        return next(new ErrorHandler("Password is required.", 400));
+    }
 
     const existingUser = await User.findById(req.user._id).select("+password")
 
-    const isMatch = await existingUser.comparePassword(currentPassword)
+    if (!existingUser) {
+        return next(new ErrorHandler("User not found.", 404));
+    }
 
+    // Check if deletion is paused (user recently cancelled a deletion request)
+    const now = new Date();
+    if (existingUser.deletionPausedUntil && now <= existingUser.deletionPausedUntil) {
+        const remainingMs = existingUser.deletionPausedUntil - now;
+        const remainingDays = Math.ceil(remainingMs / (1000 * 60 * 60 * 24));
+        return res.status(403).json({
+            success: false,
+            message: `Account deletion is paused for ${remainingDays} more day(s).`
+        });
+    }
+
+    const isMatch = await existingUser.comparePassword(currentPassword)
     if (!isMatch) {
         return next(new ErrorHandler("Incorrect password.", 401))
     }
 
-    const remainingMs = existingUser.deletionPausedUntil - now;
-    const remainingDays = Math.ceil(remainingMs / (1000 * 60 * 60 * 24));
+    // Schedule deletion 7 days from now
+    existingUser.deleteAccountRequestAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    await existingUser.save({ validateModifiedOnly: true });
 
-    if (now <= existingUser.deletionPausedUntil) {
-        return res.status(403).json({
-            success: false,
-            message: `Account can be deleted after a period of ${remainingDays} days.`
-        })
-    }
+    res.cookie("token", "", {
+        httpOnly: true,
+        expires: new Date(0),
+        sameSite: "strict",
+        path: "/"
+    });
 
-    existingUser.deleteAccountRequestAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-    await existingUser.save({ validateModifiedOnly: true })
+    res.cookie("refreshToken", "", {
+        httpOnly: true,
+        expires: new Date(0),
+        sameSite: "strict",
+        path: "/"
+    });
 
     res.status(200).json({
-        success: true, 
-        message: "Account deleted successfully!",
-    })
+        success: true,
+        message: "Your account has been scheduled for deletion in 7 days. Log in before then to cancel."
+    });
 })
 
 function generateEmailTemplate(verificationCode) {
@@ -616,26 +513,6 @@ function generateResetPasswordEmailTemplate(resetPasswordUrl) {
         </p>
         </footer>
     </div>
-    `;
-}
-
-function generateEmailChangeTemplate(confirmUrl) {
-    return `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px; background-color: #f9f9f9;">
-            <h2 style="color: #6C3CE1; text-align: center;">Confirm Email Change</h2>
-            <p style="font-size: 16px; color: #333;">Dear User,</p>
-            <p style="font-size: 16px; color: #333;">Click the button below to confirm your new email address. This link expires in 15 minutes.</p>
-            <div style="text-align: center; margin: 30px 0;">
-                <a href="${confirmUrl}" style="display: inline-block; font-size: 16px; font-weight: bold; color: #fff; background-color: #6C3CE1; padding: 12px 28px; border-radius: 6px; text-decoration: none;">
-                    Confirm New Email
-                </a>
-            </div>
-            <p style="font-size: 14px; color: #666;">If you did not request this change, please ignore this email. Your current email will remain unchanged.</p>
-            <footer style="margin-top: 20px; text-align: center; font-size: 12px; color: #aaa;">
-                <p>Thank you,<br>Paiyya Team</p>
-                <p>This is an automated message. Please do not reply.</p>
-            </footer>
-        </div>
     `;
 }
 
@@ -729,7 +606,7 @@ export const requestEmailChange = catchAsyncError(async (req, res, next) => {
     const fullUser = await User.findById(user._id);
     fullUser.pendingEmail = newEmail.toLowerCase().trim();
     fullUser.emailChangeToken = hashedToken;
-    fullUser.emailChangeTokenExpire = Date.now() + 15 * 60 * 1000; // 15 minutes
+    fullUser.emailChangeTokenExpire = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
     await fullUser.save({ validateModifiedOnly: true });
 
     const confirmUrl = `${process.env.FRONTEND_URL}/confirm-email-change?token=${rawToken}`;
@@ -747,4 +624,74 @@ export const requestEmailChange = catchAsyncError(async (req, res, next) => {
         await fullUser.save({ validateModifiedOnly: true });
         return next(new ErrorHandler("Failed to send verification email. Please try again.", 500));
     }
+});
+
+export const confirmEmailChange = catchAsyncError(async (req, res, next) => {
+    const { token } = req.query;
+
+    if (!token) {
+        return next(new ErrorHandler("Invalid or missing token.", 400));
+    }
+
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+
+    const user = await User.findOne({
+        emailChangeToken: hashedToken,
+        emailChangeTokenExpire: { $gt: Date.now() }
+    });
+
+    if (!user) {
+        return next(new ErrorHandler("Token is invalid or has expired.", 400));
+    }
+
+    user.email = user.pendingEmail;
+    user.pendingEmail = undefined;
+    user.emailChangeToken = undefined;
+    user.emailChangeTokenExpire = undefined;
+    await user.save({ validateModifiedOnly: true });
+
+    return res.status(200).json({
+        success: true,
+        message: "Email address updated successfully."
+    });
+});
+
+export const changePassword = catchAsyncError(async (req, res, next) => {
+    const { currentPassword, newPassword, confirmNewPassword } = req.body;
+
+    if (!currentPassword || !newPassword || !confirmNewPassword) {
+        return next(new ErrorHandler("All fields are required.", 400));
+    }
+
+    if (newPassword !== confirmNewPassword) {
+        return next(new ErrorHandler("New passwords do not match.", 400));
+    }
+
+    if (currentPassword === newPassword) {
+        return next(new ErrorHandler("New password must be different from current password.", 400));
+    }
+
+    const passwordError = validatePasswordStrict(newPassword);
+    if (passwordError) {
+        return next(new ErrorHandler(passwordError, 400));
+    }
+
+    const user = await User.findById(req.user._id).select("+password");
+
+    if (!user) {
+        return next(new ErrorHandler("User not found.", 404));
+    }
+
+    const isMatch = await user.comparePassword(currentPassword);
+    if (!isMatch) {
+        return next(new ErrorHandler("Current password is incorrect.", 401));
+    }
+
+    user.password = newPassword;
+    await user.save({ validateModifiedOnly: true });
+
+    return res.status(200).json({
+        success: true,
+        message: "Password changed successfully."
+    });
 });
