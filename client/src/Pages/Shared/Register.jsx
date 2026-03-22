@@ -11,11 +11,11 @@ import {
   ArrowRight,
   AlertCircle,
 } from 'lucide-react';
-import { Field } from '../Components/Login-Register/Field';
-import { Input } from '../Components/Login-Register/Input';
-import authService from '../Services/authService';
-import { validateRegisterFields } from '../utilities/RegisterValidator';
-import { useRegister } from '../Hooks/useRegister';
+import { Field } from '../../Components/Login-Register/Field';
+import { Input } from '../../Components/Login-Register/Input';
+import authService from '../../Services/authService';
+import { validateRegisterFields } from '../../utilities/RegisterValidator';
+import { useRegister } from '../../Hooks/useRegister';
 
 const pwStrength = (pw) => {
   if (!pw) return 0;

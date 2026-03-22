@@ -394,18 +394,6 @@ export const getUser = catchAsyncError(async (req, res, next) => {
     })
 })
 
-export const getAllUsers = catchAsyncError(async (req, res, next) => {
-
-    const users = await User.find({ role: "user" }).select("-password -refreshToken -refreshTokenExpire -resetPasswordToken -resetPasswordExpire -__v -updatedAt");
-
-    res.status(200).json({
-        success: true,
-        message: "Request successful",
-        count: users.length,
-        users
-    });
-});
-
 export const deleteAccount = catchAsyncError(async (req, res, next) => {
     const { currentPassword } = req.body
 
@@ -693,5 +681,58 @@ export const changePassword = catchAsyncError(async (req, res, next) => {
     return res.status(200).json({
         success: true,
         message: "Password changed successfully."
+    });
+});
+
+export const getAdminStats = catchAsyncError(async (req, res, next) => {
+    const now = new Date();
+    const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+
+    const totalUsers = await User.countDocuments({ isAccountVerified: true });
+
+    const usersThisMonth = await User.countDocuments({
+        isAccountVerified: true,
+        createdAt: { $gte: startOfThisMonth }
+    });
+
+    const usersLastMonth = await User.countDocuments({
+        isAccountVerified: true,
+        createdAt: { $gte: startOfLastMonth, $lte: endOfLastMonth }
+    });
+
+    const userTrend = usersLastMonth === 0
+        ? null
+        : Math.round(((usersThisMonth - usersLastMonth) / usersLastMonth) * 100);
+
+    const recentUsers = await User.find({ 
+        isAccountVerified: true,
+        role: "user"
+    })
+        .sort({ createdAt: -1 })
+        .limit(4)
+        .select('name email createdAt isBanned deleteAccountRequestAt');
+
+    res.status(200).json({
+        success: true,
+        stats: {
+            totalUsers,
+            usersThisMonth,
+            userTrend,
+            recentUsers,
+        }
+    });
+});
+
+export const getAllUsers = catchAsyncError(async (req, res, next) => {
+    const users = await User.find({ isAccountVerified: true })
+        .sort({ createdAt: -1 })
+        .select('name email phone role isAccountVerified isEmailVerified isBanned deleteAccountRequestAt createdAt');
+
+    res.status(200).json({
+        success: true,
+        count: users.length,
+        users
     });
 });

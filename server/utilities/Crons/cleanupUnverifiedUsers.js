@@ -1,5 +1,5 @@
 import cron from "node-cron";
-import { User } from "../models/userSchema.js";
+import { User } from "../../models/userSchema.js";
 
 cron.schedule("0 0 * * *", async () => {
     try {

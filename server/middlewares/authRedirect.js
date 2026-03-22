@@ -17,7 +17,6 @@ export const redirectIfAuthenticated = catchAsyncError(async (req, res, next) =>
         const existingUser = await User.findById(decoded.id);
 
         if (existingUser) {
-            // return res.status(200).json({ alreadyLoggedIn: true, redirectTo: "/userprofile" });
             return res.status(200).json({ alreadyLoggedIn: true });
         }
 

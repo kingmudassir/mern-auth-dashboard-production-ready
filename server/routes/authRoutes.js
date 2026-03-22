@@ -1,5 +1,5 @@
 import express from "express"
-import { changePassword, confirmEmailChange, deleteAccount, forgetPassword, getAllUsers, getUser, login, logout, refreshAccessToken, register, requestEmailChange, resendOTP, resetPassword, updateProfile, verifyOTP } from "../controllers/authController.js"
+import { changePassword, confirmEmailChange, deleteAccount, forgetPassword, getAdminStats, getAllUsers, getUser, login, logout, refreshAccessToken, register, requestEmailChange, resendOTP, resetPassword, updateProfile, verifyOTP } from "../controllers/authController.js"
 import { isAuthenticated } from "../middlewares/userAuth.js"
 import { redirectIfAuthenticated } from "../middlewares/authRedirect.js"
 import { authorizeRoles } from "../middlewares/authorizeRoles.js"
@@ -24,6 +24,10 @@ router.put('/requestEmailChange', isAuthenticated, requestEmailChange);
 router.get('/confirm-email-change', confirmEmailChange);
 router.put('/password/change', isAuthenticated, changePassword);
 router.delete('/deleteAccount', isAuthenticated, deleteAccount)
+
+//Admin Routes
+router.get('/admin/stats', isAuthenticated, authorizeRoles("admin"), getAdminStats);
+router.get('/admin/users', isAuthenticated, authorizeRoles("admin"), getAllUsers);
 
 
 // Only for testing purposes!

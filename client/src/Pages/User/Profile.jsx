@@ -15,17 +15,17 @@ import {
   Shield,
   LogOut,
 } from 'lucide-react';
-import { useUser } from '../Hooks/useUser';
-import { useUpdateProfile } from '../Hooks/useUpdateProfile';
-import authService from '../Services/authService';
+import { useUser } from '../../Hooks/useUser';
+import { useUpdateProfile } from '../../Hooks/useUpdateProfile';
+import authService from '../../Services/authService';
 import { replace, useNavigate } from 'react-router-dom';
-import { validatePhone } from '../utilities/PhoneValidator';
-import { useEmailChange } from '../Hooks/useEmailChange';
-import { validateEmail } from '../utilities/EmailValidator';
-import { useChangePassword } from '../Hooks/useChangePassword';
-import { validatePasswordStrict } from '../utilities/PasswordValidator';
-import { useLogout } from '../Hooks/useLogout';
-import { useDeleteAccount } from '../Hooks/useDeleteAccount';
+import { validatePhone } from '../../utilities/PhoneValidator';
+import { useEmailChange } from '../../Hooks/useEmailChange';
+import { validateEmail } from '../../utilities/EmailValidator';
+import { useChangePassword } from '../../Hooks/useChangePassword';
+import { validatePasswordStrict } from '../../utilities/PasswordValidator';
+import { useLogout } from '../../Hooks/useLogout';
+import { useDeleteAccount } from '../../Hooks/useDeleteAccount';
 
 // ── Helpers ──────────────────────────────────────────────────────
 const isEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);

@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Mail, Lock, Eye, EyeOff, ArrowRight, AlertCircle } from 'lucide-react';
-import { useLogin } from '../Hooks/useLogin';
-import { Field } from '../Components/Login-Register/Field';
-import { Input } from '../Components/Login-Register/Input';
+import { useLogin } from '../../Hooks/useLogin';
+import { Field } from '../../Components/Login-Register/Field';
+import { Input } from '../../Components/Login-Register/Input';
 import { replace, useNavigate } from 'react-router-dom';
-import authService from '../Services/authService';
-import { validateLoginFields } from '../utilities/LoginValidator';
+import authService from '../../Services/authService';
+import { validateLoginFields } from '../../utilities/LoginValidator';
+import { useUser } from '../../Hooks/useUser';
 
 function LoginSkeleton() {
   return (
@@ -75,6 +76,7 @@ function Login() {
   const [showPw, setShowPw] = useState(false);
   const [errors, setErrors] = useState({});
   const [rememberMe, setRememberMe] = useState(false);
+  const { data: user } = useUser();
 
   const navigate = useNavigate();
 
@@ -104,10 +106,14 @@ function Login() {
 
   // ── Success screen ─────────────────────────────────────────────
   useEffect(() => {
-    if (isSuccess) {
-      navigate('/userprofile', { replace: true });
+    if (isSuccess && user) {
+      if (user.role === 'admin') {
+        navigate('/admin', { replace: true });
+      } else {
+        navigate('/', { replace: true });
+      }
     }
-  }, [isSuccess, navigate]);
+  }, [isSuccess, user, navigate]);
 
   const [checking, setChecking] = useState(true);
 

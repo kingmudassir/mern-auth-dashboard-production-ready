@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Mail, Phone, ArrowRight, ArrowLeft, AlertCircle, CheckCircle2 } from 'lucide-react';
-import { useForgetPassword } from '../Hooks/useForgetPassword';
-import { validateEmail } from '../utilities/EmailValidator';
+import { useForgetPassword } from '../../Hooks/useForgetPassword';
+import { validateEmail } from '../../utilities/EmailValidator';
 import { useNavigate } from 'react-router-dom';
-import authService from '../Services/authService';
+import authService from '../../Services/authService';
 
 // ── Validators ───────────────────────────────────────────────────
 const isPhone = (v) => /^(\+92|0)[0-9]{10}$/.test(v);

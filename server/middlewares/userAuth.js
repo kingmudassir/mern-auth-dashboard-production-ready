@@ -18,12 +18,27 @@ export const isAuthenticated = catchAsyncError(async (req, res, next) => {
 
         if (!existingUser) {
             res
-            .cookie("token", "", { expires: new Date(Date.now()), httpOnly: true, sameSite: "strict", path: "/" })
-            .cookie("refreshToken", "", { expires: new Date(Date.now()), httpOnly: true, sameSite: "strict", path: "/" });
+            .cookie("token", "", 
+                { 
+                    expires: new Date(0), 
+                    httpOnly: true, 
+                    sameSite: "strict", 
+                    path: "/" 
+                })
+                
+            .cookie("refreshToken", "", 
+                { expires: new Date(0), 
+                    httpOnly: true, 
+                    sameSite: "strict", 
+                    path: "/" 
+                });
             return next(new ErrorHandler("User no longer exists", 401));
         }
 
-        req.user = existingUser;
+        req.user = {
+            ...existingUser.toObject(),
+            role: existingUser.role // comes from JWT
+        };
         next();
     } catch (error) {
         if (error.name === "TokenExpiredError" && refreshToken) {
@@ -48,17 +63,11 @@ async function attemptRefresh(req, res, next) {
             refreshTokenExpire: { $gt: Date.now() }
         }).select("-password -refreshToken -resetPasswordToken -__v -updatedAt");
 
-        console.log('hashedToken:', hashedToken);
-        console.log('existingUser:', existingUser);
-
         if (!existingUser) return next(new ErrorHandler("Session expired. Please log in again.", 401));
 
         const remainingExpiry = existingUser.refreshTokenExpire;
         const newAccessToken = existingUser.generateAccessToken();
         const newRefreshToken = existingUser.generateRefreshToken(remainingExpiry - Date.now());
-
-        console.log('refreshToken cookie:', refreshToken);
-        console.log('remainingExpiry:', existingUser?.refreshTokenExpire);
 
         await existingUser.save({ validateModifiedOnly: true });
 
@@ -76,7 +85,11 @@ async function attemptRefresh(req, res, next) {
             path: "/"
         });
 
-        req.user = existingUser;
+        req.user = {
+            ...existingUser.toObject(),
+            role: existingUser.role // comes from JWT
+        };        
+        
         next(); // ← continue to the protected route
     } catch (err) {
         next(new ErrorHandler("Session expired. Please log in again.", 401));

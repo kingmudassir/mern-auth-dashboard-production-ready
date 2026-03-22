@@ -1,10 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft, AlertCircle, CheckCircle2, ArrowRight } from 'lucide-react';
-import { InputOTP } from '../Components/OTP/InputOTP';
-import { useResendOTP } from '../Hooks/useResendOTP';
-import { useVerifyOTP } from '../Hooks/useVerifyOTP';
-import authService from '../Services/authService';
+import { InputOTP } from '../../Components/OTP/InputOTP';
+import { useResendOTP } from '../../Hooks/useResendOTP';
+import { useVerifyOTP } from '../../Hooks/useVerifyOTP';
+import authService from '../../Services/authService';
 
 // ── Mask contact for display ─────────────────────────────────────
 const maskContact = (value = '', type = 'email') => {

@@ -115,6 +115,21 @@ const userSchema = new mongoose.Schema(
         emailChangeTokenExpire: {
             type: Date,
         },
+        
+        isBanned: {
+            type: Boolean,
+            default: false
+        },
+
+        banReason: {
+            type: String,
+            default: undefined
+        },
+
+        bannedAt: {
+            type: Date,
+            default: undefined
+        },
     },
     {
         timestamps: true
@@ -184,7 +199,7 @@ userSchema.methods.generateResetPasswordToken = function () {
 // Generate JWT access token
 // =========================
 userSchema.methods.generateAccessToken = function () {
-    return jwt.sign({ id: this._id }, process.env.JWT_SECRET_KEY, {
+    return jwt.sign({ id: this._id, role: this.role }, process.env.JWT_SECRET_KEY, {
         expiresIn: process.env.JWT_EXPIRE?.trim()
     });
 };

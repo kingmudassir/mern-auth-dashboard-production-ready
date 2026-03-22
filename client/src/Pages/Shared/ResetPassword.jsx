@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Lock, Eye, EyeOff, ArrowRight, AlertCircle, CheckCircle2 } from 'lucide-react';
-import { useResetPassword } from '../Hooks/useResetPassword';
-import { validatePasswordStrict } from '../utilities/PasswordValidator';
+import { useResetPassword } from '../../Hooks/useResetPassword';
+import { validatePasswordStrict } from '../../utilities/PasswordValidator';
 
 // ── Password strength ────────────────────────────────────────────
 const pwStrength = (pw) => {

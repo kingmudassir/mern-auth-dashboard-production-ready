@@ -1,8 +1,9 @@
 import dotenv from "dotenv";
 import app from "./app.js";
 import connection from "./config/dbConnection.js";
-import "./utilities/cleanupUnverifiedUsers.js"
-import './utilities/deleteScheduledAccounts.js'
+import "./utilities/Crons/cleanupUnverifiedUsers.js"
+import './utilities/Crons/deleteScheduledAccounts.js'
+import './utilities/Crons/accountDeletionWatcher.js'
 
 dotenv.config()
 
@@ -24,4 +25,4 @@ const startServer = async () => {
     }
 };
 
-startServer ()
+startServer()
