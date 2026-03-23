@@ -356,6 +356,9 @@ export const login = catchAsyncError(async (req, res, next) => {
         return next(new ErrorHandler("Incorrect email or password.", 401));
     }
 
+    existingUser.lastLoginAt = new Date();
+    await existingUser.save({ validateModifiedOnly: true });
+
     sendToken(existingUser, 200, "User logged in successfully.", res, rememberMe);
 })
 

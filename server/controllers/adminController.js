@@ -106,18 +106,6 @@ export const updateEmail = catchAsyncError(async (req, res, next) => {
             )
         );
     };
-
-    // res.status(200).json({
-    //     success: true,
-    //     message: "Email updated successfully. Please verify your new email.",
-    //     user: {
-    //         _id: user._id,
-    //         name: user.name,
-    //         email: user.email,
-    //         role: user.role,
-    //         isEmailVerified: user.isEmailVerified,
-    //     },
-    // });
 });
 
 export const updateUserRole = catchAsyncError(async (req, res, next) => {

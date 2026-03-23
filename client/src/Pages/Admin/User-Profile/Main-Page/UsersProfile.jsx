@@ -29,20 +29,23 @@ import {
   X,
   Check,
 } from 'lucide-react';
+import SectionCard from '../Components/Common/SectionCard';
+import SectionTitle from '../Components/Common/SectionTitle';
+import FieldLabel from '../Components/Common/FieldLabel';
+import StatusBadge from '../Components/Common/StatusBadge';
+import ListingBadge from '../Components/Common/ListingBadge';
+import Toast from '../Components/Common/Toast';
+import EditableField from '../Components/Functions/EditableField';
+import ConfirmModal from '../Components/Common/ConfirmModal';
+import ActionBtn from '../Components/Common/ActionBtn';
+import { useUserById } from '../../../../Hooks/Admin-Hook/All-Users/useUserById';
+import { useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useUpdateUserStatus } from '../../../../Hooks/Admin-Hook/All-Users/useUpdateUserStatus';
+import { useUpdateAdminNotes } from '../../../../Hooks/Admin-Hook/All-Users/useUpdateAdminNotes';
+import { useUpdateUserRole } from '../../../../Hooks/Admin-Hook/All-Users/useUpdateUserRole';
+import { useUpdateUserInfo } from '../../../../Hooks/Admin-Hook/All-Users/useUpdateUserInfo';
 
-// ─────────────────────────────────────────────────────────────────
-// 💡 TANSTACK INTEGRATION POINTS
-//
-//  const { data: user, isLoading } = useQuery({
-//    queryKey: ['admin-user', userId],
-//    queryFn: () => axios.get(`/api/admin/users/${userId}`).then(r => r.data),
-//  });
-//
-//  Each action has a clearly marked ← REPLACE block.
-//  Swap simulate() calls with your useMutation hooks.
-// ─────────────────────────────────────────────────────────────────
-
-// ── Mock user — replace with useQuery ───────────────────────────
 const MOCK_USER = {
   id: '64f3a1b2c9e1d2f3a4b5c6d7',
   name: 'Muhammad Ali Khan',
@@ -114,6 +117,7 @@ const STATUS_OPTIONS = [
 // ── Helpers ───────────────────────────────────────────────────────
 const isEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 const isPhone = (v) => /^(\+92|0)[0-9]{10}$/.test(v);
+
 const initials = (name = '') =>
   name
     .split(' ')
@@ -122,376 +126,32 @@ const initials = (name = '') =>
     .join('')
     .toUpperCase();
 
-// ── Shared primitives ─────────────────────────────────────────────
-function SectionCard({ children, danger = false }) {
-  return (
-    <div
-      className="rounded-2xl p-6"
-      style={{
-        background: danger ? '#FFFAF9' : '#FFFFFF',
-        border: `1.5px solid ${danger ? 'rgba(232,98,42,0.2)' : '#E8E3DC'}`,
-        boxShadow: '0 1px 4px rgba(26,21,35,0.04)',
-      }}
-    >
-      {children}
-    </div>
-  );
-}
-
-function SectionTitle({ children, sub }) {
-  return (
-    <div className="mb-5">
-      <h2
-        className="text-[0.95rem] font-bold tracking-[-0.02em]"
-        style={{ color: '#1A1523', fontFamily: "'Syne', sans-serif" }}
-      >
-        {children}
-      </h2>
-      {sub && (
-        <p
-          className="text-[0.75rem] mt-0.5"
-          style={{ color: '#8A8390', fontFamily: "'DM Sans', sans-serif" }}
-        >
-          {sub}
-        </p>
-      )}
-    </div>
-  );
-}
-
-function FieldLabel({ children }) {
-  return (
-    <p
-      className="text-[0.68rem] font-semibold uppercase tracking-wider mb-1"
-      style={{ color: '#8A8390', fontFamily: "'DM Sans', sans-serif" }}
-    >
-      {children}
-    </p>
-  );
-}
-
-function StatusBadge({ status }) {
-  const s = STATUS_OPTIONS.find((o) => o.value === status) ?? STATUS_OPTIONS[0];
-  return (
-    <span
-      className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[0.7rem] font-semibold"
-      style={{ background: s.bg, color: s.color, fontFamily: "'DM Sans', sans-serif" }}
-    >
-      <span
-        className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-        style={{ background: s.color }}
-        aria-hidden="true"
-      />
-      {s.label}
-    </span>
-  );
-}
-
-function ListingBadge({ status }) {
-  const map = {
-    active: { bg: 'rgba(34,197,94,0.1)', color: '#16a34a', label: 'Active' },
-    pending: { bg: 'rgba(201,168,76,0.15)', color: '#92700a', label: 'Pending' },
-    flagged: { bg: 'rgba(239,68,68,0.1)', color: '#dc2626', label: 'Flagged' },
-  };
-  const s = map[status] ?? map.active;
-  return (
-    <span
-      className="inline-flex px-2 py-0.5 rounded-full text-[0.68rem] font-semibold"
-      style={{ background: s.bg, color: s.color, fontFamily: "'DM Sans', sans-serif" }}
-    >
-      {s.label}
-    </span>
-  );
-}
-
-function Toast({ msg, type = 'success', onDismiss }) {
-  if (!msg) return null;
-  const ok = type === 'success';
-  return (
-    <div
-      className="flex items-center gap-2 px-4 py-3 rounded-xl text-[0.8rem] font-medium"
-      style={{
-        background: ok ? 'rgba(34,197,94,0.1)' : 'rgba(232,98,42,0.08)',
-        border: `1px solid ${ok ? 'rgba(34,197,94,0.25)' : 'rgba(232,98,42,0.2)'}`,
-        color: ok ? '#16a34a' : '#C4531F',
-        fontFamily: "'DM Sans', sans-serif",
-      }}
-      role="status"
-      aria-live="polite"
-    >
-      {ok ? <CheckCircle2 size={14} strokeWidth={2} /> : <AlertCircle size={14} strokeWidth={2} />}
-      <span className="flex-1">{msg}</span>
-      <button type="button" onClick={onDismiss} aria-label="Dismiss">
-        <X size={13} strokeWidth={2} />
-      </button>
-    </div>
-  );
-}
-
-// ── Inline editable field ─────────────────────────────────────────
-function EditableField({ label, value, onSave, validate, type = 'text', icon: Icon }) {
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(value);
-  const [error, setError] = useState('');
-  const [saving, setSaving] = useState(false);
-
-  const handleSave = async () => {
-    if (validate) {
-      const err = validate(draft);
-      if (err) {
-        setError(err);
-        return;
-      }
-    }
-    setSaving(true);
-    await onSave(draft);
-    setSaving(false);
-    setEditing(false);
-    setError('');
-  };
-
-  const handleCancel = () => {
-    setDraft(value);
-    setError('');
-    setEditing(false);
-  };
-
-  return (
-    <div>
-      <FieldLabel>{label}</FieldLabel>
-      {editing ? (
-        <div className="flex flex-col gap-1.5">
-          <div
-            className="flex items-center border rounded-xl h-10 bg-[#FAFAF9] transition-[border-color,box-shadow] duration-200 focus-within:border-[rgba(108,60,225,0.4)] focus-within:shadow-[0_0_0_3px_rgba(108,60,225,0.08)] focus-within:bg-white"
-            style={{ borderColor: error ? 'rgba(232,98,42,0.5)' : '#E8E3DC' }}
-          >
-            {Icon && (
-              <Icon
-                size={13}
-                strokeWidth={1.9}
-                className="absolute"
-                style={{ color: '#C4BDD0', marginLeft: '12px', pointerEvents: 'none' }}
-                aria-hidden="true"
-              />
-            )}
-            <input
-              type={type}
-              value={draft}
-              onChange={(e) => {
-                setDraft(e.target.value);
-                setError('');
-              }}
-              className="flex-1 h-full bg-transparent outline-none border-none text-[0.85rem] text-[#1A1523]"
-              style={{
-                fontFamily: "'DM Sans', sans-serif",
-                paddingLeft: Icon ? '36px' : '12px',
-                paddingRight: '8px',
-              }}
-              autoFocus
-              aria-label={label}
-            />
-            <div className="flex items-center gap-1 pr-2 flex-shrink-0">
-              <button
-                type="button"
-                onClick={handleSave}
-                disabled={saving}
-                className="w-6 h-6 rounded-lg flex items-center justify-center text-green-600 hover:bg-green-50 transition-colors duration-150 disabled:opacity-50"
-                aria-label="Save"
-              >
-                {saving ? (
-                  <span className="spinner-xs" aria-hidden="true" />
-                ) : (
-                  <Check size={12} strokeWidth={2.5} />
-                )}
-              </button>
-              <button
-                type="button"
-                onClick={handleCancel}
-                className="w-6 h-6 rounded-lg flex items-center justify-center hover:bg-[#F2EEE9] transition-colors duration-150"
-                style={{ color: '#8A8390' }}
-                aria-label="Cancel"
-              >
-                <X size={12} strokeWidth={2.5} />
-              </button>
-            </div>
-          </div>
-          {error && (
-            <span
-              className="flex items-center gap-1 text-[0.72rem]"
-              style={{ color: '#E8622A', fontFamily: "'DM Sans', sans-serif" }}
-            >
-              <AlertCircle size={10} strokeWidth={2} />
-              {error}
-            </span>
-          )}
-        </div>
-      ) : (
-        <div className="flex items-center gap-2 group">
-          <span
-            className="text-[0.875rem] font-medium"
-            style={{ color: '#1A1523', fontFamily: "'DM Sans', sans-serif" }}
-          >
-            {value || <span style={{ color: '#C4BDD0' }}>Not set</span>}
-          </span>
-          <button
-            type="button"
-            onClick={() => {
-              setDraft(value);
-              setEditing(true);
-            }}
-            className="opacity-0 group-hover:opacity-100 w-6 h-6 rounded-lg flex items-center justify-center transition-[opacity,background-color] duration-150 hover:bg-[#F2EEE9]"
-            style={{ color: '#8A8390' }}
-            aria-label={`Edit ${label}`}
-          >
-            <Pencil size={11} strokeWidth={2} />
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ── Action button ─────────────────────────────────────────────────
-function ActionBtn({ label, icon: Icon, onClick, loading, variant = 'default', disabled }) {
-  const styles = {
-    default: { color: '#1A1523', border: '#E8E3DC', bg: '#FFFFFF', hover: '#F7F4F0' },
-    violet: {
-      color: '#6C3CE1',
-      border: 'rgba(108,60,225,0.28)',
-      bg: 'rgba(108,60,225,0.05)',
-      hover: 'rgba(108,60,225,0.1)',
-    },
-    danger: {
-      color: '#C4531F',
-      border: 'rgba(232,98,42,0.28)',
-      bg: 'rgba(232,98,42,0.05)',
-      hover: 'rgba(232,98,42,0.1)',
-    },
-    red: {
-      color: '#dc2626',
-      border: 'rgba(239,68,68,0.28)',
-      bg: 'rgba(239,68,68,0.05)',
-      hover: 'rgba(239,68,68,0.1)',
-    },
-  };
-  const s = styles[variant];
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={loading || disabled}
-      className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[0.8rem] font-medium transition-[background-color,border-color] duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
-      style={{
-        color: s.color,
-        border: `1.5px solid ${s.border}`,
-        background: s.bg,
-        fontFamily: "'DM Sans', sans-serif",
-      }}
-      onMouseEnter={(e) => {
-        if (!loading && !disabled) e.currentTarget.style.background = s.hover;
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.background = s.bg;
-      }}
-      aria-label={label}
-    >
-      {loading ? (
-        <span className="spinner-xs" aria-hidden="true" />
-      ) : (
-        <Icon size={13} strokeWidth={2} aria-hidden="true" />
-      )}
-      {label}
-    </button>
-  );
-}
-
-// ── Confirm modal ─────────────────────────────────────────────────
-function ConfirmModal({ open, title, message, confirmLabel, onConfirm, onCancel, danger = false }) {
-  if (!open) return null;
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center px-4"
-      style={{ background: 'rgba(26,21,35,0.55)', backdropFilter: 'blur(4px)' }}
-      role="dialog"
-      aria-modal="true"
-    >
-      <div
-        className="bg-white rounded-2xl p-7 w-full max-w-sm"
-        style={{ border: '1.5px solid #E8E3DC', boxShadow: '0 20px 60px rgba(26,21,35,0.2)' }}
-      >
-        <div
-          className="w-10 h-10 rounded-xl flex items-center justify-center mb-4"
-          style={{ background: danger ? 'rgba(232,98,42,0.1)' : 'rgba(108,60,225,0.1)' }}
-        >
-          {danger ? (
-            <AlertTriangle size={18} strokeWidth={2} style={{ color: '#E8622A' }} />
-          ) : (
-            <Shield size={18} strokeWidth={2} style={{ color: '#6C3CE1' }} />
-          )}
-        </div>
-        <h3
-          className="text-[1rem] font-extrabold mb-1.5 tracking-[-0.025em]"
-          style={{ color: '#1A1523', fontFamily: "'Syne', sans-serif" }}
-        >
-          {title}
-        </h3>
-        <p
-          className="text-[0.8rem] leading-relaxed mb-5"
-          style={{ color: '#8A8390', fontFamily: "'DM Sans', sans-serif" }}
-        >
-          {message}
-        </p>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="flex-1 text-[0.82rem] font-medium py-2.5 rounded-xl border transition-colors duration-150"
-            style={{
-              color: '#8A8390',
-              borderColor: '#E8E3DC',
-              background: 'transparent',
-              fontFamily: "'DM Sans', sans-serif",
-            }}
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            className="flex-1 text-[0.82rem] font-semibold text-white py-2.5 rounded-xl transition-opacity duration-150"
-            style={{
-              background: danger
-                ? 'linear-gradient(135deg, #E8622A 0%, #C4531F 100%)'
-                : 'linear-gradient(135deg, #6C3CE1 0%, #5A2FCA 100%)',
-              fontFamily: "'DM Sans', sans-serif",
-            }}
-          >
-            {confirmLabel}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ── Main component ────────────────────────────────────────────────
 export default function UsersProfile() {
+  const queryClient = useQueryClient();
   const { userId } = useParams();
   const navigate = useNavigate();
 
-  // ← REPLACE with: const { data: user, isLoading } = useQuery(...)
-  const [user, setUser] = useState({ ...MOCK_USER });
+  const { data, isLoading } = useUserById(userId);
+  const { mutate: updateStatus, isPending: isUpdatingStatus } = useUpdateUserStatus(userId);
+  const { mutate: saveNotes, isPending: notesSaving } = useUpdateAdminNotes(userId);
+  const { mutate: updateRole, isPending: isUpdatingRole } = useUpdateUserRole(userId);
+  const { mutate: updateUserInfo, isPending: isUpdatingInfo } = useUpdateUserInfo(userId);
+
+  const user = data?.user;
 
   const [toast, setToast] = useState({ msg: '', type: 'success' });
   const [modal, setModal] = useState(null); // { type, ... }
   const [loading, setLoading] = useState({}); // { [action]: bool }
-  const [notes, setNotes] = useState(user.notes ?? '');
-  const [notesSaving, setNotesSaving] = useState(false);
+  const [notes, setNotes] = useState('');
   const [activeTab, setActiveTab] = useState('listings'); // 'listings' | 'activity'
   const [pwVisible, setPwVisible] = useState(false);
   const [newPw, setNewPw] = useState('');
   const [pwErr, setPwErr] = useState('');
+
+  useEffect(() => {
+    if (user?.adminNotes) setNotes(user.adminNotes);
+  }, [user]);
 
   const showToast = (msg, type = 'success') => {
     setToast({ msg, type });
@@ -500,53 +160,61 @@ export default function UsersProfile() {
 
   const setLoad = (key, val) => setLoading((p) => ({ ...p, [key]: val }));
 
-  // ── Actions ───────────────────────────────────────────────────
-  const handleSaveName = async (name) => {
-    // ← REPLACE with: updateUserMutation.mutate({ userId, name })
-    await new Promise((r) => setTimeout(r, 800));
-    setUser((p) => ({ ...p, name }));
-    showToast('Name updated successfully');
+  const handleSaveName = (name) => {
+    updateUserInfo(
+      { name },
+      {
+        onSuccess: () => showToast('Name updated successfully'),
+        onError: (err) => showToast(err?.message || 'Failed to update name.', 'error'),
+      }
+    );
   };
 
-  const handleSaveEmail = async (email) => {
-    // ← REPLACE with: updateUserMutation.mutate({ userId, email })
-    await new Promise((r) => setTimeout(r, 800));
-    setUser((p) => ({ ...p, email, emailVerified: false }));
-    showToast('Email updated. Verification status reset.');
+  const handleSaveEmail = (email) => {
+    updateUserInfo(
+      { email },
+      {
+        onSuccess: () => showToast('Email updated. Verification status reset.'),
+        onError: (err) => showToast(err?.message || 'Failed to update email.', 'error'),
+      }
+    );
   };
 
-  const handleSavePhone = async (phone) => {
-    // ← REPLACE with: updateUserMutation.mutate({ userId, phone })
-    await new Promise((r) => setTimeout(r, 800));
-    setUser((p) => ({ ...p, phone }));
-    showToast('Phone number updated');
+  const handleSavePhone = (phone) => {
+    updateUserInfo(
+      { phone },
+      {
+        onSuccess: () => showToast('Phone number updated'),
+        onError: (err) => showToast(err?.message || 'Failed to update phone.', 'error'),
+      }
+    );
   };
 
-  const handleSaveCity = async (city) => {
-    // ← REPLACE with: updateUserMutation.mutate({ userId, city })
-    await new Promise((r) => setTimeout(r, 800));
-    setUser((p) => ({ ...p, city }));
-    showToast('City updated');
+  const handleStatusChange = (status) => {
+    updateStatus(
+      { status },
+      {
+        onSuccess: () => {
+          showToast(`User ${status === 'banned' ? 'banned' : 'activated'} successfully.`);
+          setModal(null);
+        },
+        onError: (err) => {
+          showToast(err?.message || 'Failed to update status.', 'error');
+          setModal(null);
+        },
+      }
+    );
   };
 
-  const handleStatusChange = async (status) => {
-    setLoad('status', true);
-    // ← REPLACE with: changeStatusMutation.mutate({ userId, status })
-    await new Promise((r) => setTimeout(r, 900));
-    setLoad('status', false);
-    setUser((p) => ({ ...p, status }));
-    showToast(`User status changed to ${status}`);
-    setModal(null);
-  };
-
-  const handleRoleChange = async (role) => {
-    setLoad('role', true);
-    // ← REPLACE with: changeRoleMutation.mutate({ userId, role })
-    await new Promise((r) => setTimeout(r, 900));
-    setLoad('role', false);
-    setUser((p) => ({ ...p, role }));
-    showToast(`Role changed to ${role}`);
-    setModal(null);
+  const handleRoleChange = (role) => {
+    updateRole(role, {
+      onSuccess: () => {
+        showToast(`Role updated to ${role}.`);
+      },
+      onError: (err) => {
+        showToast(err?.message || 'Failed to update role.', 'error');
+      },
+    });
   };
 
   const handleResendVerification = async (type) => {
@@ -590,12 +258,11 @@ export default function UsersProfile() {
     showToast('Password reset link sent to user');
   };
 
-  const handleSaveNotes = async () => {
-    setNotesSaving(true);
-    // ← REPLACE with: saveNotesMutation.mutate({ userId, notes })
-    await new Promise((r) => setTimeout(r, 700));
-    setNotesSaving(false);
-    showToast('Notes saved');
+  const handleSaveNotes = () => {
+    saveNotes(notes, {
+      onSuccess: () => showToast('Notes saved'),
+      onError: (err) => showToast(err?.message || 'Failed to save notes.', 'error'),
+    });
   };
 
   const handleDeleteAccount = async () => {
@@ -617,6 +284,46 @@ export default function UsersProfile() {
     setModal(null);
   };
 
+  const formatDate = (date) =>
+    new Date(date).toLocaleDateString('en-PK', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
+
+  const getUserStatus = (user) => {
+    if (!user) return 'active'; // fallback while loading
+    if (user.isBanned) return 'banned';
+    if (!user.isAccountVerified) return 'pending';
+    if (user.deleteAccountRequestAt) return 'pending';
+    return 'active';
+  };
+
+  const currentStatus = getUserStatus(user);
+
+  if (isLoading)
+    return (
+      <div className="flex items-center justify-center h-40">
+        <p
+          className="text-[0.82rem] text-[#8A8390]"
+          style={{ fontFamily: "'DM Sans', sans-serif" }}
+        >
+          Loading user...
+        </p>
+      </div>
+    );
+  if (!user)
+    return (
+      <div className="flex items-center justify-center h-40">
+        <p
+          className="text-[0.82rem] text-[#8A8390]"
+          style={{ fontFamily: "'DM Sans', sans-serif" }}
+        >
+          User not found.
+        </p>
+      </div>
+    );
+
   // ── Render ─────────────────────────────────────────────────────
   return (
     <>
@@ -632,6 +339,7 @@ export default function UsersProfile() {
         onCancel={() => setModal(null)}
         danger
       />
+
       <ConfirmModal
         open={modal?.type === 'activate'}
         title="Activate this user?"
@@ -784,7 +492,7 @@ export default function UsersProfile() {
       )}
 
       {/* ── Page ── */}
-      <div className="max-w-[980px] mx-auto">
+      <div className="max-w-245 mx-auto">
         {/* Back + toast */}
         <div className="flex items-center justify-between mb-6 gap-4 flex-wrap">
           <button
@@ -821,6 +529,7 @@ export default function UsersProfile() {
         <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-5 items-start">
           {/* ── LEFT COLUMN ───────────────────────────────────── */}
           <div className="flex flex-col gap-4">
+            {' '}
             {/* Identity card */}
             <SectionCard>
               <div className="flex flex-col items-center text-center gap-3">
@@ -844,7 +553,6 @@ export default function UsersProfile() {
                     initials(user.name)
                   )}
                 </div>
-
                 <div>
                   <h1
                     className="text-[1.15rem] font-extrabold tracking-[-0.03em] leading-tight"
@@ -859,9 +567,8 @@ export default function UsersProfile() {
                     {user.email}
                   </p>
                 </div>
-
                 <div className="flex items-center gap-2 flex-wrap justify-center">
-                  <StatusBadge status={user.status} />
+                  <StatusBadge status={getUserStatus(user)} options={STATUS_OPTIONS} />
                   <span
                     className="text-[0.7rem] font-semibold px-2.5 py-0.5 rounded-full"
                     style={{
@@ -880,10 +587,18 @@ export default function UsersProfile() {
                 style={{ borderTop: '1px solid #F2EEE9' }}
               >
                 {[
-                  { icon: Calendar, label: 'Joined', value: user.joinedAt },
-                  { icon: Clock, label: 'Last login', value: user.lastLogin },
-                  { icon: Car, label: 'Listings', value: `${user.listings} total` },
-                  { icon: Flag, label: 'Reports against', value: `${user.reportCount} reports` },
+                  { icon: Calendar, label: 'Joined', value: formatDate(user.createdAt) },
+                  {
+                    icon: Clock,
+                    label: 'Last login',
+                    value: user.lastLoginAt ? formatDate(user.lastLoginAt) : 'N/A',
+                  },
+                  { icon: Car, label: 'Listings', value: `${user.listings ?? 0} total` },
+                  {
+                    icon: Flag,
+                    label: 'Reports against',
+                    value: `${user.reportCount ?? 0} reports`,
+                  },
                 ].map(({ icon: Icon, label, value }) => (
                   <div key={label} className="flex items-center gap-2.5">
                     <Icon
@@ -912,11 +627,10 @@ export default function UsersProfile() {
               <div className="mt-4 pt-3" style={{ borderTop: '1px solid #F2EEE9' }}>
                 <FieldLabel>User ID</FieldLabel>
                 <p className="text-[0.72rem] font-mono break-all" style={{ color: '#8A8390' }}>
-                  {user.id}
+                  {user._id}
                 </p>
               </div>
             </SectionCard>
-
             {/* Status control */}
             <SectionCard>
               <SectionTitle sub="Change this user's account standing">Account Status</SectionTitle>
@@ -926,7 +640,7 @@ export default function UsersProfile() {
                     key={s.value}
                     type="button"
                     onClick={() => {
-                      if (s.value === user.status) return;
+                      if (s.value === currentStatus) return;
                       setModal({
                         type:
                           s.value === 'banned'
@@ -936,26 +650,28 @@ export default function UsersProfile() {
                               : s.value,
                       });
                     }}
-                    disabled={loading.status}
+                    disabled={isUpdatingStatus}
                     className="flex items-center justify-between px-4 py-3 rounded-xl border transition-all duration-150 disabled:opacity-50"
                     style={{
                       border:
-                        user.status === s.value ? `1.5px solid ${s.color}` : '1.5px solid #E8E3DC',
-                      background: user.status === s.value ? s.bg : '#FAFAF9',
-                      cursor: user.status === s.value ? 'default' : 'pointer',
+                        currentStatus === s.value
+                          ? `1.5px solid ${s.color}`
+                          : '1.5px solid #E8E3DC',
+                      background: currentStatus === s.value ? s.bg : '#FAFAF9',
+                      cursor: currentStatus === s.value ? 'default' : 'pointer',
                     }}
-                    aria-pressed={user.status === s.value}
+                    aria-pressed={currentStatus === s.value}
                   >
                     <span
                       className="text-[0.82rem] font-semibold"
                       style={{
-                        color: user.status === s.value ? s.color : '#8A8390',
+                        color: currentStatus === s.value ? s.color : '#8A8390',
                         fontFamily: "'DM Sans', sans-serif",
                       }}
                     >
                       {s.label}
                     </span>
-                    {user.status === s.value && (
+                    {currentStatus === s.value && (
                       <Check
                         size={14}
                         strokeWidth={2.5}
@@ -967,38 +683,43 @@ export default function UsersProfile() {
                 ))}
               </div>
             </SectionCard>
-
             {/* Role control */}
+            {/* //TODO: Fetch real info here //TODO: Fetch real info here //TODO: Fetch real info here
+                  //TODO: Fetch real info here //TODO: Fetch real info here //TODO: Fetch real info here
+                  //TODO: Fetch real info here //TODO: Fetch real info here //TODO: Fetch real info here */}
             <SectionCard>
               <SectionTitle sub="Change what this user can do">Role</SectionTitle>
               <div className="flex flex-col gap-2">
-                {['Buyer', 'Seller', 'Dealer'].map((r) => (
+                {[
+                  { value: 'user', label: 'User' },
+                  { value: 'moderator', label: 'Moderator' },
+                ].map(({ value, label }) => (
                   <button
-                    key={r}
+                    key={value}
                     type="button"
                     onClick={() => {
-                      if (r === user.role) return;
-                      handleRoleChange(r);
+                      if (value === user.role) return;
+                      handleRoleChange(value);
                     }}
-                    disabled={loading.role}
+                    disabled={isUpdatingRole}
                     className="flex items-center justify-between px-4 py-2.5 rounded-xl border transition-all duration-150 disabled:opacity-50"
                     style={{
-                      border: user.role === r ? '1.5px solid #6C3CE1' : '1.5px solid #E8E3DC',
-                      background: user.role === r ? 'rgba(108,60,225,0.06)' : '#FAFAF9',
-                      cursor: user.role === r ? 'default' : 'pointer',
+                      border: user.role === value ? '1.5px solid #6C3CE1' : '1.5px solid #E8E3DC',
+                      background: user.role === value ? 'rgba(108,60,225,0.06)' : '#FAFAF9',
+                      cursor: user.role === value ? 'default' : 'pointer',
                     }}
-                    aria-pressed={user.role === r}
+                    aria-pressed={user.role === value}
                   >
                     <span
                       className="text-[0.82rem] font-semibold"
                       style={{
-                        color: user.role === r ? '#6C3CE1' : '#8A8390',
+                        color: user.role === value ? '#6C3CE1' : '#8A8390',
                         fontFamily: "'DM Sans', sans-serif",
                       }}
                     >
-                      {r}
+                      {label}
                     </span>
-                    {user.role === r && (
+                    {user.role === value && (
                       <Check
                         size={14}
                         strokeWidth={2.5}
@@ -1010,7 +731,6 @@ export default function UsersProfile() {
                 ))}
               </div>
             </SectionCard>
-
             {/* Admin notes */}
             <SectionCard>
               <SectionTitle sub="Internal notes — not visible to user">Admin Notes</SectionTitle>
@@ -1053,29 +773,37 @@ export default function UsersProfile() {
                   value={user.name}
                   icon={User}
                   onSave={handleSaveName}
-                  validate={(v) => (!v.trim() ? 'Name is required' : null)}
+                  validate={(v) => {
+                    if (!v.trim()) return 'Name is required';
+                    if (v.trim() === user.name) return 'Name must be different from current name';
+                    return null;
+                  }}
                 />
-                <EditableField
-                  label="City"
-                  value={user.city}
-                  icon={MapPin}
-                  onSave={handleSaveCity}
-                />
-                <EditableField
-                  label="Email Address"
-                  value={user.email}
-                  type="email"
-                  icon={Mail}
-                  onSave={handleSaveEmail}
-                  validate={(v) => (!isEmail(v) ? 'Invalid email address' : null)}
-                />
+
                 <EditableField
                   label="Phone Number"
                   value={user.phone}
                   type="tel"
                   icon={Phone}
                   onSave={handleSavePhone}
-                  validate={(v) => (!isPhone(v) ? 'Invalid Pakistani number' : null)}
+                  validate={(v) => {
+                    if (!isPhone(v)) return 'Invalid Pakistani number';
+                    if (v === user.phone) return 'Phone must be different from current number';
+                    return null;
+                  }}
+                />
+
+                <EditableField
+                  label="Email Address"
+                  value={user.email}
+                  type="email"
+                  icon={Mail}
+                  onSave={handleSaveEmail}
+                  validate={(v) => {
+                    if (!isEmail(v)) return 'Invalid email address';
+                    if (v === user.email) return 'Email must be different from current email';
+                    return null;
+                  }}
                 />
               </div>
             </SectionCard>
@@ -1093,14 +821,14 @@ export default function UsersProfile() {
                 >
                   <div className="flex items-center gap-3">
                     <div
-                      className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                      className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
                       style={{
-                        background: user.emailVerified
+                        background: user.isEmailVerified
                           ? 'rgba(34,197,94,0.12)'
                           : 'rgba(232,98,42,0.1)',
                       }}
                     >
-                      {user.emailVerified ? (
+                      {user.isEmailVerified ? (
                         <ShieldCheck
                           size={15}
                           strokeWidth={2}
@@ -1126,16 +854,16 @@ export default function UsersProfile() {
                       <p
                         className="text-[0.72rem]"
                         style={{
-                          color: user.emailVerified ? '#16a34a' : '#E8622A',
+                          color: user.isEmailVerified ? '#16a34a' : '#E8622A',
                           fontFamily: "'DM Sans', sans-serif",
                         }}
                       >
-                        {user.emailVerified ? 'Verified' : 'Not verified'}
+                        {user.isEmailVerified ? 'Verified' : 'Not verified'}
                       </p>
                     </div>
                   </div>
                   <div className="flex gap-2 flex-wrap justify-end">
-                    {!user.emailVerified && (
+                    {!user.isEmailVerified && (
                       <ActionBtn
                         label="Resend"
                         icon={Send}
@@ -1144,7 +872,7 @@ export default function UsersProfile() {
                         variant="violet"
                       />
                     )}
-                    {!user.emailVerified && (
+                    {!user.isEmailVerified && (
                       <ActionBtn
                         label="Verify manually"
                         icon={ShieldCheck}
@@ -1294,7 +1022,7 @@ export default function UsersProfile() {
                           {l.city} · {l.createdAt}
                         </p>
                       </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
+                      <div className="flex items-center gap-2 shrink-0">
                         <span
                           className="text-[0.78rem] font-bold"
                           style={{ color: '#1A1523', fontFamily: "'DM Sans', sans-serif" }}

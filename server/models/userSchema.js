@@ -50,7 +50,7 @@ const userSchema = new mongoose.Schema(
 
         role: {
             type: String,
-            enum: ["user", "admin"],
+            enum: ["user", "admin", "moderator"],
             default: "user"
         },
 
@@ -128,6 +128,28 @@ const userSchema = new mongoose.Schema(
 
         bannedAt: {
             type: Date,
+            default: undefined
+        },
+        
+        lastLoginAt: {
+            type: Date,
+            default: undefined
+        },
+
+        city: {
+            type: String,
+            trim: true,
+            default: undefined
+        },
+
+        adminNotes: {
+            type: String,
+            default: undefined
+        },
+
+        bannedBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
             default: undefined
         },
     },

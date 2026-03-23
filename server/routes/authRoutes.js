@@ -4,6 +4,11 @@ import { isAuthenticated } from "../middlewares/userAuth.js"
 import { redirectIfAuthenticated } from "../middlewares/authRedirect.js"
 import { authorizeRoles } from "../middlewares/authorizeRoles.js"
 import { loginLimiter, otpLimiter, signupLimiter } from "../middlewares/rateLimiter.js"
+import { getUserById } from "../controllers/Admin-Controller/All-Users/AllUsers.js"
+import { UpdateUserStatus } from "../controllers/Admin-Controller/All-Users/UpdateUserStatus.js"
+import { updateAdminNotes } from "../controllers/Admin-Controller/All-Users/UpdateAdminNotes.js"
+import { updateUserRole } from "../controllers/Admin-Controller/All-Users/UpdateUserRole.js"
+import { updateUserInfo } from "../controllers/Admin-Controller/All-Users/UpdateUserInfo.js"
 
 const router = express.Router()
 
@@ -28,7 +33,11 @@ router.delete('/deleteAccount', isAuthenticated, deleteAccount)
 //Admin Routes
 router.get('/admin/stats', isAuthenticated, authorizeRoles("admin"), getAdminStats);
 router.get('/admin/users', isAuthenticated, authorizeRoles("admin"), getAllUsers);
-
+router.get('/admin/users/:userId', isAuthenticated, authorizeRoles("admin"), getUserById);
+router.patch('/admin/users/:userId/status', isAuthenticated, authorizeRoles("admin"), UpdateUserStatus);
+router.patch('/admin/users/:userId/notes', isAuthenticated, authorizeRoles("admin"), updateAdminNotes);
+router.patch('/admin/users/:userId/role', isAuthenticated, authorizeRoles("admin"), updateUserRole);
+router.patch('/admin/users/:userId/info', isAuthenticated, authorizeRoles("admin"), updateUserInfo);
 
 // Only for testing purposes!
 router.post('/refresh', refreshAccessToken)
