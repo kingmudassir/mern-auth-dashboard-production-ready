@@ -1387,55 +1387,10 @@ select {
   box-shadow: 0 1px 4px rgba(26, 21, 35, 0.03);
 }
 
-/* Sidebar nav hover bg */
-.hover\\:bg-white\\/07:hover {
-  background-color: rgba(255, 255, 255, 0.07);
-}
-.bg-white\\/12 {
-  background-color: rgba(255, 255, 255, 0.12);
-}
-.border-white\\/07 {
-  border-color: rgba(255, 255, 255, 0.07);
-}
-
 @keyframes spin {
   to {
     transform: rotate(360deg);
   }
-}
-.admin-root {
-  font-family: 'DM Sans', sans-serif;
-  background: #f7f4f0;
-}
-
-.admin-sidebar {
-  background: linear-gradient(180deg, #1a1523 0%, #1f1a2e 100%);
-  border-right: 1px solid rgba(255, 255, 255, 0.06);
-  overflow: hidden;
-}
-
-.admin-topbar {
-  background: #ffffff;
-}
-
-.admin-stat-card {
-  background: #ffffff;
-  border: 1.5px solid #e8e3dc;
-  box-shadow: 0 1px 4px rgba(26, 21, 35, 0.04);
-  transition:
-    box-shadow 0.2s ease,
-    transform 0.2s ease;
-}
-
-.admin-stat-card:hover {
-  box-shadow: 0 4px 16px rgba(26, 21, 35, 0.08);
-  transform: translateY(-1px);
-}
-
-.admin-table-card {
-  background: #ffffff;
-  border: 1.5px solid #e8e3dc;
-  box-shadow: 0 1px 4px rgba(26, 21, 35, 0.03);
 }
 
 /* ********** Styling for Admin Dashboard here ********** */

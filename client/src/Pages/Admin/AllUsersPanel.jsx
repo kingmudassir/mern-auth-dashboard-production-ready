@@ -6,6 +6,7 @@ import SearchBar from '../../Admin-Components/Dashboard/SearchBar';
 import AdminTable from '../../Admin-Components/Dashboard/AdminTable';
 import TableHeader from '../../Admin-Components/Dashboard/TableHeader';
 import ActionMenu from '../../Admin-Components/Dashboard/ActionMenu';
+import { useNavigate } from 'react-router-dom';
 
 const getStatus = (user) => {
   if (user.isBanned) return 'banned';
@@ -29,6 +30,7 @@ const initials = (name = '') =>
     .toUpperCase();
 
 function AllUsersPanel() {
+  const navigate = useNavigate();
   const { data, isLoading } = useAllUsers();
   const users = data?.users ?? [];
 
@@ -66,12 +68,13 @@ function AllUsersPanel() {
             users.map((u) => (
               <tr
                 key={u._id}
+                onClick={() => navigate(`/admin/users/${u._id}`)}
                 className="border-b border-[#F2EEE9] last:border-0 hover:bg-[#FAFAF9] transition-colors duration-100"
               >
                 <td className="px-4 py-3.5">
                   <div className="flex items-center gap-3">
                     <div
-                      className="w-8 h-8 rounded-xl flex items-center justify-center text-[0.7rem] font-bold text-[#6C3CE1] flex-shrink-0"
+                      className="w-8 h-8 rounded-xl flex items-center justify-center text-[0.7rem] font-bold text-[#6C3CE1] shrink-0"
                       style={{
                         background: 'rgba(108,60,225,0.1)',
                         fontFamily: "'Syne', sans-serif",

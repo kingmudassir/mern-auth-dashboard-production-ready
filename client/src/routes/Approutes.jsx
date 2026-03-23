@@ -12,6 +12,7 @@ import ConfirmEmailChange from '../Pages/ConfirmEmailChange';
 import Dashboard from '../Pages/Admin/Dashboard';
 import AdminLayout from '../Layout/AdminLayout';
 import AllUsersPanel from '../Pages/Admin/AllUsersPanel';
+import UsersProfile from '../Pages/Admin/User-Profile/Main-Page/UsersProfile';
 
 function Approutes() {
   return (
@@ -28,12 +29,16 @@ function Approutes() {
         <Route path="/confirm-email-change" element={<ConfirmEmailChange />} />
         <Route path="/admin/dashboard" element={<Dashboard />} />
       </Route>
-
-      <Route path="/admin/*" element={<Dashboard />}>
+      {/* <Route path="/admin/*" element={<Dashboard />}>
         <Route index element={<Dashboard />} />
         <Route path="users" element={<AllUsersPanel />} />
-      </Route>
-
+        <Route path="users/:userId" element={<UsersProfile />} />
+      </Route> */}
+      <Route path="/admin" element={<AdminLayout />}>
+        {/* <Route index element={<Dashboard />} /> */}
+        <Route path="users" element={<AllUsersPanel />} />
+        <Route path="users/:userId" element={<UsersProfile />} />
+      </Route>{' '}
       {/* <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<Dashboard />} />
         <Route path="users" element={<AllUsersPanel />} />

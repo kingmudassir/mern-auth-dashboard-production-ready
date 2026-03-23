@@ -1066,7 +1066,7 @@ function Sidebar({ active, onSelect, collapsed, onToggle }) {
     >
       {/* Logo row */}
       <div
-        className={`flex items-center h-[60px] px-4 border-b border-[rgba(255,255,255,0.07)] shrink-0 ${collapsed ? 'justify-center' : 'justify-between'}`}
+        className={`flex items-center h-15 px-4 border-b border-[rgba(255,255,255,0.07)] shrink-0 ${collapsed ? 'justify-center' : 'justify-between'}`}
       >
         {!collapsed && (
           <a href="/admin" className="flex items-center gap-2" aria-label="Paiyya homepage">

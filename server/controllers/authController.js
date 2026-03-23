@@ -690,15 +690,20 @@ export const getAdminStats = catchAsyncError(async (req, res, next) => {
     const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
 
-    const totalUsers = await User.countDocuments({ isAccountVerified: true });
+    const totalUsers = await User.countDocuments({ 
+        isAccountVerified: true,
+        role: "user"
+    });
 
     const usersThisMonth = await User.countDocuments({
         isAccountVerified: true,
+        role: "user",
         createdAt: { $gte: startOfThisMonth }
     });
 
     const usersLastMonth = await User.countDocuments({
-        isAccountVerified: true,
+        isAccountVerified: true,        
+        role: "user",
         createdAt: { $gte: startOfLastMonth, $lte: endOfLastMonth }
     });
 
@@ -726,7 +731,10 @@ export const getAdminStats = catchAsyncError(async (req, res, next) => {
 });
 
 export const getAllUsers = catchAsyncError(async (req, res, next) => {
-    const users = await User.find({ isAccountVerified: true })
+    const users = await User.find({ 
+        isAccountVerified: true, 
+        role: "user"
+    })
         .sort({ createdAt: -1 })
         .select('name email phone role isAccountVerified isEmailVerified isBanned deleteAccountRequestAt createdAt');
 
