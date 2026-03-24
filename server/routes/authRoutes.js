@@ -1,5 +1,5 @@
 import express from "express"
-import { changePassword, confirmEmailChange, deleteAccount, forgetPassword, getAdminStats, getAllUsers, getUser, login, logout, refreshAccessToken, register, requestEmailChange, resendOTP, resetPassword, updateProfile, verifyOTP } from "../controllers/authController.js"
+import { changePassword, confirmEmailChange, deleteAccount, forgetPassword, getAdminStats, getAllUsers, getDeletedUsers, getUser, login, logout, refreshAccessToken, register, requestEmailChange, resendOTP, resetPassword, updateProfile, verifyOTP } from "../controllers/authController.js"
 import { isAuthenticated } from "../middlewares/userAuth.js"
 import { redirectIfAuthenticated } from "../middlewares/authRedirect.js"
 import { authorizeRoles } from "../middlewares/authorizeRoles.js"
@@ -37,6 +37,7 @@ router.delete('/deleteAccount', isAuthenticated, deleteAccount)
 //Admin Routes
 router.get('/admin/stats', isAuthenticated, authorizeRoles("admin"), getAdminStats);
 router.get('/admin/users', isAuthenticated, authorizeRoles("admin"), getAllUsers);
+router.get('/admin/users/deleted', isAuthenticated, authorizeRoles("admin"), getDeletedUsers);
 router.get('/admin/users/:userId', isAuthenticated, authorizeRoles("admin"), getUserById);
 router.patch('/admin/users/:userId/status', isAuthenticated, authorizeRoles("admin"), UpdateUserStatus);
 router.patch('/admin/users/:userId/notes', isAuthenticated, authorizeRoles("admin"), updateAdminNotes);

@@ -10,6 +10,10 @@ const adminService = {
         return await api.get('/admin/users');
     },
 
+    getDeletedUsers: async () => {
+        return await api.get('/admin/users/deleted');
+    },
+
     getUserById: async (userId) => {
         return await api.get(`/admin/users/${userId}`);
     },

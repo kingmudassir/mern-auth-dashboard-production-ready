@@ -756,3 +756,19 @@ export const getAllUsers = catchAsyncError(async (req, res, next) => {
         users
     });
 });
+
+export const getDeletedUsers = catchAsyncError(async (req, res, next) => {
+    const users = await User.find({
+        isDeleted: true,
+    })
+        .sort({ softDeletedAt: -1, updatedAt: -1 })
+        .select(
+            "name email phone role createdAt isDeleted softDeletedAt deletedBy banReason isBanned"
+        );
+
+    res.status(200).json({
+        success: true,
+        count: users.length,
+        users,
+    });
+});

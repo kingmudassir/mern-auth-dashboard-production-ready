@@ -38,7 +38,7 @@ function Approutes() {
       <Route path="/admin" element={<AdminLayout />}>
         <Route path="users" element={<AllUsersPanel />} />
         <Route path="users/:userId" element={<UsersProfile />} />
-        <Route path="users/deleted/:userId" element={<DeletedUsers />} />
+        <Route path="users/deleted" element={<DeletedUsers />} />
       </Route>{' '}
       {/* <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<Dashboard />} />

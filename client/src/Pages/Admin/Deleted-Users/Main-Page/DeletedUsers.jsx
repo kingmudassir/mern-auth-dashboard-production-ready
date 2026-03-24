@@ -3,103 +3,18 @@ import { useNavigate } from 'react-router-dom';
 import {
   Trash2,
   Search,
-  RefreshCw,
   RotateCcw,
   ShieldOff,
-  Calendar,
-  User,
-  AlertTriangle,
   ChevronLeft,
   ChevronRight,
-  Filter,
   Clock,
   X,
   Eye,
 } from 'lucide-react';
 import ConfirmModal from '../../User-Profile/Components/Common/ConfirmModal';
 import Toast from '../../User-Profile/Components/Common/Toast';
-
-// ── Mock data ─────────────────────────────────────────────────────
-const MOCK_DELETED_USERS = [
-  {
-    _id: 'usr_001abc',
-    name: 'Ahmed Raza',
-    email: 'ahmed.raza@gmail.com',
-    phone: '03001234567',
-    role: 'user',
-    listings: 5,
-    reportCount: 2,
-    deletedAt: '2024-03-10T08:22:00Z',
-    createdAt: '2023-06-01T00:00:00Z',
-    deletedBy: 'admin',
-    reason: 'Spam listings',
-  },
-  {
-    _id: 'usr_002def',
-    name: 'Sara Khan',
-    email: 'sara.khan@hotmail.com',
-    phone: '03211234567',
-    role: 'user',
-    listings: 1,
-    reportCount: 0,
-    deletedAt: '2024-03-08T14:10:00Z',
-    createdAt: '2023-11-15T00:00:00Z',
-    deletedBy: 'admin',
-    reason: 'User requested deletion',
-  },
-  {
-    _id: 'usr_003ghi',
-    name: 'Bilal Mahmood',
-    email: 'bilal.m@yahoo.com',
-    phone: '03451234567',
-    role: 'moderator',
-    listings: 0,
-    reportCount: 7,
-    deletedAt: '2024-03-05T11:45:00Z',
-    createdAt: '2023-01-20T00:00:00Z',
-    deletedBy: 'super_admin',
-    reason: 'Abuse of moderation privileges',
-  },
-  {
-    _id: 'usr_004jkl',
-    name: 'Fatima Zahra',
-    email: 'fatima.z@gmail.com',
-    phone: '03011234567',
-    role: 'user',
-    listings: 12,
-    reportCount: 1,
-    deletedAt: '2024-02-28T09:00:00Z',
-    createdAt: '2022-08-10T00:00:00Z',
-    deletedBy: 'admin',
-    reason: 'Fake listings — verified fraud',
-  },
-  {
-    _id: 'usr_005mno',
-    name: 'Usman Tariq',
-    email: 'usman.t@outlook.com',
-    phone: '03331234567',
-    role: 'user',
-    listings: 3,
-    reportCount: 0,
-    deletedAt: '2024-02-20T16:30:00Z',
-    createdAt: '2023-09-05T00:00:00Z',
-    deletedBy: 'admin',
-    reason: 'Duplicate account',
-  },
-  {
-    _id: 'usr_006pqr',
-    name: 'Nadia Hussain',
-    email: 'nadia.h@gmail.com',
-    phone: '03121234567',
-    role: 'user',
-    listings: 0,
-    reportCount: 3,
-    deletedAt: '2024-02-14T10:15:00Z',
-    createdAt: '2023-03-22T00:00:00Z',
-    deletedBy: 'admin',
-    reason: 'Harassment reports',
-  },
-];
+import { useDeletedUsers } from '../../../../Hooks/Admin-Hook/All-Users/useDeletedUsers';
+import { useRestoreUser } from '../../../../Hooks/Admin-Hook/All-Users/useRestoreUser';
 
 const PAGE_SIZE = 5;
 
@@ -186,23 +101,19 @@ function RolePill({ role }) {
 // ── Main component ────────────────────────────────────────────────
 export default function DeletedUsers() {
   const navigate = useNavigate();
-
-  // TODO: replace with → const { data, isLoading } = useDeletedUsers();
-  const [users] = useState(MOCK_DELETED_USERS);
-  const isLoading = false;
+  const { data, isLoading } = useDeletedUsers();
+  const { mutate: restoreUser, isPending: isRestoringAny } = useRestoreUser();
+  const users = data?.users ?? [];
 
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [toast, setToast] = useState({ msg: '', type: 'success' });
   const [modal, setModal] = useState(null); // { type: 'restore'|'purge', user }
-  const [actionLoading, setActionLoading] = useState({}); // { [userId]: bool }
 
   const showToast = (msg, type = 'success') => {
     setToast({ msg, type });
     setTimeout(() => setToast({ msg: '', type: 'success' }), 4000);
   };
-
-  const setLoad = (id, val) => setActionLoading((p) => ({ ...p, [id]: val }));
 
   // ── Filter + paginate ─────────────────────────────────────────
   const filtered = useMemo(() => {
@@ -210,9 +121,9 @@ export default function DeletedUsers() {
     if (!q) return users;
     return users.filter(
       (u) =>
-        u.name.toLowerCase().includes(q) ||
-        u.email.toLowerCase().includes(q) ||
-        u.phone.includes(q) ||
+        u.name?.toLowerCase().includes(q) ||
+        u.email?.toLowerCase().includes(q) ||
+        (u.phone || '').includes(q) ||
         u._id.includes(q)
     );
   }, [users, search]);
@@ -226,30 +137,30 @@ export default function DeletedUsers() {
   };
 
   // ── Actions ───────────────────────────────────────────────────
-  const handleRestore = async () => {
+  const handleRestore = () => {
     const { user } = modal;
-    setLoad(user._id, true);
-    setModal(null);
-    // TODO: restoreUserMutation.mutate(user._id)
-    await new Promise((r) => setTimeout(r, 900));
-    setLoad(user._id, false);
-    showToast(`${user.name}'s account has been restored`);
+    restoreUser(user._id, {
+      onSuccess: () => {
+        showToast(`${user.name}'s account has been restored`);
+        setModal(null);
+      },
+      onError: (err) => {
+        showToast(err?.message || 'Failed to restore account.', 'error');
+        setModal(null);
+      },
+    });
   };
 
-  const handlePurge = async () => {
-    const { user } = modal;
-    setLoad(user._id + '_purge', true);
+  const handlePurge = () => {
     setModal(null);
-    // TODO: purgeUserMutation.mutate(user._id)
-    await new Promise((r) => setTimeout(r, 1000));
-    setLoad(user._id + '_purge', false);
-    showToast(`${user.name}'s account permanently deleted`, 'error');
+    showToast('Permanent purge is not implemented yet.', 'error');
   };
 
   // ── Stats ─────────────────────────────────────────────────────
   const stats = useMemo(() => {
     const today = users.filter((u) => {
-      const diff = Date.now() - new Date(u.deletedAt).getTime();
+      const deletedAt = u.softDeletedAt || u.deletedAt || u.updatedAt || u.createdAt;
+      const diff = Date.now() - new Date(deletedAt).getTime();
       return diff < 86400000;
     }).length;
     return { total: users.length, today };
@@ -406,8 +317,8 @@ export default function DeletedUsers() {
               {/* Rows */}
               {paginated.map((u, i) => {
                 const avatarColor = AVATAR_COLORS[i % AVATAR_COLORS.length];
-                const isRestoring = actionLoading[u._id];
-                const isPurging = actionLoading[u._id + '_purge'];
+                const isRestoring = isRestoringAny && modal?.user?._id === u._id;
+                const isPurging = false;
 
                 return (
                   <div
@@ -456,9 +367,9 @@ export default function DeletedUsers() {
                       <p
                         className="text-[0.75rem] truncate"
                         style={{ color: '#8A8390', fontFamily: "'DM Sans', sans-serif" }}
-                        title={u.reason}
+                        title={u.banReason}
                       >
-                        {u.reason || '—'}
+                        {u.banReason || '—'}
                       </p>
                     </div>
 
@@ -468,13 +379,13 @@ export default function DeletedUsers() {
                         className="text-[0.75rem] font-medium"
                         style={{ color: '#1A1523', fontFamily: "'DM Sans', sans-serif" }}
                       >
-                        {timeAgo(u.deletedAt)}
+                        {timeAgo(u.softDeletedAt || u.deletedAt || u.updatedAt || u.createdAt)}
                       </p>
                       <p
                         className="text-[0.68rem]"
                         style={{ color: '#C4BDD0', fontFamily: "'DM Sans', sans-serif" }}
                       >
-                        {formatDate(u.deletedAt)}
+                        {formatDate(u.softDeletedAt || u.deletedAt || u.updatedAt || u.createdAt)}
                       </p>
                     </div>
 
@@ -489,7 +400,7 @@ export default function DeletedUsers() {
                         className="text-[0.78rem] font-semibold"
                         style={{ color: '#1A1523', fontFamily: "'DM Sans', sans-serif" }}
                       >
-                        {u.listings}
+                        {u.listings ?? 0}
                       </span>
                       <span
                         className="text-[0.7rem] ml-1"
@@ -531,9 +442,9 @@ export default function DeletedUsers() {
                       <button
                         type="button"
                         onClick={() => setModal({ type: 'purge', user: u })}
-                        disabled={isRestoring || isPurging}
+                        disabled
                         className="du-action-btn du-purge"
-                        title="Permanently delete"
+                        title="Purge not available"
                       >
                         {isPurging ? (
                           <span className="spinner-xs-red" />
@@ -551,8 +462,8 @@ export default function DeletedUsers() {
             <div className="flex flex-col gap-3 md:hidden">
               {paginated.map((u, i) => {
                 const avatarColor = AVATAR_COLORS[i % AVATAR_COLORS.length];
-                const isRestoring = actionLoading[u._id];
-                const isPurging = actionLoading[u._id + '_purge'];
+                const isRestoring = isRestoringAny && modal?.user?._id === u._id;
+                const isPurging = false;
 
                 return (
                   <div
@@ -604,7 +515,7 @@ export default function DeletedUsers() {
                           className="text-[0.72rem]"
                           style={{ color: '#8A8390', fontFamily: "'DM Sans', sans-serif" }}
                         >
-                          {u.reason || 'No reason provided'}
+                          {u.banReason || 'No reason provided'}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
@@ -613,7 +524,8 @@ export default function DeletedUsers() {
                           className="text-[0.72rem]"
                           style={{ color: '#8A8390', fontFamily: "'DM Sans', sans-serif" }}
                         >
-                          Deleted {timeAgo(u.deletedAt)} · {formatDate(u.deletedAt)}
+                          Deleted {timeAgo(u.softDeletedAt || u.deletedAt || u.updatedAt || u.createdAt)} ·{' '}
+                          {formatDate(u.softDeletedAt || u.deletedAt || u.updatedAt || u.createdAt)}
                         </span>
                       </div>
                     </div>
@@ -655,7 +567,7 @@ export default function DeletedUsers() {
                       <button
                         type="button"
                         onClick={() => setModal({ type: 'purge', user: u })}
-                        disabled={isRestoring || isPurging}
+                        disabled
                         className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-[0.75rem] font-semibold border transition-colors duration-150 disabled:opacity-50"
                         style={{
                           color: '#C4531F',
