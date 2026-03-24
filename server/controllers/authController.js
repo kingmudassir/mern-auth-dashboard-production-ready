@@ -757,6 +757,21 @@ export const getAllUsers = catchAsyncError(async (req, res, next) => {
     });
 });
 
+export const getAdminAccounts = catchAsyncError(async (req, res, next) => {
+    const users = await User.find({
+        role: { $in: ['admin', 'moderator'] },
+        isDeleted: false,
+    })
+        .sort({ createdAt: -1 })
+        .select('name email phone role isBanned isDeleted createdAt lastLoginAt banReason bannedAt bannedBy');
+
+    res.status(200).json({
+        success: true,
+        count: users.length,
+        users,
+    });
+});
+
 export const getDeletedUsers = catchAsyncError(async (req, res, next) => {
     const users = await User.find({
         isDeleted: true,

@@ -6,8 +6,8 @@ export const updateUserRole = catchAsyncError(async (req, res, next) => {
     const { userId } = req.params;
     const { role } = req.body;
 
-    if (!['user', 'moderator'].includes(role)) {
-        return next(new ErrorHandler("Invalid role. Must be 'user' or 'admin'.", 400));
+    if (!['user', 'moderator', 'admin'].includes(role)) {
+        return next(new ErrorHandler("Invalid role. Must be 'user', 'moderator' or 'admin'.", 400));
     }
 
     const user = await User.findById(userId);

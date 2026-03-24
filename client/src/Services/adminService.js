@@ -18,6 +18,10 @@ const adminService = {
         return await api.get('/admin/users/banned');
     },
 
+    getAdminAccounts: async () => {
+        return await api.get('/admin/users/admins');
+    },
+
     getUserById: async (userId) => {
         return await api.get(`/admin/users/${userId}`);
     },

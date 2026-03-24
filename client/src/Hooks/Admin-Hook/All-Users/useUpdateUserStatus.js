@@ -14,6 +14,8 @@ export const useUpdateUserStatus = (userId) => {
                 user: data.user
             }));
             queryClient.invalidateQueries({ queryKey: ['adminUsers'] });
+            queryClient.invalidateQueries({ queryKey: ['bannedUsers'] });
+            queryClient.invalidateQueries({ queryKey: ['adminStats'] });
         }
     });
 };

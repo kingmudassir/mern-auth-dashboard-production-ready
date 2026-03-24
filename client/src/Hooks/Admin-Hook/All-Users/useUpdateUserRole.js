@@ -12,6 +12,8 @@ export const useUpdateUserRole = (userId) => {
                 user: data.user
             }));
             queryClient.invalidateQueries({ queryKey: ['adminUsers'] });
+            queryClient.invalidateQueries({ queryKey: ['adminAccounts'] });
+            queryClient.invalidateQueries({ queryKey: ['bannedUsers'] });
         }
     });
 };
