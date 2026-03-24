@@ -18,101 +18,8 @@ import {
 } from 'lucide-react';
 import Toast from '../../User-Profile/Components/Common/Toast';
 import ConfirmModal from '../../User-Profile/Components/Common/ConfirmModal';
-
-// ── Mock data ─────────────────────────────────────────────────────
-const MOCK_BANNED_USERS = [
-  {
-    _id: 'usr_b01abc',
-    name: 'Kamran Iqbal',
-    email: 'kamran.iq@gmail.com',
-    phone: '03001112233',
-    role: 'user',
-    listings: 8,
-    reportCount: 9,
-    bannedAt: '2024-03-12T10:30:00Z',
-    createdAt: '2023-05-14T00:00:00Z',
-    bannedBy: 'admin',
-    reason: 'Repeated fraudulent listings',
-  },
-  {
-    _id: 'usr_b02def',
-    name: 'Zara Siddiqui',
-    email: 'zara.s@hotmail.com',
-    phone: '03211223344',
-    role: 'user',
-    listings: 2,
-    reportCount: 4,
-    bannedAt: '2024-03-09T08:15:00Z',
-    createdAt: '2023-10-01T00:00:00Z',
-    bannedBy: 'admin',
-    reason: 'Harassment of other users',
-  },
-  {
-    _id: 'usr_b03ghi',
-    name: 'Asad Mehmood',
-    email: 'asad.m@yahoo.com',
-    phone: '03451223344',
-    role: 'moderator',
-    listings: 0,
-    reportCount: 12,
-    bannedAt: '2024-03-01T14:00:00Z',
-    createdAt: '2022-11-20T00:00:00Z',
-    bannedBy: 'super_admin',
-    reason: 'Abuse of moderator role',
-  },
-  {
-    _id: 'usr_b04jkl',
-    name: 'Hina Baig',
-    email: 'hina.b@gmail.com',
-    phone: '03011223344',
-    role: 'user',
-    listings: 15,
-    reportCount: 6,
-    bannedAt: '2024-02-22T11:45:00Z',
-    createdAt: '2022-07-30T00:00:00Z',
-    bannedBy: 'admin',
-    reason: 'Price manipulation & fake bids',
-  },
-  {
-    _id: 'usr_b05mno',
-    name: 'Tariq Nawaz',
-    email: 'tariq.n@outlook.com',
-    phone: '03331223344',
-    role: 'user',
-    listings: 4,
-    reportCount: 2,
-    bannedAt: '2024-02-18T09:00:00Z',
-    createdAt: '2023-08-12T00:00:00Z',
-    bannedBy: 'admin',
-    reason: 'Spam messaging',
-  },
-  {
-    _id: 'usr_b06pqr',
-    name: 'Mariam Yousuf',
-    email: 'mariam.y@gmail.com',
-    phone: '03121223344',
-    role: 'user',
-    listings: 1,
-    reportCount: 5,
-    bannedAt: '2024-02-10T16:20:00Z',
-    createdAt: '2023-02-05T00:00:00Z',
-    bannedBy: 'admin',
-    reason: 'Scam attempts via chat',
-  },
-  {
-    _id: 'usr_b07stu',
-    name: 'Danish Rehman',
-    email: 'danish.r@gmail.com',
-    phone: '03051223344',
-    role: 'user',
-    listings: 3,
-    reportCount: 8,
-    bannedAt: '2024-01-30T13:10:00Z',
-    createdAt: '2023-01-10T00:00:00Z',
-    bannedBy: 'admin',
-    reason: 'Stolen vehicle listing',
-  },
-];
+import { useBannedUsers } from '../../../../Hooks/Admin-Hook/All-Users/useBannedUsers';
+import { useUnbanUser } from '../../../../Hooks/Admin-Hook/All-Users/useUnbanUser';
 
 const PAGE_SIZE = 5;
 
@@ -217,23 +124,19 @@ function ReportDot({ count }) {
 // ── Main component ────────────────────────────────────────────────
 export default function BannedUsers() {
   const navigate = useNavigate();
-
-  // TODO: replace with → const { data, isLoading } = useBannedUsers();
-  const [users] = useState(MOCK_BANNED_USERS);
-  const isLoading = false;
+  const { data, isLoading } = useBannedUsers();
+  const { mutate: unbanUser, isPending: isUnbanningAny } = useUnbanUser();
+  const users = data?.users ?? [];
 
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [toast, setToast] = useState({ msg: '', type: 'success' });
   const [modal, setModal] = useState(null); // { type: 'unban', user }
-  const [actionLoading, setActionLoading] = useState({});
 
   const showToast = (msg, type = 'success') => {
     setToast({ msg, type });
     setTimeout(() => setToast({ msg: '', type: 'success' }), 4000);
   };
-
-  const setLoad = (id, val) => setActionLoading((p) => ({ ...p, [id]: val }));
 
   // ── Filter + paginate ─────────────────────────────────────────
   const filtered = useMemo(() => {
@@ -241,9 +144,9 @@ export default function BannedUsers() {
     if (!q) return users;
     return users.filter(
       (u) =>
-        u.name.toLowerCase().includes(q) ||
-        u.email.toLowerCase().includes(q) ||
-        u.phone.includes(q) ||
+        u.name?.toLowerCase().includes(q) ||
+        u.email?.toLowerCase().includes(q) ||
+        (u.phone || '').includes(q) ||
         u._id.includes(q)
     );
   }, [users, search]);
@@ -257,21 +160,25 @@ export default function BannedUsers() {
   };
 
   // ── Actions ───────────────────────────────────────────────────
-  const handleUnban = async () => {
+  const handleUnban = () => {
     const { user } = modal;
-    setLoad(user._id, true);
-    setModal(null);
-    // TODO: unbanUserMutation.mutate(user._id)
-    await new Promise((r) => setTimeout(r, 900));
-    setLoad(user._id, false);
-    showToast(`${user.name}'s account has been unbanned`);
+    unbanUser(user._id, {
+      onSuccess: () => {
+        showToast(`${user.name}'s account has been unbanned`);
+        setModal(null);
+      },
+      onError: (err) => {
+        showToast(err?.message || 'Failed to unban user.', 'error');
+        setModal(null);
+      },
+    });
   };
 
   // ── Stats ─────────────────────────────────────────────────────
   const stats = useMemo(() => {
-    const highRisk = users.filter((u) => u.reportCount >= 8).length;
+    const highRisk = users.filter((u) => (u.reportCount ?? 0) >= 8).length;
     const bannedToday = users.filter((u) => {
-      const diff = Date.now() - new Date(u.bannedAt).getTime();
+      const diff = Date.now() - new Date(u.bannedAt || u.updatedAt || u.createdAt).getTime();
       return diff < 86400000;
     }).length;
     return { total: users.length, highRisk, bannedToday };
@@ -417,7 +324,7 @@ export default function BannedUsers() {
               {/* Rows */}
               {paginated.map((u, i) => {
                 const avatarColor = AVATAR_COLORS[i % AVATAR_COLORS.length];
-                const isUnbanning = actionLoading[u._id];
+                const isUnbanning = isUnbanningAny && modal?.user?._id === u._id;
 
                 return (
                   <div
@@ -467,9 +374,9 @@ export default function BannedUsers() {
                       <p
                         className="text-[0.75rem] truncate"
                         style={{ color: '#8A8390', fontFamily: "'DM Sans', sans-serif" }}
-                        title={u.reason}
+                        title={u.banReason}
                       >
-                        {u.reason || '—'}
+                        {u.banReason || '—'}
                       </p>
                     </div>
 
@@ -479,13 +386,13 @@ export default function BannedUsers() {
                         className="text-[0.75rem] font-medium"
                         style={{ color: '#1A1523', fontFamily: "'DM Sans', sans-serif" }}
                       >
-                        {timeAgo(u.bannedAt)}
+                        {timeAgo(u.bannedAt || u.updatedAt || u.createdAt)}
                       </p>
                       <p
                         className="text-[0.68rem]"
                         style={{ color: '#C4BDD0', fontFamily: "'DM Sans', sans-serif" }}
                       >
-                        {formatDate(u.bannedAt)}
+                        {formatDate(u.bannedAt || u.updatedAt || u.createdAt)}
                       </p>
                     </div>
 
@@ -496,7 +403,7 @@ export default function BannedUsers() {
 
                     {/* Reports */}
                     <div>
-                      <ReportDot count={u.reportCount} />
+                      <ReportDot count={u.reportCount ?? 0} />
                     </div>
 
                     {/* Listings */}
@@ -505,7 +412,7 @@ export default function BannedUsers() {
                         className="text-[0.78rem] font-semibold"
                         style={{ color: '#1A1523', fontFamily: "'DM Sans', sans-serif" }}
                       >
-                        {u.listings}
+                        {u.listings ?? 0}
                       </span>
                       <span
                         className="text-[0.7rem] ml-1"
@@ -549,7 +456,7 @@ export default function BannedUsers() {
             <div className="flex flex-col gap-3 md:hidden">
               {paginated.map((u, i) => {
                 const avatarColor = AVATAR_COLORS[i % AVATAR_COLORS.length];
-                const isUnbanning = actionLoading[u._id];
+                const isUnbanning = isUnbanningAny && modal?.user?._id === u._id;
 
                 return (
                   <div
@@ -602,7 +509,7 @@ export default function BannedUsers() {
                           className="text-[0.72rem]"
                           style={{ color: '#8A8390', fontFamily: "'DM Sans', sans-serif" }}
                         >
-                          {u.reason || 'No reason provided'}
+                          {u.banReason || 'No reason provided'}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
@@ -611,7 +518,8 @@ export default function BannedUsers() {
                           className="text-[0.72rem]"
                           style={{ color: '#8A8390', fontFamily: "'DM Sans', sans-serif" }}
                         >
-                          Banned {timeAgo(u.bannedAt)} · {formatDate(u.bannedAt)}
+                          Banned {timeAgo(u.bannedAt || u.updatedAt || u.createdAt)} ·{' '}
+                          {formatDate(u.bannedAt || u.updatedAt || u.createdAt)}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
@@ -620,7 +528,7 @@ export default function BannedUsers() {
                           className="text-[0.72rem]"
                           style={{ color: '#8A8390', fontFamily: "'DM Sans', sans-serif" }}
                         >
-                          {u.reportCount} reports · {u.listings} listings
+                          {u.reportCount ?? 0} reports · {u.listings ?? 0} listings
                         </span>
                       </div>
                     </div>

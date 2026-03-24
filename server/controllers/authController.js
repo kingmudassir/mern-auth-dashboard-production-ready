@@ -772,3 +772,20 @@ export const getDeletedUsers = catchAsyncError(async (req, res, next) => {
         users,
     });
 });
+
+export const getBannedUsers = catchAsyncError(async (req, res, next) => {
+    const users = await User.find({
+        isBanned: true,
+        isDeleted: false,
+    })
+        .sort({ bannedAt: -1, updatedAt: -1 })
+        .select(
+            "name email phone role createdAt isBanned banReason bannedAt bannedBy isDeleted"
+        );
+
+    res.status(200).json({
+        success: true,
+        count: users.length,
+        users,
+    });
+});

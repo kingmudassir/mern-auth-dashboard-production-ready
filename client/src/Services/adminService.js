@@ -14,6 +14,10 @@ const adminService = {
         return await api.get('/admin/users/deleted');
     },
 
+    getBannedUsers: async () => {
+        return await api.get('/admin/users/banned');
+    },
+
     getUserById: async (userId) => {
         return await api.get(`/admin/users/${userId}`);
     },
