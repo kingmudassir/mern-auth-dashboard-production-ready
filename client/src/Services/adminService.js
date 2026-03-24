@@ -41,6 +41,14 @@ const adminService = {
     sendUserPasswordResetLink: async ({ userId }) => {
         return await api.post(`/admin/users/${userId}/password/reset-link`);
     },
+
+    softDeleteUser: async ({ userId }) => {
+        return await api.patch(`/admin/users/${userId}/soft-delete`);
+    },
+
+    restoreUser: async ({ userId }) => {
+        return await api.patch(`/admin/users/${userId}/restore`);
+    },
 };
 
 export default adminService;

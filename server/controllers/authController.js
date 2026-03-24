@@ -342,6 +342,10 @@ export const login = catchAsyncError(async (req, res, next) => {
         return next(new ErrorHandler("Incorrect email or password", 401));
     }
 
+    if (existingUser.isDeleted) {
+        return next(new ErrorHandler("This account has been deleted.", 403));
+    }
+
     // check if user scheduled his account for deletion
     if (existingUser.deleteAccountRequestAt) {
         existingUser.deleteAccountRequestAt = undefined
@@ -695,18 +699,21 @@ export const getAdminStats = catchAsyncError(async (req, res, next) => {
 
     const totalUsers = await User.countDocuments({ 
         isAccountVerified: true,
-        role: "user"
+        role: "user",
+        isDeleted: false
     });
 
     const usersThisMonth = await User.countDocuments({
         isAccountVerified: true,
         role: "user",
+        isDeleted: false,
         createdAt: { $gte: startOfThisMonth }
     });
 
     const usersLastMonth = await User.countDocuments({
         isAccountVerified: true,        
         role: "user",
+        isDeleted: false,
         createdAt: { $gte: startOfLastMonth, $lte: endOfLastMonth }
     });
 
@@ -716,11 +723,12 @@ export const getAdminStats = catchAsyncError(async (req, res, next) => {
 
     const recentUsers = await User.find({ 
         isAccountVerified: true,
-        role: "user"
+        role: "user",
+        isDeleted: false
     })
         .sort({ createdAt: -1 })
         .limit(4)
-        .select('name email createdAt isBanned deleteAccountRequestAt');
+        .select('name email createdAt isBanned deleteAccountRequestAt isDeleted');
 
     res.status(200).json({
         success: true,
@@ -736,10 +744,11 @@ export const getAdminStats = catchAsyncError(async (req, res, next) => {
 export const getAllUsers = catchAsyncError(async (req, res, next) => {
     const users = await User.find({ 
         isAccountVerified: true, 
-        role: "user"
+        role: "user",
+        isDeleted: false
     })
         .sort({ createdAt: -1 })
-        .select('name email phone role isAccountVerified isEmailVerified isBanned deleteAccountRequestAt createdAt');
+        .select('name email phone role isAccountVerified isEmailVerified isBanned deleteAccountRequestAt isDeleted createdAt');
 
     res.status(200).json({
         success: true,

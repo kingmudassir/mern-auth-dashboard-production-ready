@@ -48,25 +48,7 @@ import { useUpdateUserInfo } from '../../../../Hooks/Admin-Hook/All-Users/useUpd
 import { useVerifyEmailManually } from '../../../../Hooks/Admin-Hook/All-Users/useVerifyEmailManually';
 import { useResetUserPassword } from '../../../../Hooks/Admin-Hook/All-Users/useResetUserPassword';
 import { useSendUserPasswordResetLink } from '../../../../Hooks/Admin-Hook/All-Users/useSendUserPasswordResetLink';
-
-const MOCK_USER = {
-  id: '64f3a1b2c9e1d2f3a4b5c6d7',
-  name: 'Muhammad Ali Khan',
-  email: 'ali.khan@example.com',
-  phone: '03001234567',
-  city: 'Lahore',
-  role: 'Seller',
-  status: 'active',
-  emailVerified: true,
-  phoneVerified: false,
-  joinedAt: '12 January 2024',
-  lastLogin: '2 hours ago',
-  listings: 4,
-  flaggedCount: 1,
-  reportCount: 2,
-  avatar: null,
-  notes: '',
-};
+import { useSoftDeleteUser } from '../../../../Hooks/Admin-Hook/All-Users/useSoftDeleteUser';
 
 const MOCK_LISTINGS = [
   {
@@ -145,6 +127,7 @@ export default function UsersProfile() {
   const { mutate: resetUserPassword, isPending: isResettingPassword } = useResetUserPassword(userId);
   const { mutate: sendUserPasswordResetLink, isPending: isSendingResetLink } =
     useSendUserPasswordResetLink(userId);
+  const { mutate: softDeleteUser, isPending: isDeletingUser } = useSoftDeleteUser(userId);
 
   const user = data?.user;
 
@@ -287,13 +270,19 @@ export default function UsersProfile() {
     });
   };
 
-  const handleDeleteAccount = async () => {
-    setLoad('delete', true);
-    // ← REPLACE with: deleteUserMutation.mutate({ userId })
-    await new Promise((r) => setTimeout(r, 1200));
-    setLoad('delete', false);
-    setModal(null);
-    navigate('/admin/users');
+  const handleDeleteAccount = () => {
+    softDeleteUser(undefined, {
+      onSuccess: () => {
+        showToast('User soft-deleted successfully');
+        setModal(null);
+        queryClient.removeQueries({ queryKey: ['adminUser', userId] });
+        navigate('/admin/users');
+      },
+      onError: (err) => {
+        showToast(err?.message || 'Failed to delete account.', 'error');
+        setModal(null);
+      },
+    });
   };
 
   const handleDeleteListings = async () => {
@@ -315,6 +304,7 @@ export default function UsersProfile() {
 
   const getUserStatus = (user) => {
     if (!user) return 'active'; // fallback while loading
+    if (user.isDeleted) return 'banned';
     if (user.isBanned) return 'banned';
     if (!user.isAccountVerified) return 'pending';
     if (user.deleteAccountRequestAt) return 'pending';
@@ -397,9 +387,9 @@ export default function UsersProfile() {
       />
       <ConfirmModal
         open={modal?.type === 'delete-account'}
-        title="Delete this account?"
-        message="This will permanently delete the user's account, all listings, and all associated data. This cannot be undone."
-        confirmLabel="Delete Account"
+        title="Soft delete this account?"
+        message="This will hide the user from admin listings and block account access. Data remains in the database for potential restore."
+        confirmLabel="Soft Delete"
         onConfirm={handleDeleteAccount}
         onCancel={() => setModal(null)}
         danger
@@ -1130,7 +1120,7 @@ export default function UsersProfile() {
                   label="Delete account"
                   icon={Trash2}
                   onClick={() => setModal({ type: 'delete-account' })}
-                  loading={loading.delete}
+                  loading={isDeletingUser}
                   variant="red"
                 />
               </div>

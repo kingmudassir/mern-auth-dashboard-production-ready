@@ -10,6 +10,10 @@ export const getUserById = catchAsyncError(async (req, res, next) => {
         return next(new ErrorHandler("User not found.", 404));
     }
 
+    if (user.isDeleted) {
+        return next(new ErrorHandler("User has been deleted.", 404));
+    }
+
     res.status(200).json({
         success: true,
         user

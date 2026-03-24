@@ -35,6 +35,25 @@ export const isAuthenticated = catchAsyncError(async (req, res, next) => {
             return next(new ErrorHandler("User no longer exists", 401));
         }
 
+        if (existingUser.isDeleted) {
+            res
+            .cookie("token", "",
+                {
+                    expires: new Date(0),
+                    httpOnly: true,
+                    sameSite: "strict",
+                    path: "/"
+                })
+            .cookie("refreshToken", "",
+                {
+                    expires: new Date(0),
+                    httpOnly: true,
+                    sameSite: "strict",
+                    path: "/"
+                });
+            return next(new ErrorHandler("This account has been deleted.", 401));
+        }
+
         req.user = {
             ...existingUser.toObject(),
             role: existingUser.role // comes from JWT
@@ -65,6 +84,25 @@ async function attemptRefresh(req, res, next) {
 
         console.log("isAuth: ", hashedToken)
         if (!existingUser) return next(new ErrorHandler("Session expired. Please log in again.", 401));
+
+        if (existingUser.isDeleted) {
+            res
+            .cookie("token", "",
+                {
+                    expires: new Date(0),
+                    httpOnly: true,
+                    sameSite: "strict",
+                    path: "/"
+                })
+            .cookie("refreshToken", "",
+                {
+                    expires: new Date(0),
+                    httpOnly: true,
+                    sameSite: "strict",
+                    path: "/"
+                });
+            return next(new ErrorHandler("This account has been deleted.", 401));
+        }
 
         const remainingExpiry = existingUser.refreshTokenExpire;
         const newAccessToken = existingUser.generateAccessToken();

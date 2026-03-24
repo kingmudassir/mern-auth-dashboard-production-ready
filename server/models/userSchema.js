@@ -97,6 +97,22 @@ const userSchema = new mongoose.Schema(
             default: undefined
         },
 
+        isDeleted: {
+            type: Boolean,
+            default: false
+        },
+
+        softDeletedAt: {
+            type: Date,
+            default: undefined
+        },
+
+        deletedBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+            default: undefined
+        },
+
         deletionPausedUntil: {
             type: Date,
             default: undefined

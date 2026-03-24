@@ -12,6 +12,7 @@ import { updateUserInfo } from "../controllers/Admin-Controller/All-Users/Update
 import { verifyEmail } from "../controllers/Admin-Controller/All-Users/VerifyEmail.js"
 import { resetUserPassword } from "../controllers/Admin-Controller/All-Users/ResetUserPassword.js"
 import { sendUserPasswordResetLink } from "../controllers/Admin-Controller/All-Users/SendUserPasswordResetLink.js"
+import { restoreSoftDeletedUser, softDeleteUser } from "../controllers/Admin-Controller/All-Users/SoftDeleteUser.js"
 
 const router = express.Router()
 
@@ -44,6 +45,8 @@ router.patch('/admin/users/:userId/info', isAuthenticated, authorizeRoles("admin
 router.patch('/admin/users/:userId/verify-email-manually', isAuthenticated, authorizeRoles("admin"), verifyEmail);
 router.patch('/admin/users/:userId/password/reset', isAuthenticated, authorizeRoles("admin"), resetUserPassword);
 router.post('/admin/users/:userId/password/reset-link', isAuthenticated, authorizeRoles("admin"), sendUserPasswordResetLink);
+router.patch('/admin/users/:userId/soft-delete', isAuthenticated, authorizeRoles("admin"), softDeleteUser);
+router.patch('/admin/users/:userId/restore', isAuthenticated, authorizeRoles("admin"), restoreSoftDeletedUser);
 
 // Only for testing purposes!
 router.post('/refresh', refreshAccessToken)

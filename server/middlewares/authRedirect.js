@@ -16,7 +16,7 @@ export const redirectIfAuthenticated = catchAsyncError(async (req, res, next) =>
         const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
         const existingUser = await User.findById(decoded.id);
 
-        if (existingUser) {
+        if (existingUser && !existingUser.isDeleted) {
             return res.status(200).json({ alreadyLoggedIn: true });
         }
 
@@ -46,7 +46,7 @@ async function attemptRefresh(req, res, next) {
         });
 
         console.log("Redirect: ", hashedToken)
-        if (!existingUser) return next();
+        if (!existingUser || existingUser.isDeleted) return next();
 
         // ── Only rotate access token, keep existing refresh token ──
         const newAccessToken = existingUser.generateAccessToken();
