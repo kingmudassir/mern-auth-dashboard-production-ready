@@ -17,6 +17,7 @@ import {
   Bell,
   LogOut,
   ChevronRight,
+  Trash2,
 } from 'lucide-react';
 import { useUser } from '../Hooks/useUser.js';
 import { useLogout } from '../Hooks/useLogout.js';
@@ -32,6 +33,7 @@ const NAV = [
     items: [
       { path: '/admin/users', icon: Users, label: 'All Users', end: true },
       { path: '/admin/users/banned', icon: ShieldOff, label: 'Banned Users', end: true },
+      { path: '/admin/users/deleted', icon: Trash2, label: 'Deleted Users', end: true },
     ],
   },
   {

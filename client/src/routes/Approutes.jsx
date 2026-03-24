@@ -13,6 +13,7 @@ import Dashboard from '../Pages/Admin/Dashboard';
 import AdminLayout from '../Layout/AdminLayout';
 import AllUsersPanel from '../Pages/Admin/AllUsersPanel';
 import UsersProfile from '../Pages/Admin/User-Profile/Main-Page/UsersProfile';
+import DeletedUsers from '../Pages/Admin/Deleted-Users/Main-Page/DeletedUsers';
 
 function Approutes() {
   return (
@@ -37,6 +38,7 @@ function Approutes() {
       <Route path="/admin" element={<AdminLayout />}>
         <Route path="users" element={<AllUsersPanel />} />
         <Route path="users/:userId" element={<UsersProfile />} />
+        <Route path="users/deleted/:userId" element={<DeletedUsers />} />
       </Route>{' '}
       {/* <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<Dashboard />} />
