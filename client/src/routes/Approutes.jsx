@@ -14,6 +14,7 @@ import AdminLayout from '../Layout/AdminLayout';
 import AllUsersPanel from '../Pages/Admin/AllUsersPanel';
 import UsersProfile from '../Pages/Admin/User-Profile/Main-Page/UsersProfile';
 import DeletedUsers from '../Pages/Admin/Deleted-Users/Main-Page/DeletedUsers';
+import BannedUsers from '../Pages/Admin/Banned-Users/Main-Page/BannerUsers';
 
 function Approutes() {
   return (
@@ -39,6 +40,7 @@ function Approutes() {
         <Route path="users" element={<AllUsersPanel />} />
         <Route path="users/:userId" element={<UsersProfile />} />
         <Route path="users/deleted" element={<DeletedUsers />} />
+        <Route path="users/banned" element={<BannedUsers />} />
       </Route>{' '}
       {/* <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<Dashboard />} />
