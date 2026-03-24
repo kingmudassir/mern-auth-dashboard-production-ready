@@ -35,21 +35,35 @@ async function attemptRefresh(req, res, next) {
     if (!refreshToken) return next();
 
     try {
-        const hashedToken = crypto.createHash("sha256").update(refreshToken).digest("hex");
+        const hashedToken = crypto
+        .createHash("sha256")
+        .update(refreshToken)
+        .digest("hex");
 
         const existingUser = await User.findOne({
             refreshToken: hashedToken,
             refreshTokenExpire: { $gt: Date.now() }
         });
 
+        console.log("Redirect: ", hashedToken)
         if (!existingUser) return next();
 
         // ── Only rotate access token, keep existing refresh token ──
         const newAccessToken = existingUser.generateAccessToken();
+        const newRefreshToken = existingUser.generateRefreshToken();
+
+        await existingUser.save(); 
 
         res.cookie("token", newAccessToken, {
+        httpOnly: true,
+        expires: new Date(Date.now() + 15 * 60 * 1000),
+        sameSite: "strict",
+        path: "/"
+    });
+
+        res.cookie("refreshToken", newRefreshToken, {
             httpOnly: true,
-            expires: new Date(Date.now() + 15 * 60 * 1000),
+            expires: new Date(existingUser.refreshTokenExpire),
             sameSite: "strict",
             path: "/"
         });

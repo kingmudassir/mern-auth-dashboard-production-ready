@@ -25,8 +25,13 @@ const adminService = {
     updateUserRole: async ({ userId, role }) => {
         return await api.patch(`/admin/users/${userId}/role`, { role });
     },
+
     updateUserInfo: async ({ userId, ...fields }) => {
         return await api.patch(`/admin/users/${userId}/info`, fields);
+    },
+
+    manuallyVerifyEmail: async ({ userId }) => {
+        return await api.patch(`/admin/users/${userId}/verify-email-manually`);
     },
 };
 

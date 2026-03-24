@@ -9,6 +9,7 @@ import { UpdateUserStatus } from "../controllers/Admin-Controller/All-Users/Upda
 import { updateAdminNotes } from "../controllers/Admin-Controller/All-Users/UpdateAdminNotes.js"
 import { updateUserRole } from "../controllers/Admin-Controller/All-Users/UpdateUserRole.js"
 import { updateUserInfo } from "../controllers/Admin-Controller/All-Users/UpdateUserInfo.js"
+import { verifyEmail } from "../controllers/Admin-Controller/All-Users/VerifyEmail.js"
 
 const router = express.Router()
 
@@ -38,6 +39,7 @@ router.patch('/admin/users/:userId/status', isAuthenticated, authorizeRoles("adm
 router.patch('/admin/users/:userId/notes', isAuthenticated, authorizeRoles("admin"), updateAdminNotes);
 router.patch('/admin/users/:userId/role', isAuthenticated, authorizeRoles("admin"), updateUserRole);
 router.patch('/admin/users/:userId/info', isAuthenticated, authorizeRoles("admin"), updateUserInfo);
+router.patch('/admin/users/:userId/verify-email-manually', isAuthenticated, authorizeRoles("admin"), verifyEmail);
 
 // Only for testing purposes!
 router.post('/refresh', refreshAccessToken)

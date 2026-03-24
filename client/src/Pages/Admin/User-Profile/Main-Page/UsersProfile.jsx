@@ -45,6 +45,7 @@ import { useUpdateUserStatus } from '../../../../Hooks/Admin-Hook/All-Users/useU
 import { useUpdateAdminNotes } from '../../../../Hooks/Admin-Hook/All-Users/useUpdateAdminNotes';
 import { useUpdateUserRole } from '../../../../Hooks/Admin-Hook/All-Users/useUpdateUserRole';
 import { useUpdateUserInfo } from '../../../../Hooks/Admin-Hook/All-Users/useUpdateUserInfo';
+import { useVerifyEmailManually } from '../../../../Hooks/Admin-Hook/All-Users/useVerifyEmailManually';
 
 const MOCK_USER = {
   id: '64f3a1b2c9e1d2f3a4b5c6d7',
@@ -137,6 +138,8 @@ export default function UsersProfile() {
   const { mutate: saveNotes, isPending: notesSaving } = useUpdateAdminNotes(userId);
   const { mutate: updateRole, isPending: isUpdatingRole } = useUpdateUserRole(userId);
   const { mutate: updateUserInfo, isPending: isUpdatingInfo } = useUpdateUserInfo(userId);
+  const { mutate: verifyEmailManually, isPending: isVerifyingEmail } =
+    useVerifyEmailManually(userId);
 
   const user = data?.user;
 
@@ -225,14 +228,19 @@ export default function UsersProfile() {
     showToast(`Verification ${type === 'email' ? 'email' : 'SMS'} sent`);
   };
 
-  const handleVerifyManually = async (type) => {
-    setLoad(`verify-${type}`, true);
-    // ← REPLACE with: verifyManuallyMutation.mutate({ userId, type })
-    await new Promise((r) => setTimeout(r, 700));
-    setLoad(`verify-${type}`, false);
-    setUser((p) => ({ ...p, [`${type}Verified`]: true }));
-    showToast(`${type === 'email' ? 'Email' : 'Phone'} marked as verified`);
-    setModal(null);
+  const handleVerifyManually = (type) => {
+    if (type === 'email') {
+      verifyEmailManually(undefined, {
+        onSuccess: () => {
+          showToast('Email marked as verified');
+          setModal(null);
+        },
+        onError: (err) => {
+          showToast(err?.message || 'Failed to verify email.', 'error');
+          setModal(null);
+        },
+      });
+    }
   };
 
   const handleResetPassword = async () => {
@@ -862,24 +870,16 @@ export default function UsersProfile() {
                       </p>
                     </div>
                   </div>
-                  <div className="flex gap-2 flex-wrap justify-end">
-                    {!user.isEmailVerified && (
-                      <ActionBtn
-                        label="Resend"
-                        icon={Send}
-                        loading={loading['resend-email']}
-                        onClick={() => handleResendVerification('email')}
-                        variant="violet"
-                      />
-                    )}
-                    {!user.isEmailVerified && (
+                  {!user.isEmailVerified && (
+                    <div className="flex gap-2 flex-wrap justify-end">
                       <ActionBtn
                         label="Verify manually"
                         icon={ShieldCheck}
+                        loading={isVerifyingEmail}
                         onClick={() => setModal({ type: 'verify-email' })}
                       />
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Phone */}

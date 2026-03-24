@@ -63,6 +63,7 @@ async function attemptRefresh(req, res, next) {
             refreshTokenExpire: { $gt: Date.now() }
         }).select("-password -refreshToken -resetPasswordToken -__v -updatedAt");
 
+        console.log("isAuth: ", hashedToken)
         if (!existingUser) return next(new ErrorHandler("Session expired. Please log in again.", 401));
 
         const remainingExpiry = existingUser.refreshTokenExpire;
