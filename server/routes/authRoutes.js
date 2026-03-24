@@ -10,6 +10,8 @@ import { updateAdminNotes } from "../controllers/Admin-Controller/All-Users/Upda
 import { updateUserRole } from "../controllers/Admin-Controller/All-Users/UpdateUserRole.js"
 import { updateUserInfo } from "../controllers/Admin-Controller/All-Users/UpdateUserInfo.js"
 import { verifyEmail } from "../controllers/Admin-Controller/All-Users/VerifyEmail.js"
+import { resetUserPassword } from "../controllers/Admin-Controller/All-Users/ResetUserPassword.js"
+import { sendUserPasswordResetLink } from "../controllers/Admin-Controller/All-Users/SendUserPasswordResetLink.js"
 
 const router = express.Router()
 
@@ -40,6 +42,8 @@ router.patch('/admin/users/:userId/notes', isAuthenticated, authorizeRoles("admi
 router.patch('/admin/users/:userId/role', isAuthenticated, authorizeRoles("admin"), updateUserRole);
 router.patch('/admin/users/:userId/info', isAuthenticated, authorizeRoles("admin"), updateUserInfo);
 router.patch('/admin/users/:userId/verify-email-manually', isAuthenticated, authorizeRoles("admin"), verifyEmail);
+router.patch('/admin/users/:userId/password/reset', isAuthenticated, authorizeRoles("admin"), resetUserPassword);
+router.post('/admin/users/:userId/password/reset-link', isAuthenticated, authorizeRoles("admin"), sendUserPasswordResetLink);
 
 // Only for testing purposes!
 router.post('/refresh', refreshAccessToken)

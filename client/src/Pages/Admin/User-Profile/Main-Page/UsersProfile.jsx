@@ -46,6 +46,8 @@ import { useUpdateAdminNotes } from '../../../../Hooks/Admin-Hook/All-Users/useU
 import { useUpdateUserRole } from '../../../../Hooks/Admin-Hook/All-Users/useUpdateUserRole';
 import { useUpdateUserInfo } from '../../../../Hooks/Admin-Hook/All-Users/useUpdateUserInfo';
 import { useVerifyEmailManually } from '../../../../Hooks/Admin-Hook/All-Users/useVerifyEmailManually';
+import { useResetUserPassword } from '../../../../Hooks/Admin-Hook/All-Users/useResetUserPassword';
+import { useSendUserPasswordResetLink } from '../../../../Hooks/Admin-Hook/All-Users/useSendUserPasswordResetLink';
 
 const MOCK_USER = {
   id: '64f3a1b2c9e1d2f3a4b5c6d7',
@@ -140,6 +142,9 @@ export default function UsersProfile() {
   const { mutate: updateUserInfo, isPending: isUpdatingInfo } = useUpdateUserInfo(userId);
   const { mutate: verifyEmailManually, isPending: isVerifyingEmail } =
     useVerifyEmailManually(userId);
+  const { mutate: resetUserPassword, isPending: isResettingPassword } = useResetUserPassword(userId);
+  const { mutate: sendUserPasswordResetLink, isPending: isSendingResetLink } =
+    useSendUserPasswordResetLink(userId);
 
   const user = data?.user;
 
@@ -243,27 +248,36 @@ export default function UsersProfile() {
     }
   };
 
-  const handleResetPassword = async () => {
+  const handleResetPassword = () => {
     if (newPw.length < 8) {
       setPwErr('Minimum 8 characters');
       return;
     }
-    setLoad('resetpw', true);
-    // ← REPLACE with: resetPasswordMutation.mutate({ userId, password: newPw })
-    await new Promise((r) => setTimeout(r, 1000));
-    setLoad('resetpw', false);
-    setNewPw('');
-    setPwErr('');
-    showToast("User's password has been reset");
-    setModal(null);
+    resetUserPassword(
+      { newPassword: newPw },
+      {
+        onSuccess: () => {
+          setNewPw('');
+          setPwErr('');
+          showToast("User's password has been reset");
+          setModal(null);
+        },
+        onError: (err) => {
+          showToast(err?.message || 'Failed to reset password.', 'error');
+        },
+      }
+    );
   };
 
-  const handleSendPasswordReset = async () => {
-    setLoad('sendpwreset', true);
-    // ← REPLACE with: sendPasswordResetMutation.mutate({ userId })
-    await new Promise((r) => setTimeout(r, 800));
-    setLoad('sendpwreset', false);
-    showToast('Password reset link sent to user');
+  const handleSendPasswordReset = () => {
+    sendUserPasswordResetLink(undefined, {
+      onSuccess: () => {
+        showToast('Password reset link sent to user');
+      },
+      onError: (err) => {
+        showToast(err?.message || 'Failed to send reset link.', 'error');
+      },
+    });
   };
 
   const handleSaveNotes = () => {
@@ -485,14 +499,14 @@ export default function UsersProfile() {
               <button
                 type="button"
                 onClick={handleResetPassword}
-                disabled={loading.resetpw}
+                  disabled={isResettingPassword}
                 className="flex-1 text-[0.82rem] font-semibold text-white py-2.5 rounded-xl disabled:opacity-50"
                 style={{
                   background: 'linear-gradient(135deg, #6C3CE1 0%, #5A2FCA 100%)',
                   fontFamily: "'DM Sans', sans-serif",
                 }}
               >
-                {loading.resetpw ? 'Setting…' : 'Set Password'}
+                {isResettingPassword ? 'Setting…' : 'Set Password'}
               </button>
             </div>
           </div>
@@ -967,7 +981,7 @@ export default function UsersProfile() {
                 <ActionBtn
                   label="Send reset link"
                   icon={Send}
-                  loading={loading.sendpwreset}
+                  loading={isSendingResetLink}
                   onClick={handleSendPasswordReset}
                 />
               </div>

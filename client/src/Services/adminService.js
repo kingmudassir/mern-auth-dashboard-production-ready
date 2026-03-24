@@ -33,6 +33,14 @@ const adminService = {
     manuallyVerifyEmail: async ({ userId }) => {
         return await api.patch(`/admin/users/${userId}/verify-email-manually`);
     },
+
+    resetUserPassword: async ({ userId, newPassword }) => {
+        return await api.patch(`/admin/users/${userId}/password/reset`, { newPassword });
+    },
+
+    sendUserPasswordResetLink: async ({ userId }) => {
+        return await api.post(`/admin/users/${userId}/password/reset-link`);
+    },
 };
 
 export default adminService;
