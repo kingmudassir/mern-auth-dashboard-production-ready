@@ -24,6 +24,8 @@ import PendingListingsPanel from '../Pages/Admin/Pending-Listings/Main-Page/Pend
 import MakesPanel from '../Pages/Admin/Catalogue/Makes/Main-Page/MakesPanel';
 import CitiesPanel from '../Pages/Admin/Catalogue/Cities/Main-Page/CitiesPanel';
 import SettingsPanel from '../Pages/Admin/Settings/Main-Page/SettingsPanel';
+import PostAd from '../Pages/PostAd';
+import SavedAds from '../Pages/SavedAds';
 
 function Approutes() {
   return (
@@ -41,6 +43,8 @@ function Approutes() {
         {/* <Route path="/admin/dashboard" element={<Dashboard />} /> */}
         <Route path="/cars" element={<CarMarketplace />} />
         <Route path="cars/:carId" element={<CarListing />} />
+        <Route path="post-ad" element={<PostAd />} />
+        <Route path="saved" element={<SavedAds />} />
       </Route>
       <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<Dashboard />} />

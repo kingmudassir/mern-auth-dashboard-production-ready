@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Menu, X, ChevronRight, UserCircle, LogOut, User } from 'lucide-react';
+import { Menu, X, ChevronRight, UserCircle, LogOut, User, Heart } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useLogout } from '../../Hooks/useLogout.js';
 import { useUser } from '../../Hooks/useUser.js';
@@ -160,6 +160,15 @@ export default function Navbar() {
                         </div>
                       )}
                     </div>{' '}
+                    <a
+                      href="/saved"
+                      className="relative w-9 h-9 flex items-center justify-center rounded-xl border border-transparent hover:border-[rgba(232,98,42,0.22)] hover:bg-[rgba(232,98,42,0.05)] transition-all duration-200"
+                      aria-label="Saved ads"
+                    >
+                      <Heart size={17} strokeWidth={1.9} className="text-[#8A8390]" />
+                      {/* Unread dot — show when user has saved ads */}
+                      <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#E8622A]" />
+                    </a>
                     <a
                       href="/register"
                       className="
