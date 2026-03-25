@@ -15,6 +15,7 @@ import { sendUserPasswordResetLink } from "../controllers/Admin-Controller/All-U
 import { restoreSoftDeletedUser, softDeleteUser } from "../controllers/Admin-Controller/All-Users/SoftDeleteUser.js"
 import { getReports, getReportById, resolveReport, dismissReport, updateReportPriority } from "../controllers/Admin-Controller/Reports/ReportsController.js"
 import { getPendingListings, getFlaggedListings, approveListing, rejectListing, removeFlaggedListing } from "../controllers/Admin-Controller/Listings/ListingsController.js"
+import { getAllListings } from "../controllers/Admin-Controller/Listings/GetAllListings.js"
 import { getMakes, getMakeById, addMake, updateMake, deleteMake, addModelToMake, getCities, getCityById, addCity, updateCity, deleteCity } from "../controllers/Admin-Controller/Catalogue/CatalogueController.js"
 
 const router = express.Router()
@@ -68,6 +69,7 @@ router.patch('/admin/reports/:reportId/dismiss', isAuthenticated, authorizeRoles
 router.patch('/admin/reports/:reportId/priority', isAuthenticated, authorizeRoles("admin"), updateReportPriority);
 
 // ==================== LISTINGS ====================
+router.get('/admin/listings', isAuthenticated, authorizeRoles("admin"), getAllListings);
 router.get('/admin/listings/pending', isAuthenticated, authorizeRoles("admin"), getPendingListings);
 router.get('/admin/listings/flagged', isAuthenticated, authorizeRoles("admin"), getFlaggedListings);
 router.patch('/admin/listings/:listingId/approve', isAuthenticated, authorizeRoles("admin"), approveListing);

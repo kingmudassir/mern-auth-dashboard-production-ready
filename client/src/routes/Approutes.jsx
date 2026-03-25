@@ -19,6 +19,11 @@ import AdminAccounts from '../Pages/Admin/Admin-Accounts/Main-Page/AdminAccounts
 import CarMarketplace from '../Pages/CarMarketplace';
 import CarListing from '../Pages/CarListing';
 import AllCarListings from '../Pages/Admin/Car-Listings/Main-Page/AllCarListings';
+import ReportsPanel from '../Pages/Admin/Reports/Main-Page/ReportsPanel';
+import PendingListingsPanel from '../Pages/Admin/Pending-Listings/Main-Page/PendingListingsPanel';
+import MakesPanel from '../Pages/Admin/Catalogue/Makes/Main-Page/MakesPanel';
+import CitiesPanel from '../Pages/Admin/Catalogue/Cities/Main-Page/CitiesPanel';
+import SettingsPanel from '../Pages/Admin/Settings/Main-Page/SettingsPanel';
 
 function Approutes() {
   return (
@@ -45,8 +50,16 @@ function Approutes() {
         <Route path="users/banned" element={<BannedUsers />} />
 
         <Route path="listings" element={<AllCarListings />} />
+        <Route path="listings/pending" element={<PendingListingsPanel />} />
 
-        <Route path="/admin/accounts" element={<AdminAccounts />} />
+        <Route path="reports" element={<ReportsPanel />} />
+
+        <Route path="catalogue/makes" element={<MakesPanel />} />
+        <Route path="catalogue/cities" element={<CitiesPanel />} />
+
+        <Route path="settings" element={<SettingsPanel />} />
+
+        <Route path="accounts" element={<AdminAccounts />} />
       </Route>{' '}
       {/* <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<Dashboard />} />

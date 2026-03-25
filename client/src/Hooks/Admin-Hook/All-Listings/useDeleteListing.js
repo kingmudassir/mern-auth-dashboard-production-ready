@@ -1,8 +1,14 @@
-import authService from "../../../Services/authService"
-import { useMutation } from "@tanstack/react-query"
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import adminService from '../../../Services/adminService';
 
 export const useDeleteListing = () => {
+    const queryClient = useQueryClient();
+    
     return useMutation({
-        mutationFn: authService.changePassword,
-    })
+        mutationFn: adminService.removeFlaggedListing,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['allListings'] });
+            queryClient.invalidateQueries({ queryKey: ['flaggedListings'] });
+        },
+    });
 }

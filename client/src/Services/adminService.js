@@ -90,6 +90,15 @@ const adminService = {
     },
 
     // ==================== LISTINGS ====================
+    getAllListings: async (filters = {}) => {
+        const params = new URLSearchParams();
+        if (filters.page) params.append('page', filters.page);
+        if (filters.limit) params.append('limit', filters.limit);
+        if (filters.sortBy) params.append('sortBy', filters.sortBy);
+        if (filters.order) params.append('order', filters.order);
+        return await api.get(`/admin/listings?${params.toString()}`);
+    },
+
     getPendingListings: async (filters = {}) => {
         const params = new URLSearchParams();
         if (filters.page) params.append('page', filters.page);

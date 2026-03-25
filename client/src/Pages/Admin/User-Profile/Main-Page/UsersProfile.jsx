@@ -124,7 +124,8 @@ export default function UsersProfile() {
   const { mutate: updateUserInfo, isPending: isUpdatingInfo } = useUpdateUserInfo(userId);
   const { mutate: verifyEmailManually, isPending: isVerifyingEmail } =
     useVerifyEmailManually(userId);
-  const { mutate: resetUserPassword, isPending: isResettingPassword } = useResetUserPassword(userId);
+  const { mutate: resetUserPassword, isPending: isResettingPassword } =
+    useResetUserPassword(userId);
   const { mutate: sendUserPasswordResetLink, isPending: isSendingResetLink } =
     useSendUserPasswordResetLink(userId);
   const { mutate: softDeleteUser, isPending: isDeletingUser } = useSoftDeleteUser(userId);
@@ -489,7 +490,7 @@ export default function UsersProfile() {
               <button
                 type="button"
                 onClick={handleResetPassword}
-                  disabled={isResettingPassword}
+                disabled={isResettingPassword}
                 className="flex-1 text-[0.82rem] font-semibold text-white py-2.5 rounded-xl disabled:opacity-50"
                 style={{
                   background: 'linear-gradient(135deg, #6C3CE1 0%, #5A2FCA 100%)',
@@ -696,9 +697,6 @@ export default function UsersProfile() {
               </div>
             </SectionCard>
             {/* Role control */}
-            {/* //TODO: Fetch real info here //TODO: Fetch real info here //TODO: Fetch real info here
-                  //TODO: Fetch real info here //TODO: Fetch real info here //TODO: Fetch real info here
-                  //TODO: Fetch real info here //TODO: Fetch real info here //TODO: Fetch real info here */}
             <SectionCard>
               <SectionTitle sub="Change what this user can do">Role</SectionTitle>
               <div className="flex flex-col gap-2">

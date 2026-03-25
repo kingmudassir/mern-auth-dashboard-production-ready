@@ -17,6 +17,10 @@ import {
   DollarSign,
   MapPin,
 } from 'lucide-react';
+import { useAdminStats } from '../../Hooks/Admin-Hook/useAdminStats';
+import { useAllUsers } from '../../Hooks/Admin-Hook/useAllUsers';
+import { useAllListings } from '../../Hooks/Admin-Hook/All-Listings/useAllListings';
+import { useReports } from '../../Hooks/Admin-Hook/Reports/useReports';
 
 // ── Mock Data ─────────────────────────────────────────────────────
 const STATS = [
@@ -335,6 +339,18 @@ export default function Dashboard() {
     setMounted(true);
   }, []);
 
+  // Fetch real data
+  const { data: statsData } = useAdminStats();
+  const { data: usersData } = useAllUsers();
+  const { data: listingsData } = useAllListings({ limit: 5 });
+  const { data: reportsData } = useReports({ status: 'open', limit: 5 });
+
+  // Use real data or fallback to mock
+  const stats = STATS;
+  const recentUsers = usersData?.users?.slice(0, 6) || RECENT_USERS;
+  const recentListings = listingsData?.listings?.slice(0, 5) || RECENT_LISTINGS;
+  const reports = reportsData?.reports || REPORTS;
+
   const now = new Date();
   const timeStr = now.toLocaleTimeString('en-PK', { hour: '2-digit', minute: '2-digit' });
   const dateStr = now.toLocaleDateString('en-PK', {
@@ -370,7 +386,7 @@ export default function Dashboard() {
 
         {/* ── Stat Cards ── */}
         <div className="stat-grid mb-6">
-          {STATS.map((s, i) => {
+          {stats.map((s, i) => {
             const Icon = s.icon;
             return (
               <div key={s.id} className="stat-card" style={{ animationDelay: `${i * 60}ms` }}>
@@ -469,7 +485,7 @@ export default function Dashboard() {
               </a>
             </div>
             <div className="flex flex-col gap-2.5">
-              {REPORTS.map((r) => {
+              {reports.map((r) => {
                 const pri = PRIORITY_CONFIG[r.priority];
                 return (
                   <div key={r.id} className="report-row">
@@ -523,8 +539,8 @@ export default function Dashboard() {
               </a>
             </div>
             <div className="flex flex-col gap-3">
-              {RECENT_USERS.map((u) => (
-                <div key={u.id} className="user-row">
+              {recentUsers.map((u, i) => (
+                <div key={i} className="user-row">
                   <AvatarBubble initials={u.avatar} size={34} />
                   <div className="flex-1 min-w-0">
                     <p
@@ -561,7 +577,7 @@ export default function Dashboard() {
               </a>
             </div>
             <div className="flex flex-col gap-3">
-              {RECENT_LISTINGS.map((l) => (
+              {recentListings.map((l) => (
                 <div key={l.id} className="user-row">
                   <div
                     className="w-9 h-9 rounded-xl flex items-center justify-center text-lg shrink-0"

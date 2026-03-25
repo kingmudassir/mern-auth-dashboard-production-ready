@@ -1,8 +1,14 @@
-import { useMutation } from "@tanstack/react-query"
-import authService from "../../../Services/authService"
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import adminService from '../../../Services/adminService';
 
 export const useApproveListing = () => {
+    const queryClient = useQueryClient();
+    
     return useMutation({
-        mutationFn: authService.changePassword,
-    })
+        mutationFn: adminService.approveListing,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['allListings'] });
+            queryClient.invalidateQueries({ queryKey: ['pendingListings'] });
+        },
+    });
 }
