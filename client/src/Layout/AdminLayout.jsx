@@ -401,7 +401,7 @@ export default function AdminLayout() {
         <div className="admin-main flex flex-col min-w-0 overflow-hidden">
           {/* Top bar */}
           <header
-            className="admin-topbar flex items-center justify-between px-5 flex-shrink-0"
+            className="admin-topbar flex items-center justify-between px-5 shrink-0"
             style={{ height: '60px' }}
           >
             <div className="flex items-center gap-3">

@@ -493,25 +493,20 @@ export default function AdminAccounts() {
               <div
                 className="grid items-center px-5 py-3"
                 style={{
-                  gridTemplateColumns: '2fr 1.3fr 1fr 0.9fr 0.9fr 0.8fr 0.8fr auto',
+                  gridTemplateColumns: '1.5fr 1.2fr 1fr 1.1fr 148px',
                   borderBottom: '1px solid #F2EEE9',
                   background: '#FAFAF9',
                 }}
               >
-                {[
-                  'Admin',
-                  'Phone',
-                  'Joined',
-                  'Last Active',
-                  'Role',
-                  'Status',
-                  'Listings',
-                  'Actions',
-                ].map((h) => (
+                {['Admin', 'Phone', 'Last Active', 'Status', 'Actions'].map((h) => (
                   <span
                     key={h}
-                    className="text-[0.7rem] font-semibold uppercase tracking-widest"
-                    style={{ color: '#C4BDD0', fontFamily: "'DM Sans', sans-serif" }}
+                    className="text-[0.7rem] font-semibold uppercase tracking-widest flex justify-center "
+                    style={{
+                      color: '#C4BDD0',
+                      fontFamily: "'DM Sans', sans-serif",
+                      ...(h === 'Actions' && { textAlign: 'right' }),
+                    }}
                   >
                     {h}
                   </span>
@@ -529,7 +524,7 @@ export default function AdminAccounts() {
                     key={u._id}
                     className="aa-row grid items-center px-5 py-4"
                     style={{
-                      gridTemplateColumns: '2fr 1.3fr 1fr 0.9fr 0.9fr 0.8fr 0.8fr auto',
+                      gridTemplateColumns: '2fr 1.2fr 1.1fr 0.85fr 148px',
                       borderBottom: i < paginated.length - 1 ? '1px solid #F2EEE9' : 'none',
                       opacity: u.isBanned ? 0.75 : 1,
                     }}
@@ -572,16 +567,6 @@ export default function AdminAccounts() {
                       </p>
                     </div>
 
-                    {/* Joined */}
-                    <div>
-                      <p
-                        className="text-[0.75rem] font-medium"
-                        style={{ color: '#1A1523', fontFamily: "'DM Sans', sans-serif" }}
-                      >
-                        {formatDate(u.createdAt)}
-                      </p>
-                    </div>
-
                     {/* Last active */}
                     <div>
                       {lastActive ? (
@@ -609,34 +594,13 @@ export default function AdminAccounts() {
                       )}
                     </div>
 
-                    {/* Role */}
-                    <div>
-                      <RoleBadge role={u.role} />
-                    </div>
-
                     {/* Status */}
                     <div>
                       <StatusDot isBanned={u.isBanned} />
                     </div>
 
-                    {/* Listings */}
-                    <div>
-                      <span
-                        className="text-[0.78rem] font-semibold"
-                        style={{ color: '#1A1523', fontFamily: "'DM Sans', sans-serif" }}
-                      >
-                        {u.listings ?? 0}
-                      </span>
-                      <span
-                        className="text-[0.7rem] ml-1"
-                        style={{ color: '#C4BDD0', fontFamily: "'DM Sans', sans-serif" }}
-                      >
-                        total
-                      </span>
-                    </div>
-
                     {/* Actions */}
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 justify-end">
                       {/* View */}
                       <button
                         type="button"

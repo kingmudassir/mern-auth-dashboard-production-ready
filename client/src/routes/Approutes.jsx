@@ -16,6 +16,9 @@ import UsersProfile from '../Pages/Admin/User-Profile/Main-Page/UsersProfile';
 import DeletedUsers from '../Pages/Admin/Deleted-Users/Main-Page/DeletedUsers';
 import BannedUsers from '../Pages/Admin/Banned-Users/Main-Page/BannerUsers';
 import AdminAccounts from '../Pages/Admin/Admin-Accounts/Main-Page/AdminAccounts';
+import CarMarketplace from '../Pages/CarMarketplace';
+import CarListing from '../Pages/CarListing';
+import AllCarListings from '../Pages/Admin/Car-Listings/Main-Page/AllCarListings';
 
 function Approutes() {
   return (
@@ -30,18 +33,18 @@ function Approutes() {
         <Route path="/password/reset/:token" element={<ResetPassword />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/confirm-email-change" element={<ConfirmEmailChange />} />
-        <Route path="/admin/dashboard" element={<Dashboard />} />
+        {/* <Route path="/admin/dashboard" element={<Dashboard />} /> */}
+        <Route path="/cars" element={<CarMarketplace />} />
+        <Route path="cars/:carId" element={<CarListing />} />
       </Route>
-      {/* <Route path="/admin/*" element={<Dashboard />}>
-        <Route index element={<Dashboard />} />
-        <Route path="users" element={<AllUsersPanel />} />
-        <Route path="users/:userId" element={<UsersProfile />} />
-      </Route> */}
       <Route path="/admin" element={<AdminLayout />}>
+        <Route index element={<Dashboard />} />
         <Route path="users" element={<AllUsersPanel />} />
         <Route path="users/:userId" element={<UsersProfile />} />
         <Route path="users/deleted" element={<DeletedUsers />} />
         <Route path="users/banned" element={<BannedUsers />} />
+
+        <Route path="listings" element={<AllCarListings />} />
 
         <Route path="/admin/accounts" element={<AdminAccounts />} />
       </Route>{' '}

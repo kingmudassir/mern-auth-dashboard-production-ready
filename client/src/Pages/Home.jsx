@@ -9,6 +9,7 @@ import {
   Shield,
   Clock,
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 // ── Static data ──────────────────────────────────────────────
 const MAKES = [
@@ -84,6 +85,7 @@ function FilterSelect({ placeholder, options, value, onChange }) {
 
 // ── Main component ────────────────────────────────────────────
 function Home() {
+  const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const [make, setMake] = useState('');
   const [city, setCity] = useState('');
@@ -249,7 +251,8 @@ function Home() {
                 {/* Search submit */}
                 <button
                   type="submit"
-                  className="btn-search relative overflow-hidden flex items-center gap-2 text-white text-[0.875rem] font-semibold px-5 py-2.5 rounded-xl flex-shrink-0"
+                  onClick={() => navigate(`/cars?q=${query}&make=${make}&city=${city}`)}
+                  className="btn-search relative overflow-hidden flex items-center gap-2 text-white text-[0.875rem] font-semibold px-5 py-2.5 rounded-xl shrink-0"
                   style={{ fontFamily: "'DM Sans', sans-serif" }}
                   aria-label="Search cars"
                 >
