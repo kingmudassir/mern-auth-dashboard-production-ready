@@ -70,7 +70,7 @@ const RECENT_USERS = [
   {
     id: 1,
     name: 'Malaika Khan',
-    email: 'malai.k@gmail.com',
+    email: 'malaika.k@gmail.com',
     city: 'Karachi',
     listings: 3,
     status: 'active',

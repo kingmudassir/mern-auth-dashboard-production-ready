@@ -13,6 +13,9 @@ import { verifyEmail } from "../controllers/Admin-Controller/All-Users/VerifyEma
 import { resetUserPassword } from "../controllers/Admin-Controller/All-Users/ResetUserPassword.js"
 import { sendUserPasswordResetLink } from "../controllers/Admin-Controller/All-Users/SendUserPasswordResetLink.js"
 import { restoreSoftDeletedUser, softDeleteUser } from "../controllers/Admin-Controller/All-Users/SoftDeleteUser.js"
+import { getReports, getReportById, resolveReport, dismissReport, updateReportPriority } from "../controllers/Admin-Controller/Reports/ReportsController.js"
+import { getPendingListings, getFlaggedListings, approveListing, rejectListing, removeFlaggedListing } from "../controllers/Admin-Controller/Listings/ListingsController.js"
+import { getMakes, getMakeById, addMake, updateMake, deleteMake, addModelToMake, getCities, getCityById, addCity, updateCity, deleteCity } from "../controllers/Admin-Controller/Catalogue/CatalogueController.js"
 
 const router = express.Router()
 
@@ -56,6 +59,35 @@ router.post('/refresh', refreshAccessToken)
 
 // Admin role
 router.get('/admin/users', isAuthenticated, authorizeRoles("admin"), getAllUsers)
+
+// ==================== REPORTS ====================
+router.get('/admin/reports', isAuthenticated, authorizeRoles("admin"), getReports);
+router.get('/admin/reports/:reportId', isAuthenticated, authorizeRoles("admin"), getReportById);
+router.patch('/admin/reports/:reportId/resolve', isAuthenticated, authorizeRoles("admin"), resolveReport);
+router.patch('/admin/reports/:reportId/dismiss', isAuthenticated, authorizeRoles("admin"), dismissReport);
+router.patch('/admin/reports/:reportId/priority', isAuthenticated, authorizeRoles("admin"), updateReportPriority);
+
+// ==================== LISTINGS ====================
+router.get('/admin/listings/pending', isAuthenticated, authorizeRoles("admin"), getPendingListings);
+router.get('/admin/listings/flagged', isAuthenticated, authorizeRoles("admin"), getFlaggedListings);
+router.patch('/admin/listings/:listingId/approve', isAuthenticated, authorizeRoles("admin"), approveListing);
+router.patch('/admin/listings/:listingId/reject', isAuthenticated, authorizeRoles("admin"), rejectListing);
+router.patch('/admin/listings/:listingId/remove', isAuthenticated, authorizeRoles("admin"), removeFlaggedListing);
+
+// ==================== CATALOGUE: MAKES ====================
+router.get('/admin/catalogue/makes', isAuthenticated, authorizeRoles("admin"), getMakes);
+router.get('/admin/catalogue/makes/:makeId', isAuthenticated, authorizeRoles("admin"), getMakeById);
+router.post('/admin/catalogue/makes', isAuthenticated, authorizeRoles("admin"), addMake);
+router.patch('/admin/catalogue/makes/:makeId', isAuthenticated, authorizeRoles("admin"), updateMake);
+router.delete('/admin/catalogue/makes/:makeId', isAuthenticated, authorizeRoles("admin"), deleteMake);
+router.post('/admin/catalogue/makes/:makeId/models', isAuthenticated, authorizeRoles("admin"), addModelToMake);
+
+// ==================== CATALOGUE: CITIES ====================
+router.get('/admin/catalogue/cities', isAuthenticated, authorizeRoles("admin"), getCities);
+router.get('/admin/catalogue/cities/:cityId', isAuthenticated, authorizeRoles("admin"), getCityById);
+router.post('/admin/catalogue/cities', isAuthenticated, authorizeRoles("admin"), addCity);
+router.patch('/admin/catalogue/cities/:cityId', isAuthenticated, authorizeRoles("admin"), updateCity);
+router.delete('/admin/catalogue/cities/:cityId', isAuthenticated, authorizeRoles("admin"), deleteCity);
 
 // route
 router.get('/check', redirectIfAuthenticated, (req, res) => {
