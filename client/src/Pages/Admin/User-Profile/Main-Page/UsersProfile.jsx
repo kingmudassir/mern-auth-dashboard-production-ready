@@ -35,7 +35,7 @@ import FieldLabel from '../Components/Common/FieldLabel';
 import StatusBadge from '../Components/Common/StatusBadge';
 import ListingBadge from '../Components/Common/ListingBadge';
 import Toast from '../Components/Common/Toast';
-import EditableField from '../Components/Functions/EditableField';
+import EditableField from '../Components/Common/EditableField';
 import ConfirmModal from '../Components/Common/ConfirmModal';
 import ActionBtn from '../Components/Common/ActionBtn';
 import { useUserById } from '../../../../Hooks/Admin-Hook/All-Users/useUserById';
@@ -49,6 +49,15 @@ import { useVerifyEmailManually } from '../../../../Hooks/Admin-Hook/All-Users/u
 import { useResetUserPassword } from '../../../../Hooks/Admin-Hook/All-Users/useResetUserPassword';
 import { useSendUserPasswordResetLink } from '../../../../Hooks/Admin-Hook/All-Users/useSendUserPasswordResetLink';
 import { useSoftDeleteUser } from '../../../../Hooks/Admin-Hook/All-Users/useSoftDeleteUser';
+import BackHeader from '../Components/Common/BackHeader';
+import UserProfileCard from '../Components/Functions/UserProfileCard';
+import UserStatusManager from '../Components/Functions/UserStatusManager';
+import UserRoleManager from '../Components/Functions/UserRoleManager';
+import AdminNotesManager from '../Components/Functions/AdminNotesManager';
+import UserPersonalInfoManager from '../Components/Functions/UserPersonalInfoManager';
+import UserVerificationManager from '../Components/Functions/UserVerificationManager';
+import UserPasswordManager from '../Components/Functions/UserPasswordManager';
+import UserDangerZone from '../Components/Functions/UserDangerZone';
 
 const MOCK_LISTINGS = [
   {
@@ -211,7 +220,6 @@ export default function UsersProfile() {
 
   const handleResendVerification = async (type) => {
     setLoad(`resend-${type}`, true);
-    // ← REPLACE with: resendVerificationMutation.mutate({ userId, type })
     await new Promise((r) => setTimeout(r, 900));
     setLoad(`resend-${type}`, false);
     showToast(`Verification ${type === 'email' ? 'email' : 'SMS'} sent`);
@@ -304,7 +312,7 @@ export default function UsersProfile() {
     });
 
   const getUserStatus = (user) => {
-    if (!user) return 'active'; // fallback while loading
+    if (!user) return 'active';
     if (user.isDeleted) return 'banned';
     if (user.isBanned) return 'banned';
     if (!user.isAccountVerified) return 'pending';
@@ -312,7 +320,13 @@ export default function UsersProfile() {
     return 'active';
   };
 
-  const currentStatus = getUserStatus(user);
+  const handleBack = () => {
+    if (window.history.length <= 1 || (window.history.state && window.history.state.idx === 0)) {
+      navigate('/admin/users', { replace: true });
+    } else {
+      navigate(-1);
+    }
+  };
 
   if (isLoading)
     return (
@@ -508,28 +522,7 @@ export default function UsersProfile() {
       <div className="max-w-245 mx-auto">
         {/* Back + toast */}
         <div className="flex items-center justify-between mb-6 gap-4 flex-wrap">
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            className="flex items-center gap-2 text-[0.8rem] font-medium transition-colors duration-150"
-            style={{
-              color: '#8A8390',
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              fontFamily: "'DM Sans', sans-serif",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = '#1A1523';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = '#8A8390';
-            }}
-            aria-label="Go back"
-          >
-            <ArrowLeft size={14} strokeWidth={2} />
-            Back to Users
-          </button>
+          <BackHeader onBack={handleBack} />
           {toast.msg && (
             <Toast
               msg={toast.msg}
@@ -541,439 +534,67 @@ export default function UsersProfile() {
 
         <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-5 items-start">
           {/* ── LEFT COLUMN ───────────────────────────────────── */}
+
+          {/* Identity card */}
           <div className="flex flex-col gap-4">
-            {' '}
-            {/* Identity card */}
-            <SectionCard>
-              <div className="flex flex-col items-center text-center gap-3">
-                {/* Avatar */}
-                <div
-                  className="w-20 h-20 rounded-2xl flex items-center justify-center text-[1.5rem] font-extrabold"
-                  style={{
-                    background: 'rgba(108,60,225,0.1)',
-                    color: '#6C3CE1',
-                    fontFamily: "'Syne', sans-serif",
-                  }}
-                  aria-label={`Avatar for ${user.name}`}
-                >
-                  {user.avatar ? (
-                    <img
-                      src={user.avatar}
-                      alt=""
-                      className="w-full h-full object-cover rounded-2xl"
-                    />
-                  ) : (
-                    initials(user.name)
-                  )}
-                </div>
-                <div>
-                  <h1
-                    className="text-[1.15rem] font-extrabold tracking-[-0.03em] leading-tight"
-                    style={{ color: '#1A1523', fontFamily: "'Syne', sans-serif" }}
-                  >
-                    {user.name}
-                  </h1>
-                  <p
-                    className="text-[0.78rem] mt-0.5"
-                    style={{ color: '#8A8390', fontFamily: "'DM Sans', sans-serif" }}
-                  >
-                    {user.email}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2 flex-wrap justify-center">
-                  <StatusBadge status={getUserStatus(user)} options={STATUS_OPTIONS} />
-                  <span
-                    className="text-[0.7rem] font-semibold px-2.5 py-0.5 rounded-full"
-                    style={{
-                      background: 'rgba(108,60,225,0.1)',
-                      color: '#6C3CE1',
-                      fontFamily: "'DM Sans', sans-serif",
-                    }}
-                  >
-                    {user.role}
-                  </span>
-                </div>
-              </div>
+            <UserProfileCard
+              user={user} // Pass the WHOLE object, not just the name
+              initials={initials} // Pass the function reference
+              getUserStatus={getUserStatus} // Pass the function reference
+              STATUS_OPTIONS={STATUS_OPTIONS}
+              formatDate={formatDate}
+            />
 
-              <div
-                className="mt-5 pt-4 flex flex-col gap-2.5"
-                style={{ borderTop: '1px solid #F2EEE9' }}
-              >
-                {[
-                  { icon: Calendar, label: 'Joined', value: formatDate(user.createdAt) },
-                  {
-                    icon: Clock,
-                    label: 'Last login',
-                    value: user.lastLoginAt ? formatDate(user.lastLoginAt) : 'N/A',
-                  },
-                  { icon: Car, label: 'Listings', value: `${user.listings ?? 0} total` },
-                  {
-                    icon: Flag,
-                    label: 'Reports against',
-                    value: `${user.reportCount ?? 0} reports`,
-                  },
-                ].map(({ icon: Icon, label, value }) => (
-                  <div key={label} className="flex items-center gap-2.5">
-                    <Icon
-                      size={13}
-                      strokeWidth={1.9}
-                      style={{ color: '#C4BDD0', flexShrink: 0 }}
-                      aria-hidden="true"
-                    />
-                    <span
-                      className="text-[0.75rem]"
-                      style={{ color: '#8A8390', fontFamily: "'DM Sans', sans-serif" }}
-                    >
-                      {label}
-                    </span>
-                    <span
-                      className="text-[0.75rem] font-semibold ml-auto"
-                      style={{ color: '#1A1523', fontFamily: "'DM Sans', sans-serif" }}
-                    >
-                      {value}
-                    </span>
-                  </div>
-                ))}
-              </div>
-
-              {/* User ID */}
-              <div className="mt-4 pt-3" style={{ borderTop: '1px solid #F2EEE9' }}>
-                <FieldLabel>User ID</FieldLabel>
-                <p className="text-[0.72rem] font-mono break-all" style={{ color: '#8A8390' }}>
-                  {user._id}
-                </p>
-              </div>
-            </SectionCard>
             {/* Status control */}
-            <SectionCard>
-              <SectionTitle sub="Change this user's account standing">Account Status</SectionTitle>
-              <div className="flex flex-col gap-2">
-                {STATUS_OPTIONS.map((s) => (
-                  <button
-                    key={s.value}
-                    type="button"
-                    onClick={() => {
-                      if (s.value === currentStatus) return;
-                      setModal({
-                        type:
-                          s.value === 'banned'
-                            ? 'ban'
-                            : s.value === 'active'
-                              ? 'activate'
-                              : s.value,
-                      });
-                    }}
-                    disabled={isUpdatingStatus}
-                    className="flex items-center justify-between px-4 py-3 rounded-xl border transition-all duration-150 disabled:opacity-50"
-                    style={{
-                      border:
-                        currentStatus === s.value
-                          ? `1.5px solid ${s.color}`
-                          : '1.5px solid #E8E3DC',
-                      background: currentStatus === s.value ? s.bg : '#FAFAF9',
-                      cursor: currentStatus === s.value ? 'default' : 'pointer',
-                    }}
-                    aria-pressed={currentStatus === s.value}
-                  >
-                    <span
-                      className="text-[0.82rem] font-semibold"
-                      style={{
-                        color: currentStatus === s.value ? s.color : '#8A8390',
-                        fontFamily: "'DM Sans', sans-serif",
-                      }}
-                    >
-                      {s.label}
-                    </span>
-                    {currentStatus === s.value && (
-                      <Check
-                        size={14}
-                        strokeWidth={2.5}
-                        style={{ color: s.color }}
-                        aria-label="Current status"
-                      />
-                    )}
-                  </button>
-                ))}
-              </div>
-            </SectionCard>
-            {/* Role control */}
-            <SectionCard>
-              <SectionTitle sub="Change what this user can do">Role</SectionTitle>
-              <div className="flex flex-col gap-2">
-                {[
-                  { value: 'user', label: 'User' },
-                  { value: 'moderator', label: 'Moderator' },
-                ].map(({ value, label }) => (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => {
-                      if (value === user.role) return;
-                      handleRoleChange(value);
-                    }}
-                    disabled={isUpdatingRole}
-                    className="flex items-center justify-between px-4 py-2.5 rounded-xl border transition-all duration-150 disabled:opacity-50"
-                    style={{
-                      border: user.role === value ? '1.5px solid #6C3CE1' : '1.5px solid #E8E3DC',
-                      background: user.role === value ? 'rgba(108,60,225,0.06)' : '#FAFAF9',
-                      cursor: user.role === value ? 'default' : 'pointer',
-                    }}
-                    aria-pressed={user.role === value}
-                  >
-                    <span
-                      className="text-[0.82rem] font-semibold"
-                      style={{
-                        color: user.role === value ? '#6C3CE1' : '#8A8390',
-                        fontFamily: "'DM Sans', sans-serif",
-                      }}
-                    >
-                      {label}
-                    </span>
-                    {user.role === value && (
-                      <Check
-                        size={14}
-                        strokeWidth={2.5}
-                        style={{ color: '#6C3CE1' }}
-                        aria-label="Current role"
-                      />
-                    )}
-                  </button>
-                ))}
-              </div>
-            </SectionCard>
-            {/* Admin notes */}
-            <SectionCard>
-              <SectionTitle sub="Internal notes — not visible to user">Admin Notes</SectionTitle>
-              <textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Add internal notes about this user…"
-                rows={4}
-                className="w-full rounded-xl border bg-[#FAFAF9] text-[0.82rem] p-3 outline-none resize-none transition-[border-color,box-shadow] duration-200 focus:border-[rgba(108,60,225,0.4)] focus:shadow-[0_0_0_3px_rgba(108,60,225,0.08)] focus:bg-white"
-                style={{
-                  borderColor: '#E8E3DC',
-                  color: '#1A1523',
-                  fontFamily: "'DM Sans', sans-serif",
-                }}
-                aria-label="Admin notes"
-              />
-              <button
-                type="button"
-                onClick={handleSaveNotes}
-                disabled={notesSaving}
-                className="mt-2 w-full py-2.5 rounded-xl text-[0.8rem] font-semibold text-white transition-opacity duration-150 disabled:opacity-60"
-                style={{
-                  background: 'linear-gradient(135deg, #E8622A 0%, #C4531F 100%)',
-                  fontFamily: "'DM Sans', sans-serif",
-                }}
-              >
-                {notesSaving ? 'Saving…' : 'Save Notes'}
-              </button>
-            </SectionCard>
-          </div>
+            <UserStatusManager
+              currentStatus={getUserStatus(user)} // Get the current status string
+              STATUS_OPTIONS={STATUS_OPTIONS} // Your array of status styles/labels
+              setModal={setModal} // Your state setter for the modal
+              isUpdatingStatus={isLoading} // Or whatever loading state your hook provides
+            />
 
+            {/* Role control */}
+            <UserRoleManager
+              currentRole={user.role}
+              onRoleChange={handleRoleChange}
+              isUpdatingRole={isUpdatingRole}
+            />
+
+            {/* Admin Notes control */}
+            <AdminNotesManager
+              notes={notes}
+              setNotes={setNotes}
+              onSave={handleSaveNotes}
+              isSaving={notesSaving}
+            />
+          </div>
           {/* ── RIGHT COLUMN ──────────────────────────────────── */}
           <div className="flex flex-col gap-4">
-            {/* Editable info */}
-            <SectionCard>
-              <SectionTitle sub="Hover a field to edit inline">Personal Information</SectionTitle>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
-                <EditableField
-                  label="Full Name"
-                  value={user.name}
-                  icon={User}
-                  onSave={handleSaveName}
-                  validate={(v) => {
-                    if (!v.trim()) return 'Name is required';
-                    if (v.trim() === user.name) return 'Name must be different from current name';
-                    return null;
-                  }}
-                />
+            {/* Personal Information control */}
+            <UserPersonalInfoManager
+              user={user}
+              onSaveName={handleSaveName}
+              onSavePhone={handleSavePhone}
+              onSaveEmail={handleSaveEmail}
+              isEmail={isEmail}
+              isPhone={isPhone}
+            />
 
-                <EditableField
-                  label="Phone Number"
-                  value={user.phone}
-                  type="tel"
-                  icon={Phone}
-                  onSave={handleSavePhone}
-                  validate={(v) => {
-                    if (!isPhone(v)) return 'Invalid Pakistani number';
-                    if (v === user.phone) return 'Phone must be different from current number';
-                    return null;
-                  }}
-                />
+            {/* Verification control */}
+            <UserVerificationManager
+              user={user}
+              setModal={setModal}
+              isVerifyingEmail={isVerifyingEmail}
+              isResendingPhone={loading['resend-phone']}
+              onResendVerification={handleResendVerification}
+            />
 
-                <EditableField
-                  label="Email Address"
-                  value={user.email}
-                  type="email"
-                  icon={Mail}
-                  onSave={handleSaveEmail}
-                  validate={(v) => {
-                    if (!isEmail(v)) return 'Invalid email address';
-                    if (v === user.email) return 'Email must be different from current email';
-                    return null;
-                  }}
-                />
-              </div>
-            </SectionCard>
-
-            {/* Verification */}
-            <SectionCard>
-              <SectionTitle sub="Manage email and phone verification status">
-                Verification
-              </SectionTitle>
-              <div className="flex flex-col gap-3">
-                {/* Email */}
-                <div
-                  className="flex items-center justify-between gap-4 p-4 rounded-xl"
-                  style={{ border: '1.5px solid #E8E3DC', background: '#FAFAF9' }}
-                >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-                      style={{
-                        background: user.isEmailVerified
-                          ? 'rgba(34,197,94,0.12)'
-                          : 'rgba(232,98,42,0.1)',
-                      }}
-                    >
-                      {user.isEmailVerified ? (
-                        <ShieldCheck
-                          size={15}
-                          strokeWidth={2}
-                          style={{ color: '#16a34a' }}
-                          aria-hidden="true"
-                        />
-                      ) : (
-                        <ShieldOff
-                          size={15}
-                          strokeWidth={2}
-                          style={{ color: '#E8622A' }}
-                          aria-hidden="true"
-                        />
-                      )}
-                    </div>
-                    <div>
-                      <p
-                        className="text-[0.82rem] font-semibold"
-                        style={{ color: '#1A1523', fontFamily: "'DM Sans', sans-serif" }}
-                      >
-                        Email
-                      </p>
-                      <p
-                        className="text-[0.72rem]"
-                        style={{
-                          color: user.isEmailVerified ? '#16a34a' : '#E8622A',
-                          fontFamily: "'DM Sans', sans-serif",
-                        }}
-                      >
-                        {user.isEmailVerified ? 'Verified' : 'Not verified'}
-                      </p>
-                    </div>
-                  </div>
-                  {!user.isEmailVerified && (
-                    <div className="flex gap-2 flex-wrap justify-end">
-                      <ActionBtn
-                        label="Verify manually"
-                        icon={ShieldCheck}
-                        loading={isVerifyingEmail}
-                        onClick={() => setModal({ type: 'verify-email' })}
-                      />
-                    </div>
-                  )}
-                </div>
-
-                {/* Phone */}
-                <div
-                  className="flex items-center justify-between gap-4 p-4 rounded-xl"
-                  style={{ border: '1.5px solid #E8E3DC', background: '#FAFAF9' }}
-                >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                      style={{
-                        background: user.phoneVerified
-                          ? 'rgba(34,197,94,0.12)'
-                          : 'rgba(232,98,42,0.1)',
-                      }}
-                    >
-                      {user.phoneVerified ? (
-                        <ShieldCheck
-                          size={15}
-                          strokeWidth={2}
-                          style={{ color: '#16a34a' }}
-                          aria-hidden="true"
-                        />
-                      ) : (
-                        <ShieldOff
-                          size={15}
-                          strokeWidth={2}
-                          style={{ color: '#E8622A' }}
-                          aria-hidden="true"
-                        />
-                      )}
-                    </div>
-                    <div>
-                      <p
-                        className="text-[0.82rem] font-semibold"
-                        style={{ color: '#1A1523', fontFamily: "'DM Sans', sans-serif" }}
-                      >
-                        Phone
-                      </p>
-                      <p
-                        className="text-[0.72rem]"
-                        style={{
-                          color: user.phoneVerified ? '#16a34a' : '#E8622A',
-                          fontFamily: "'DM Sans', sans-serif",
-                        }}
-                      >
-                        {user.phoneVerified ? 'Verified' : 'Not verified'}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex gap-2 flex-wrap justify-end">
-                    {!user.phoneVerified && (
-                      <ActionBtn
-                        label="Resend OTP"
-                        icon={Send}
-                        loading={loading['resend-phone']}
-                        onClick={() => handleResendVerification('phone')}
-                        variant="violet"
-                      />
-                    )}
-                    {!user.phoneVerified && (
-                      <ActionBtn
-                        label="Verify manually"
-                        icon={ShieldCheck}
-                        onClick={() => setModal({ type: 'verify-phone' })}
-                      />
-                    )}
-                  </div>
-                </div>
-              </div>
-            </SectionCard>
-
-            {/* Password */}
-            <SectionCard>
-              <SectionTitle sub="Force a password change or send a reset link">
-                Password Management
-              </SectionTitle>
-              <div className="flex gap-3 flex-wrap">
-                <ActionBtn
-                  label="Set new password"
-                  icon={KeyRound}
-                  onClick={() => setModal({ type: 'reset-pw' })}
-                  variant="violet"
-                />
-                <ActionBtn
-                  label="Send reset link"
-                  icon={Send}
-                  loading={isSendingResetLink}
-                  onClick={handleSendPasswordReset}
-                />
-              </div>
-            </SectionCard>
+            {/* Password Management control */}
+            <UserPasswordManager
+              onSetNewPassword={() => setModal({ type: 'reset-pw' })}
+              onSendResetLink={handleSendPasswordReset}
+              isSendingResetLink={isSendingResetLink}
+            />
 
             {/* Listings + activity tabs */}
             <SectionCard>
@@ -1098,31 +719,13 @@ export default function UsersProfile() {
               )}
             </SectionCard>
 
-            {/* Danger zone */}
-            <div
-              className="rounded-2xl p-6"
-              style={{ background: '#FFFAF9', border: '1.5px solid rgba(232,98,42,0.2)' }}
-            >
-              <SectionTitle sub="Irreversible actions — proceed with caution">
-                Danger Zone
-              </SectionTitle>
-              <div className="flex gap-3 flex-wrap">
-                <ActionBtn
-                  label="Delete all listings"
-                  icon={Trash2}
-                  onClick={() => setModal({ type: 'delete-listings' })}
-                  loading={loading.deletelistings}
-                  variant="danger"
-                />
-                <ActionBtn
-                  label="Delete account"
-                  icon={Trash2}
-                  onClick={() => setModal({ type: 'delete-account' })}
-                  loading={isDeletingUser}
-                  variant="red"
-                />
-              </div>
-            </div>
+            {/* Danger Zone control */}
+            <UserDangerZone
+              onDeleteListings={() => setModal({ type: 'delete-listings' })}
+              onDeleteAccount={() => setModal({ type: 'delete-account' })}
+              isDeletingListings={loading.deletelistings}
+              isDeletingAccount={isDeletingUser}
+            />
           </div>
         </div>
       </div>

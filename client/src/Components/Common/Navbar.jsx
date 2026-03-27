@@ -170,7 +170,7 @@ export default function Navbar() {
                       <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#E8622A]" />
                     </a>
                     <a
-                      href="/register"
+                      href="/post-ad"
                       className="
                         btn-register
                         relative overflow-hidden

@@ -741,22 +741,6 @@ export const getAdminStats = catchAsyncError(async (req, res, next) => {
     });
 });
 
-export const getAllUsers = catchAsyncError(async (req, res, next) => {
-    const users = await User.find({ 
-        isAccountVerified: true, 
-        role: "user",
-        isDeleted: false
-    })
-        .sort({ createdAt: -1 })
-        .select('name email phone role isAccountVerified isEmailVerified isBanned deleteAccountRequestAt isDeleted createdAt');
-
-    res.status(200).json({
-        success: true,
-        count: users.length,
-        users
-    });
-});
-
 export const getAdminAccounts = catchAsyncError(async (req, res, next) => {
     const users = await User.find({
         role: { $in: ['admin', 'moderator'] },

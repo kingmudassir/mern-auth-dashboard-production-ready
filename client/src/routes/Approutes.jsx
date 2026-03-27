@@ -9,9 +9,8 @@ import VerifyOTP from '../Pages/Shared/VerifyOTP';
 import ResetPassword from '../Pages/Shared/ResetPassword';
 import Profile from '../Pages/User/Profile';
 import ConfirmEmailChange from '../Pages/ConfirmEmailChange';
-import Dashboard from '../Pages/Admin/Dashboard';
+import Dashboard from '../Pages/Admin-Dashboard/Main-Page/Dashboard';
 import AdminLayout from '../Layout/AdminLayout';
-import AllUsersPanel from '../Pages/Admin/AllUsersPanel';
 import UsersProfile from '../Pages/Admin/User-Profile/Main-Page/UsersProfile';
 import DeletedUsers from '../Pages/Admin/Deleted-Users/Main-Page/DeletedUsers';
 import BannedUsers from '../Pages/Admin/Banned-Users/Main-Page/BannerUsers';
@@ -26,6 +25,7 @@ import CitiesPanel from '../Pages/Admin/Catalogue/Cities/Main-Page/CitiesPanel';
 import SettingsPanel from '../Pages/Admin/Settings/Main-Page/SettingsPanel';
 import PostAd from '../Pages/PostAd';
 import SavedAds from '../Pages/SavedAds';
+import AllUsersPanel from '../Pages/Admin/All-Users/Main-Page/AllUsersPanel';
 
 function Approutes() {
   return (

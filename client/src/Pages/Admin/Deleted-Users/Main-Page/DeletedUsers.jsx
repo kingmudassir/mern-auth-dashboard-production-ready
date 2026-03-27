@@ -191,7 +191,7 @@ export default function DeletedUsers() {
         danger
       />
 
-      <div className="max-w-245 mx-auto">
+      <div className="max-w-400 mx-auto">
         {/* Header */}
         <div className="flex items-start justify-between mb-5 gap-4 flex-wrap">
           <div>

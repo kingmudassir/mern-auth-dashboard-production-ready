@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import FieldLabel from '../Common/FieldLabel';
+import FieldLabel from './FieldLabel';
 import { AlertCircle, Check, Pencil, X } from 'lucide-react';
 
 function EditableField({

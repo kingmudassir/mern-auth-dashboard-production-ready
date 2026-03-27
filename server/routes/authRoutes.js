@@ -1,5 +1,5 @@
 import express from "express"
-import { changePassword, confirmEmailChange, deleteAccount, forgetPassword, getAdminStats, getAllUsers, getAdminAccounts, getBannedUsers, getDeletedUsers, getUser, login, logout, refreshAccessToken, register, requestEmailChange, resendOTP, resetPassword, updateProfile, verifyOTP } from "../controllers/authController.js"
+import { changePassword, confirmEmailChange, deleteAccount, forgetPassword, getAdminAccounts, getBannedUsers, getDeletedUsers, getUser, login, logout, refreshAccessToken, register, requestEmailChange, resendOTP, resetPassword, updateProfile, verifyOTP } from "../controllers/authController.js"
 import { isAuthenticated } from "../middlewares/userAuth.js"
 import { redirectIfAuthenticated } from "../middlewares/authRedirect.js"
 import { authorizeRoles } from "../middlewares/authorizeRoles.js"
@@ -17,6 +17,7 @@ import { getReports, getReportById, resolveReport, dismissReport, updateReportPr
 import { getPendingListings, getFlaggedListings, approveListing, rejectListing, removeFlaggedListing } from "../controllers/Admin-Controller/Listings/ListingsController.js"
 import { getAllListings } from "../controllers/Admin-Controller/Listings/GetAllListings.js"
 import { getMakes, getMakeById, addMake, updateMake, deleteMake, addModelToMake, getCities, getCityById, addCity, updateCity, deleteCity } from "../controllers/Admin-Controller/Catalogue/CatalogueController.js"
+import { getAdminStats } from "../controllers/Admin-Controller/Admin-Dashboard/AdminDashboardController.js"
 
 const router = express.Router()
 
@@ -39,8 +40,7 @@ router.put('/password/change', isAuthenticated, changePassword);
 router.delete('/deleteAccount', isAuthenticated, deleteAccount)
 
 //Admin Routes
-router.get('/admin/stats', isAuthenticated, authorizeRoles("admin"), getAdminStats);
-router.get('/admin/users', isAuthenticated, authorizeRoles("admin"), getAllUsers);
+// router.get('/admin/stats', isAuthenticated, authorizeRoles("admin"), getAdminStats);
 router.get('/admin/users/admins', isAuthenticated, authorizeRoles("admin"), getAdminAccounts);
 router.get('/admin/users/banned', isAuthenticated, authorizeRoles("admin"), getBannedUsers);
 router.get('/admin/users/deleted', isAuthenticated, authorizeRoles("admin"), getDeletedUsers);
@@ -57,9 +57,6 @@ router.patch('/admin/users/:userId/restore', isAuthenticated, authorizeRoles("ad
 
 // Only for testing purposes!
 router.post('/refresh', refreshAccessToken)
-
-// Admin role
-router.get('/admin/users', isAuthenticated, authorizeRoles("admin"), getAllUsers)
 
 // ==================== REPORTS ====================
 router.get('/admin/reports', isAuthenticated, authorizeRoles("admin"), getReports);

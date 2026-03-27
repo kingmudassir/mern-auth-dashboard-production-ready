@@ -6,6 +6,6 @@ export const useAdminStats = () => {
         queryKey: ['adminStats'],
         queryFn: adminService.getAdminStats,
         retry: false,
-        staleTime: 60 * 1000,
+        refetchOnWindowFocus: false,
     });
 };

@@ -5,39 +5,43 @@ import { MoreHorizontal } from 'lucide-react';
 function ActionMenu({ actions }) {
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState({ top: 0, left: 0 });
+
   const btnRef = useRef(null);
+  const menuRef = useRef(null);
 
   useEffect(() => {
     if (!open) return;
 
     const handleClickOutside = (e) => {
-      if (btnRef.current && !btnRef.current.contains(e.target)) {
-        setOpen(false);
+      if (btnRef.current?.contains(e.target) || menuRef.current?.contains(e.target)) {
+        return;
       }
+      setOpen(false);
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
   }, [open]);
 
-  const handleOpen = () => {
+  const handleOpen = (e) => {
+    e.stopPropagation();
     if (btnRef.current) {
       const rect = btnRef.current.getBoundingClientRect();
       setPos({
-        top: rect.bottom + window.scrollY + 4, //Moves menu down
-        left: rect.right + window.scrollX - 140, //Moves menu left
+        top: rect.bottom + window.scrollY + 4,
+        left: rect.right + window.scrollX - 140,
       });
     }
     setOpen((p) => !p);
   };
 
   return (
-    <div ref={btnRef} className="relative">
+    <div className="relative">
       <button
+        ref={btnRef}
         type="button"
         onClick={handleOpen}
         className="w-7 h-7 rounded-lg flex items-center justify-center text-[#8A8390] hover:bg-[#F2EEE9] hover:text-[#1A1523] transition-colors duration-150"
-        aria-label="Actions"
       >
         <MoreHorizontal size={15} strokeWidth={2} />
       </button>
@@ -45,16 +49,18 @@ function ActionMenu({ actions }) {
       {open &&
         createPortal(
           <div
+            ref={menuRef}
             className="fixed z-9999 bg-white border border-[#E8E3DC] rounded-xl shadow-[0_8px_24px_rgba(26,21,35,0.1)] py-1"
             style={{ top: pos.top, left: pos.left, minWidth: '140px' }}
+            onClick={(e) => e.stopPropagation()}
           >
             {actions.map(({ label, icon: Icon, danger, onClick }) => (
               <button
                 key={label}
                 type="button"
                 onClick={() => {
-                  setOpen(false);
                   onClick?.();
+                  setOpen(false);
                 }}
                 className={`flex items-center gap-2.5 w-full px-3.5 py-2 text-[0.8rem] font-medium transition-colors duration-100 ${
                   danger

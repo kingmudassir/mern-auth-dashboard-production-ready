@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import adminService from '../../Services/adminService';
+import adminService from '../../../Services/adminService';
 
 export const useAllUsers = () => {
     return useQuery({

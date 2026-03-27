@@ -3,7 +3,7 @@ import { api } from "./api";
 
 const adminService = {
     getAdminStats: async () => {
-        return await api.get('/admin/stats');
+        return await api.get('/admin/dashboard/stats');
     },
 
     getAllUsers: async () => {
