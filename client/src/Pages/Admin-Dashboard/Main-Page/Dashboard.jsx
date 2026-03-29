@@ -199,13 +199,16 @@ function StatusBadge({ status }) {
   );
 }
 
-const initials = (name = '') =>
-  name
+const initials = (name = '') => {
+  if (!name) return '??'; // Fallback for missing names
+  return name
     .split(' ')
+    .filter(Boolean) // Remove extra spaces
     .slice(0, 2)
     .map((w) => w[0])
     .join('')
     .toUpperCase();
+};
 
 //TODO: This will be replaced by a function that gets only first two initials from the name and puts them as the image.
 function AvatarBubble({ initials: text, size = 32, accent = '#6C3CE1' }) {
@@ -287,7 +290,10 @@ export default function Dashboard() {
 
   const stats = STATS;
 
-  const recentUsers = usersData?.users?.slice(0, 6) || STATS;
+  const recentUsers =
+    usersData?.users
+      ?.filter((u) => u.status === 'active' || (!u.isBanned && u.isAccountVerified))
+      ?.slice(0, 6) || [];
   const recentListings = listingsData?.listings?.slice(0, 5) || RECENT_LISTINGS;
   const reports = reportsData?.reports || REPORTS;
 
@@ -479,30 +485,44 @@ export default function Dashboard() {
               View all <ArrowUpRight size={11} />
             </a>
           </div>
+
           <div className="flex flex-col gap-3">
-            {recentUsers.map((u, i) => (
-              <div key={i} className="user-row">
-                <AvatarBubble initials={initials(u.name)} size={34} />
-                <div className="flex-1 min-w-0">
-                  <p
-                    className="text-[0.8rem] font-semibold text-[#1A1523] truncate"
-                    style={{ fontFamily: "'DM Sans', sans-serif" }}
-                  >
-                    {u.name}
-                  </p>
-                  <p
-                    className="text-[0.67rem] text-[#8A8390] truncate"
-                    style={{ fontFamily: "'DM Sans', sans-serif" }}
-                  >
-                    {u.email}
-                  </p>
+            {recentUsers.length > 0 ? (
+              recentUsers.map((u, i) => (
+                <div key={i} className="user-row">
+                  <AvatarBubble initials={initials(u.name)} size={34} />
+                  <div className="flex-1 min-w-0">
+                    <p
+                      className="text-[0.8rem] font-semibold text-[#1A1523] truncate"
+                      style={{ fontFamily: "'DM Sans', sans-serif" }}
+                    >
+                      {u.name}
+                    </p>
+                    <p
+                      className="text-[0.67rem] text-[#8A8390] truncate"
+                      style={{ fontFamily: "'DM Sans', sans-serif" }}
+                    >
+                      {u.email}
+                    </p>
+                  </div>
+                  <div className="flex flex-col items-end gap-1 shrink-0">
+                    <StatusBadge status={u.status} />
+                    <span className="text-[0.62rem] text-[#C4BDD0]">{u.joined}</span>
+                  </div>
                 </div>
-                <div className="flex flex-col items-end gap-1 shrink-0">
-                  <StatusBadge status={u.status} />
-                  <span className="text-[0.62rem] text-[#C4BDD0]">{u.joined}</span>
-                </div>
+              ))
+            ) : (
+              /* Empty State Component */
+              <div className="flex flex-col items-center justify-center py-8 px-4 border border-dashed border-[#E5E7EB] rounded-xl bg-[#F9FAFB]">
+                <Users size={24} className="text-[#C4BDD0] mb-2" />
+                <p
+                  className="text-[0.75rem] font-medium text-[#8A8390]"
+                  style={{ fontFamily: "'DM Sans', sans-serif" }}
+                >
+                  No recent sign-ups
+                </p>
               </div>
-            ))}
+            )}
           </div>
         </div>
 

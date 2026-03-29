@@ -127,7 +127,8 @@ export default function UsersProfile() {
   const navigate = useNavigate();
 
   const { data, isLoading } = useUserById(userId);
-  const { mutate: updateStatus, isPending: isUpdatingStatus } = useUpdateUserStatus(userId);
+  // const { mutate: updateStatus, isPending: isUpdatingStatus } = useUpdateUserStatus(userId);
+  const { mutate: updateStatus, isPending: isUpdatingStatus } = useUpdateUserStatus();
   const { mutate: saveNotes, isPending: notesSaving } = useUpdateAdminNotes(userId);
   const { mutate: updateRole, isPending: isUpdatingRole } = useUpdateUserRole(userId);
   const { mutate: updateUserInfo, isPending: isUpdatingInfo } = useUpdateUserInfo(userId);
@@ -193,7 +194,7 @@ export default function UsersProfile() {
 
   const handleStatusChange = (status) => {
     updateStatus(
-      { status },
+      { userId, status },
       {
         onSuccess: () => {
           showToast(`User ${status === 'banned' ? 'banned' : 'activated'} successfully.`);

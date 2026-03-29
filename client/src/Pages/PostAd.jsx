@@ -18,27 +18,6 @@ import {
   Info,
 } from 'lucide-react';
 
-// ─────────────────────────────────────────────────────────────────
-// 💡 TANSTACK MUTATION INTEGRATION
-//
-//  const postAdMutation = useMutation({
-//    mutationFn: (formData) => axios.post('/api/listings', formData, {
-//      headers: { 'Content-Type': 'multipart/form-data' },
-//    }),
-//    onSuccess: (data) => navigate(`/cars/${data.listing._id}`),
-//    onError: (err) => setGlobalErr(err.response?.data?.message || 'Failed to post ad.'),
-//  });
-//
-//  Replace simulate() in handleSubmit with:
-//  const fd = new FormData();
-//  Object.entries(fields).forEach(([k, v]) => fd.append(k, v));
-//  features.forEach(f => fd.append('features[]', f));
-//  images.forEach(img => fd.append('images', img.file));
-//  postAdMutation.mutate(fd);
-//
-//  Replace `loading` useState with: const loading = postAdMutation.isPending;
-// ─────────────────────────────────────────────────────────────────
-
 // ── Static data ───────────────────────────────────────────────────
 const MAKES = [
   'Toyota',
@@ -714,833 +693,711 @@ export default function PostAd() {
   // ── Success ───────────────────────────────────────────────────
   if (submitted) {
     return (
-      <>
-        <style>{STYLES}</style>
-        <div className="pa-bg min-h-screen flex items-center justify-center px-4 py-20">
-          <div className="pa-card success-pop w-full max-w-md rounded-3xl p-10 text-center">
-            <div
-              className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5"
-              style={{ background: 'rgba(108,60,225,0.1)' }}
+      <div className="pa-bg min-h-screen flex items-center justify-center px-4 py-20">
+        <div className="pa-card success-pop w-full max-w-md rounded-3xl p-10 text-center">
+          <div
+            className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5"
+            style={{ background: 'rgba(108,60,225,0.1)' }}
+          >
+            <CheckCircle2 size={30} strokeWidth={1.8} style={{ color: '#6C3CE1' }} />
+          </div>
+          <h2
+            className="text-[1.6rem] font-extrabold tracking-[-0.035em] mb-2"
+            style={{ color: '#1A1523', fontFamily: "'Syne', sans-serif" }}
+          >
+            Ad posted!
+          </h2>
+          <p
+            className="text-[0.875rem] leading-relaxed mb-7"
+            style={{ color: '#8A8390', fontFamily: "'DM Sans', sans-serif" }}
+          >
+            Your {fields.year} {fields.make} {fields.model} is now live. Buyers can find and contact
+            you directly.
+          </p>
+          <div className="flex flex-col gap-2.5">
+            <button
+              type="button"
+              onClick={() => navigate('/cars')}
+              className="inline-flex items-center justify-center gap-2 w-full text-white text-[0.875rem] font-semibold py-3.5 rounded-xl transition-transform duration-150 hover:-translate-y-px"
+              style={{
+                background: 'linear-gradient(135deg, #E8622A 0%, #C4531F 100%)',
+                boxShadow: '0 2px 12px rgba(232,98,42,0.3)',
+                fontFamily: "'DM Sans', sans-serif",
+              }}
             >
-              <CheckCircle2 size={30} strokeWidth={1.8} style={{ color: '#6C3CE1' }} />
-            </div>
-            <h2
-              className="text-[1.6rem] font-extrabold tracking-[-0.035em] mb-2"
-              style={{ color: '#1A1523', fontFamily: "'Syne', sans-serif" }}
+              Browse Marketplace
+              <ArrowRight size={15} strokeWidth={2.2} />
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setSubmitted(false);
+                setFields({
+                  make: '',
+                  model: '',
+                  variant: '',
+                  year: '',
+                  condition: 'Used',
+                  bodyType: '',
+                  color: '',
+                  engineCC: '',
+                  assembly: 'Local',
+                  transmission: '',
+                  fuel: '',
+                  mileage: '',
+                  registeredIn: '',
+                  price: '',
+                  negotiable: false,
+                  city: '',
+                  area: '',
+                  phone: '',
+                  whatsapp: false,
+                  description: '',
+                });
+                setImages([]);
+                setFeatures([]);
+              }}
+              className="w-full py-3 rounded-xl text-[0.875rem] font-medium border transition-colors duration-150"
+              style={{
+                color: '#8A8390',
+                borderColor: '#E8E3DC',
+                background: 'transparent',
+                fontFamily: "'DM Sans', sans-serif",
+              }}
             >
-              Ad posted!
-            </h2>
-            <p
-              className="text-[0.875rem] leading-relaxed mb-7"
-              style={{ color: '#8A8390', fontFamily: "'DM Sans', sans-serif" }}
-            >
-              Your {fields.year} {fields.make} {fields.model} is now live. Buyers can find and
-              contact you directly.
-            </p>
-            <div className="flex flex-col gap-2.5">
-              <button
-                type="button"
-                onClick={() => navigate('/cars')}
-                className="inline-flex items-center justify-center gap-2 w-full text-white text-[0.875rem] font-semibold py-3.5 rounded-xl transition-transform duration-150 hover:-translate-y-px"
-                style={{
-                  background: 'linear-gradient(135deg, #E8622A 0%, #C4531F 100%)',
-                  boxShadow: '0 2px 12px rgba(232,98,42,0.3)',
-                  fontFamily: "'DM Sans', sans-serif",
-                }}
-              >
-                Browse Marketplace
-                <ArrowRight size={15} strokeWidth={2.2} />
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setSubmitted(false);
-                  setFields({
-                    make: '',
-                    model: '',
-                    variant: '',
-                    year: '',
-                    condition: 'Used',
-                    bodyType: '',
-                    color: '',
-                    engineCC: '',
-                    assembly: 'Local',
-                    transmission: '',
-                    fuel: '',
-                    mileage: '',
-                    registeredIn: '',
-                    price: '',
-                    negotiable: false,
-                    city: '',
-                    area: '',
-                    phone: '',
-                    whatsapp: false,
-                    description: '',
-                  });
-                  setImages([]);
-                  setFeatures([]);
-                }}
-                className="w-full py-3 rounded-xl text-[0.875rem] font-medium border transition-colors duration-150"
-                style={{
-                  color: '#8A8390',
-                  borderColor: '#E8E3DC',
-                  background: 'transparent',
-                  fontFamily: "'DM Sans', sans-serif",
-                }}
-              >
-                Post Another Ad
-              </button>
-            </div>
+              Post Another Ad
+            </button>
           </div>
         </div>
-      </>
+      </div>
     );
   }
 
   return (
-    <>
-      <style>{STYLES}</style>
+    <div className="pa-bg" style={{ paddingTop: '66px' }}>
+      <div className="pa-inner">
+        {/* Page heading */}
+        <div className="mb-8">
+          <p
+            className="text-[0.72rem] font-bold uppercase tracking-[0.1em] mb-1"
+            style={{ color: '#6C3CE1', fontFamily: "'DM Sans', sans-serif" }}
+          >
+            Sell Your Car
+          </p>
+          <h1
+            className="text-[2rem] font-extrabold tracking-[-0.04em] leading-tight"
+            style={{ color: '#1A1523', fontFamily: "'Syne', sans-serif" }}
+          >
+            Post Your Ad
+          </h1>
+          <p
+            className="text-[0.875rem] mt-1"
+            style={{ color: '#8A8390', fontFamily: "'DM Sans', sans-serif" }}
+          >
+            Fill in the details below and your listing will be live in minutes.
+          </p>
+        </div>
 
-      <div className="pa-bg" style={{ paddingTop: '66px' }}>
-        <div className="pa-inner">
-          {/* Page heading */}
-          <div className="mb-8">
+        <ProgressBar activeStep={activeStep} />
+
+        {/* Global error */}
+        {globalErr && (
+          <div
+            className="flex items-start gap-2.5 rounded-xl px-4 py-3 mb-5"
+            style={{
+              background: 'rgba(232,98,42,0.07)',
+              border: '1px solid rgba(232,98,42,0.25)',
+            }}
+            role="alert"
+          >
+            <AlertCircle
+              size={15}
+              strokeWidth={2}
+              style={{ color: '#E8622A', flexShrink: 0 }}
+              aria-hidden="true"
+            />
             <p
-              className="text-[0.72rem] font-bold uppercase tracking-[0.1em] mb-1"
-              style={{ color: '#6C3CE1', fontFamily: "'DM Sans', sans-serif" }}
+              className="text-[0.8rem] font-medium"
+              style={{ color: '#C4531F', fontFamily: "'DM Sans', sans-serif" }}
             >
-              Sell Your Car
-            </p>
-            <h1
-              className="text-[2rem] font-extrabold tracking-[-0.04em] leading-tight"
-              style={{ color: '#1A1523', fontFamily: "'Syne', sans-serif" }}
-            >
-              Post Your Ad
-            </h1>
-            <p
-              className="text-[0.875rem] mt-1"
-              style={{ color: '#8A8390', fontFamily: "'DM Sans', sans-serif" }}
-            >
-              Fill in the details below and your listing will be live in minutes.
+              {globalErr}
             </p>
           </div>
+        )}
 
-          <ProgressBar activeStep={activeStep} />
+        <form onSubmit={handleSubmit} noValidate aria-label="Post vehicle ad">
+          <div className="flex flex-col gap-5">
+            {/* ══ STEP 1 — Vehicle Info ══════════════════════ */}
+            <SectionCard id="step-vehicle">
+              <SectionTitle step="1" sub="Tell buyers what you're selling">
+                Vehicle Information
+              </SectionTitle>
 
-          {/* Global error */}
-          {globalErr && (
-            <div
-              className="flex items-start gap-2.5 rounded-xl px-4 py-3 mb-5"
-              style={{
-                background: 'rgba(232,98,42,0.07)',
-                border: '1px solid rgba(232,98,42,0.25)',
-              }}
-              role="alert"
-            >
-              <AlertCircle
-                size={15}
-                strokeWidth={2}
-                style={{ color: '#E8622A', flexShrink: 0 }}
-                aria-hidden="true"
-              />
-              <p
-                className="text-[0.8rem] font-medium"
-                style={{ color: '#C4531F', fontFamily: "'DM Sans', sans-serif" }}
-              >
-                {globalErr}
-              </p>
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} noValidate aria-label="Post vehicle ad">
-            <div className="flex flex-col gap-5">
-              {/* ══ STEP 1 — Vehicle Info ══════════════════════ */}
-              <SectionCard id="step-vehicle">
-                <SectionTitle step="1" sub="Tell buyers what you're selling">
-                  Vehicle Information
-                </SectionTitle>
-
-                {/* Make / Model / Variant */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-                  <div>
-                    <FieldLabel required>Make</FieldLabel>
-                    <SelectInput
-                      value={fields.make}
-                      onChange={set('make')}
-                      error={errors.make}
-                      aria-label="Make"
-                    >
-                      <option value="">Select Make</option>
-                      {MAKES.map((m) => (
-                        <option key={m} value={m}>
-                          {m}
-                        </option>
-                      ))}
-                    </SelectInput>
-                    <FieldError msg={errors.make} />
-                  </div>
-                  <div>
-                    <FieldLabel required>Model</FieldLabel>
-                    <SelectInput
-                      value={fields.model}
-                      onChange={set('model')}
-                      error={errors.model}
-                      disabled={!fields.make}
-                      aria-label="Model"
-                    >
-                      <option value="">Select Model</option>
-                      {availableModels.map((m) => (
-                        <option key={m} value={m}>
-                          {m}
-                        </option>
-                      ))}
-                    </SelectInput>
-                    <FieldError msg={errors.model} />
-                  </div>
-                  <div>
-                    <FieldLabel>Variant</FieldLabel>
-                    <TextInput
-                      type="text"
-                      placeholder="e.g. Altis X 1.6"
-                      value={fields.variant}
-                      onChange={set('variant')}
-                      aria-label="Variant"
-                    />
-                  </div>
-                </div>
-
-                {/* Year / Condition / Body type */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-                  <div>
-                    <FieldLabel required>Year</FieldLabel>
-                    <SelectInput
-                      value={fields.year}
-                      onChange={set('year')}
-                      error={errors.year}
-                      aria-label="Year"
-                    >
-                      <option value="">Select Year</option>
-                      {YEARS.map((y) => (
-                        <option key={y} value={y}>
-                          {y}
-                        </option>
-                      ))}
-                    </SelectInput>
-                    <FieldError msg={errors.year} />
-                  </div>
-                  <div>
-                    <FieldLabel required>Condition</FieldLabel>
-                    <div className="flex gap-2 h-11">
-                      {CONDITIONS.map((c) => (
-                        <button
-                          key={c}
-                          type="button"
-                          onClick={() => {
-                            setFields((p) => ({ ...p, condition: c }));
-                          }}
-                          className="flex-1 rounded-xl border text-[0.82rem] font-semibold transition-all duration-150"
-                          style={{
-                            border:
-                              fields.condition === c
-                                ? '1.5px solid #6C3CE1'
-                                : '1.5px solid #E8E3DC',
-                            background:
-                              fields.condition === c ? 'rgba(108,60,225,0.07)' : '#FAFAF9',
-                            color: fields.condition === c ? '#6C3CE1' : '#8A8390',
-                            fontFamily: "'DM Sans', sans-serif",
-                          }}
-                          aria-pressed={fields.condition === c}
-                        >
-                          {c}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div>
-                    <FieldLabel required>Body Type</FieldLabel>
-                    <SelectInput
-                      value={fields.bodyType}
-                      onChange={set('bodyType')}
-                      error={errors.bodyType}
-                      aria-label="Body type"
-                    >
-                      <option value="">Select Body Type</option>
-                      {BODY_TYPES.map((b) => (
-                        <option key={b} value={b}>
-                          {b}
-                        </option>
-                      ))}
-                    </SelectInput>
-                    <FieldError msg={errors.bodyType} />
-                  </div>
-                </div>
-
-                {/* Fuel / Transmission / Engine / Assembly */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
-                  <div>
-                    <FieldLabel required>Fuel</FieldLabel>
-                    <SelectInput
-                      value={fields.fuel}
-                      onChange={set('fuel')}
-                      error={errors.fuel}
-                      aria-label="Fuel type"
-                    >
-                      <option value="">Select</option>
-                      {FUEL_TYPES.map((f) => (
-                        <option key={f} value={f}>
-                          {f}
-                        </option>
-                      ))}
-                    </SelectInput>
-                    <FieldError msg={errors.fuel} />
-                  </div>
-                  <div>
-                    <FieldLabel required>Transmission</FieldLabel>
-                    <SelectInput
-                      value={fields.transmission}
-                      onChange={set('transmission')}
-                      error={errors.transmission}
-                      aria-label="Transmission"
-                    >
-                      <option value="">Select</option>
-                      {TRANSMISSIONS.map((t) => (
-                        <option key={t} value={t}>
-                          {t}
-                        </option>
-                      ))}
-                    </SelectInput>
-                    <FieldError msg={errors.transmission} />
-                  </div>
-                  <div>
-                    <FieldLabel>Engine (CC)</FieldLabel>
-                    <TextInput
-                      type="number"
-                      placeholder="e.g. 1600"
-                      value={fields.engineCC}
-                      onChange={set('engineCC')}
-                      min={100}
-                      max={9000}
-                      aria-label="Engine displacement"
-                    />
-                  </div>
-                  <div>
-                    <FieldLabel>Assembly</FieldLabel>
-                    <div className="flex gap-2 h-11">
-                      {ASSEMBLIES.map((a) => (
-                        <button
-                          key={a}
-                          type="button"
-                          onClick={() => setFields((p) => ({ ...p, assembly: a }))}
-                          className="flex-1 rounded-xl border text-[0.78rem] font-semibold transition-all duration-150"
-                          style={{
-                            border:
-                              fields.assembly === a ? '1.5px solid #6C3CE1' : '1.5px solid #E8E3DC',
-                            background: fields.assembly === a ? 'rgba(108,60,225,0.07)' : '#FAFAF9',
-                            color: fields.assembly === a ? '#6C3CE1' : '#8A8390',
-                            fontFamily: "'DM Sans', sans-serif",
-                          }}
-                          aria-pressed={fields.assembly === a}
-                        >
-                          {a}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Mileage / Color / Registered in */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div>
-                    <FieldLabel required={fields.condition !== 'New'}>
-                      Mileage (km){fields.condition === 'New' && ' (optional)'}
-                    </FieldLabel>
-                    <TextInput
-                      type="number"
-                      placeholder="e.g. 45000"
-                      value={fields.mileage}
-                      onChange={set('mileage')}
-                      error={errors.mileage}
-                      min={0}
-                      aria-label="Mileage in kilometers"
-                    />
-                    <FieldError msg={errors.mileage} />
-                  </div>
-                  <div>
-                    <FieldLabel required>Color</FieldLabel>
-                    <SelectInput
-                      value={fields.color}
-                      onChange={set('color')}
-                      error={errors.color}
-                      aria-label="Color"
-                    >
-                      <option value="">Select Color</option>
-                      {COLORS.map((c) => (
-                        <option key={c} value={c}>
-                          {c}
-                        </option>
-                      ))}
-                    </SelectInput>
-                    <FieldError msg={errors.color} />
-                  </div>
-                  <div>
-                    <FieldLabel>Registered In</FieldLabel>
-                    <SelectInput
-                      value={fields.registeredIn}
-                      onChange={set('registeredIn')}
-                      aria-label="Registered in"
-                    >
-                      <option value="">Select City</option>
-                      {REGISTERED_IN.map((r) => (
-                        <option key={r} value={r}>
-                          {r}
-                        </option>
-                      ))}
-                    </SelectInput>
-                  </div>
-                </div>
-              </SectionCard>
-
-              {/* ══ STEP 2 — Photos ═══════════════════════════ */}
-              <SectionCard id="step-photos">
-                <SectionTitle
-                  step="2"
-                  sub="Good photos get significantly more inquiries — add up to 10"
-                >
-                  Photos
-                </SectionTitle>
-                <ImageUploader
-                  images={images}
-                  onAdd={handleAddImages}
-                  onRemove={handleRemoveImage}
-                  onSetPrimary={handleSetPrimary}
-                />
-              </SectionCard>
-
-              {/* ══ STEP 3 — Features ══════════════════════════ */}
-              <SectionCard>
-                <SectionTitle step="3" sub="Select all that apply — this helps buyers filter">
-                  Features & Equipment
-                </SectionTitle>
-                <div className="flex flex-col gap-5">
-                  {FEATURE_GROUPS.map(({ group, items }) => (
-                    <div key={group}>
-                      <p
-                        className="text-[0.7rem] font-bold uppercase tracking-[0.08em] mb-2.5"
-                        style={{ color: '#C4BDD0', fontFamily: "'DM Sans', sans-serif" }}
-                      >
-                        {group}
-                      </p>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-                        {items.map((feat) => (
-                          <FeatureToggle
-                            key={feat}
-                            label={feat}
-                            checked={features.includes(feat)}
-                            onChange={() => toggleFeature(feat)}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                {features.length > 0 && (
-                  <p
-                    className="text-[0.72rem] mt-4 font-medium"
-                    style={{ color: '#6C3CE1', fontFamily: "'DM Sans', sans-serif" }}
-                  >
-                    {features.length} feature{features.length !== 1 ? 's' : ''} selected
-                  </p>
-                )}
-              </SectionCard>
-
-              {/* ══ STEP 4 — Description ══════════════════════ */}
-              <SectionCard id="step-details">
-                <SectionTitle step="4" sub="Describe your car honestly — mention any issues too">
-                  Description
-                </SectionTitle>
+              {/* Make / Model / Variant */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
                 <div>
-                  <FieldLabel required>Ad Description</FieldLabel>
-                  <textarea
-                    value={fields.description}
-                    onChange={set('description')}
-                    placeholder={`Describe your ${fields.make || 'vehicle'} in detail. Include condition, any recent repairs, accessories, reason for selling, etc.\n\nMinimum 30 characters.`}
-                    rows={7}
-                    className="w-full rounded-xl border bg-[#FAFAF9] text-[0.875rem] p-4 outline-none resize-none transition-[border-color,box-shadow] duration-200 focus:border-[rgba(108,60,225,0.4)] focus:shadow-[0_0_0_3px_rgba(108,60,225,0.08)] focus:bg-white"
+                  <FieldLabel required>Make</FieldLabel>
+                  <SelectInput
+                    value={fields.make}
+                    onChange={set('make')}
+                    error={errors.make}
+                    aria-label="Make"
+                  >
+                    <option value="">Select Make</option>
+                    {MAKES.map((m) => (
+                      <option key={m} value={m}>
+                        {m}
+                      </option>
+                    ))}
+                  </SelectInput>
+                  <FieldError msg={errors.make} />
+                </div>
+                <div>
+                  <FieldLabel required>Model</FieldLabel>
+                  <SelectInput
+                    value={fields.model}
+                    onChange={set('model')}
+                    error={errors.model}
+                    disabled={!fields.make}
+                    aria-label="Model"
+                  >
+                    <option value="">Select Model</option>
+                    {availableModels.map((m) => (
+                      <option key={m} value={m}>
+                        {m}
+                      </option>
+                    ))}
+                  </SelectInput>
+                  <FieldError msg={errors.model} />
+                </div>
+                <div>
+                  <FieldLabel>Variant</FieldLabel>
+                  <TextInput
+                    type="text"
+                    placeholder="e.g. Altis X 1.6"
+                    value={fields.variant}
+                    onChange={set('variant')}
+                    aria-label="Variant"
+                  />
+                </div>
+              </div>
+
+              {/* Year / Condition / Body type */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+                <div>
+                  <FieldLabel required>Year</FieldLabel>
+                  <SelectInput
+                    value={fields.year}
+                    onChange={set('year')}
+                    error={errors.year}
+                    aria-label="Year"
+                  >
+                    <option value="">Select Year</option>
+                    {YEARS.map((y) => (
+                      <option key={y} value={y}>
+                        {y}
+                      </option>
+                    ))}
+                  </SelectInput>
+                  <FieldError msg={errors.year} />
+                </div>
+                <div>
+                  <FieldLabel required>Condition</FieldLabel>
+                  <div className="flex gap-2 h-11">
+                    {CONDITIONS.map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => {
+                          setFields((p) => ({ ...p, condition: c }));
+                        }}
+                        className="flex-1 rounded-xl border text-[0.82rem] font-semibold transition-all duration-150"
+                        style={{
+                          border:
+                            fields.condition === c ? '1.5px solid #6C3CE1' : '1.5px solid #E8E3DC',
+                          background: fields.condition === c ? 'rgba(108,60,225,0.07)' : '#FAFAF9',
+                          color: fields.condition === c ? '#6C3CE1' : '#8A8390',
+                          fontFamily: "'DM Sans', sans-serif",
+                        }}
+                        aria-pressed={fields.condition === c}
+                      >
+                        {c}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <FieldLabel required>Body Type</FieldLabel>
+                  <SelectInput
+                    value={fields.bodyType}
+                    onChange={set('bodyType')}
+                    error={errors.bodyType}
+                    aria-label="Body type"
+                  >
+                    <option value="">Select Body Type</option>
+                    {BODY_TYPES.map((b) => (
+                      <option key={b} value={b}>
+                        {b}
+                      </option>
+                    ))}
+                  </SelectInput>
+                  <FieldError msg={errors.bodyType} />
+                </div>
+              </div>
+
+              {/* Fuel / Transmission / Engine / Assembly */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
+                <div>
+                  <FieldLabel required>Fuel</FieldLabel>
+                  <SelectInput
+                    value={fields.fuel}
+                    onChange={set('fuel')}
+                    error={errors.fuel}
+                    aria-label="Fuel type"
+                  >
+                    <option value="">Select</option>
+                    {FUEL_TYPES.map((f) => (
+                      <option key={f} value={f}>
+                        {f}
+                      </option>
+                    ))}
+                  </SelectInput>
+                  <FieldError msg={errors.fuel} />
+                </div>
+                <div>
+                  <FieldLabel required>Transmission</FieldLabel>
+                  <SelectInput
+                    value={fields.transmission}
+                    onChange={set('transmission')}
+                    error={errors.transmission}
+                    aria-label="Transmission"
+                  >
+                    <option value="">Select</option>
+                    {TRANSMISSIONS.map((t) => (
+                      <option key={t} value={t}>
+                        {t}
+                      </option>
+                    ))}
+                  </SelectInput>
+                  <FieldError msg={errors.transmission} />
+                </div>
+                <div>
+                  <FieldLabel>Engine (CC)</FieldLabel>
+                  <TextInput
+                    type="number"
+                    placeholder="e.g. 1600"
+                    value={fields.engineCC}
+                    onChange={set('engineCC')}
+                    min={100}
+                    max={9000}
+                    aria-label="Engine displacement"
+                  />
+                </div>
+                <div>
+                  <FieldLabel>Assembly</FieldLabel>
+                  <div className="flex gap-2 h-11">
+                    {ASSEMBLIES.map((a) => (
+                      <button
+                        key={a}
+                        type="button"
+                        onClick={() => setFields((p) => ({ ...p, assembly: a }))}
+                        className="flex-1 rounded-xl border text-[0.78rem] font-semibold transition-all duration-150"
+                        style={{
+                          border:
+                            fields.assembly === a ? '1.5px solid #6C3CE1' : '1.5px solid #E8E3DC',
+                          background: fields.assembly === a ? 'rgba(108,60,225,0.07)' : '#FAFAF9',
+                          color: fields.assembly === a ? '#6C3CE1' : '#8A8390',
+                          fontFamily: "'DM Sans', sans-serif",
+                        }}
+                        aria-pressed={fields.assembly === a}
+                      >
+                        {a}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Mileage / Color / Registered in */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <FieldLabel required={fields.condition !== 'New'}>
+                    Mileage (km){fields.condition === 'New' && ' (optional)'}
+                  </FieldLabel>
+                  <TextInput
+                    type="number"
+                    placeholder="e.g. 45000"
+                    value={fields.mileage}
+                    onChange={set('mileage')}
+                    error={errors.mileage}
+                    min={0}
+                    aria-label="Mileage in kilometers"
+                  />
+                  <FieldError msg={errors.mileage} />
+                </div>
+                <div>
+                  <FieldLabel required>Color</FieldLabel>
+                  <SelectInput
+                    value={fields.color}
+                    onChange={set('color')}
+                    error={errors.color}
+                    aria-label="Color"
+                  >
+                    <option value="">Select Color</option>
+                    {COLORS.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </SelectInput>
+                  <FieldError msg={errors.color} />
+                </div>
+                <div>
+                  <FieldLabel>Registered In</FieldLabel>
+                  <SelectInput
+                    value={fields.registeredIn}
+                    onChange={set('registeredIn')}
+                    aria-label="Registered in"
+                  >
+                    <option value="">Select City</option>
+                    {REGISTERED_IN.map((r) => (
+                      <option key={r} value={r}>
+                        {r}
+                      </option>
+                    ))}
+                  </SelectInput>
+                </div>
+              </div>
+            </SectionCard>
+
+            {/* ══ STEP 2 — Photos ═══════════════════════════ */}
+            <SectionCard id="step-photos">
+              <SectionTitle
+                step="2"
+                sub="Good photos get significantly more inquiries — add up to 10"
+              >
+                Photos
+              </SectionTitle>
+              <ImageUploader
+                images={images}
+                onAdd={handleAddImages}
+                onRemove={handleRemoveImage}
+                onSetPrimary={handleSetPrimary}
+              />
+            </SectionCard>
+
+            {/* ══ STEP 3 — Features ══════════════════════════ */}
+            <SectionCard>
+              <SectionTitle step="3" sub="Select all that apply — this helps buyers filter">
+                Features & Equipment
+              </SectionTitle>
+              <div className="flex flex-col gap-5">
+                {FEATURE_GROUPS.map(({ group, items }) => (
+                  <div key={group}>
+                    <p
+                      className="text-[0.7rem] font-bold uppercase tracking-[0.08em] mb-2.5"
+                      style={{ color: '#C4BDD0', fontFamily: "'DM Sans', sans-serif" }}
+                    >
+                      {group}
+                    </p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                      {items.map((feat) => (
+                        <FeatureToggle
+                          key={feat}
+                          label={feat}
+                          checked={features.includes(feat)}
+                          onChange={() => toggleFeature(feat)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {features.length > 0 && (
+                <p
+                  className="text-[0.72rem] mt-4 font-medium"
+                  style={{ color: '#6C3CE1', fontFamily: "'DM Sans', sans-serif" }}
+                >
+                  {features.length} feature{features.length !== 1 ? 's' : ''} selected
+                </p>
+              )}
+            </SectionCard>
+
+            {/* ══ STEP 4 — Description ══════════════════════ */}
+            <SectionCard id="step-details">
+              <SectionTitle step="4" sub="Describe your car honestly — mention any issues too">
+                Description
+              </SectionTitle>
+              <div>
+                <FieldLabel required>Ad Description</FieldLabel>
+                <textarea
+                  value={fields.description}
+                  onChange={set('description')}
+                  placeholder={`Describe your ${fields.make || 'vehicle'} in detail. Include condition, any recent repairs, accessories, reason for selling, etc.\n\nMinimum 30 characters.`}
+                  rows={7}
+                  className="w-full rounded-xl border bg-[#FAFAF9] text-[0.875rem] p-4 outline-none resize-none transition-[border-color,box-shadow] duration-200 focus:border-[rgba(108,60,225,0.4)] focus:shadow-[0_0_0_3px_rgba(108,60,225,0.08)] focus:bg-white"
+                  style={{
+                    borderColor: errors.description ? 'rgba(232,98,42,0.5)' : '#E8E3DC',
+                    color: '#1A1523',
+                    fontFamily: "'DM Sans', sans-serif",
+                  }}
+                  aria-label="Ad description"
+                  aria-invalid={!!errors.description}
+                  aria-describedby="desc-count"
+                />
+                <div className="flex items-center justify-between mt-1">
+                  <FieldError msg={errors.description} />
+                  <span
+                    id="desc-count"
+                    className="text-[0.68rem] ml-auto"
                     style={{
-                      borderColor: errors.description ? 'rgba(232,98,42,0.5)' : '#E8E3DC',
-                      color: '#1A1523',
+                      color: charCount < 30 ? '#E8622A' : '#8A8390',
                       fontFamily: "'DM Sans', sans-serif",
                     }}
-                    aria-label="Ad description"
-                    aria-invalid={!!errors.description}
-                    aria-describedby="desc-count"
-                  />
-                  <div className="flex items-center justify-between mt-1">
-                    <FieldError msg={errors.description} />
+                  >
+                    {charCount} characters
+                    {charCount < 30 ? ` (${30 - charCount} more needed)` : ''}
+                  </span>
+                </div>
+              </div>
+            </SectionCard>
+
+            {/* ══ STEP 5 — Price ════════════════════════════ */}
+            <SectionCard>
+              <SectionTitle step="5" sub="Set your asking price in PKR">
+                Price
+              </SectionTitle>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <FieldLabel required>Asking Price (PKR)</FieldLabel>
+                  <div className="relative">
                     <span
-                      id="desc-count"
-                      className="text-[0.68rem] ml-auto"
-                      style={{
-                        color: charCount < 30 ? '#E8622A' : '#8A8390',
-                        fontFamily: "'DM Sans', sans-serif",
-                      }}
+                      className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[0.8rem] font-semibold pointer-events-none"
+                      style={{ color: '#8A8390', fontFamily: "'DM Sans', sans-serif" }}
+                      aria-hidden="true"
                     >
-                      {charCount} characters
-                      {charCount < 30 ? ` (${30 - charCount} more needed)` : ''}
+                      PKR
                     </span>
+                    <TextInput
+                      type="number"
+                      placeholder="e.g. 2500000"
+                      value={fields.price}
+                      onChange={set('price')}
+                      error={errors.price}
+                      min={0}
+                      style={{ paddingLeft: '52px' }}
+                      aria-label="Asking price in PKR"
+                    />
                   </div>
-                </div>
-              </SectionCard>
-
-              {/* ══ STEP 5 — Price ════════════════════════════ */}
-              <SectionCard>
-                <SectionTitle step="5" sub="Set your asking price in PKR">
-                  Price
-                </SectionTitle>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <FieldLabel required>Asking Price (PKR)</FieldLabel>
-                    <div className="relative">
-                      <span
-                        className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[0.8rem] font-semibold pointer-events-none"
-                        style={{ color: '#8A8390', fontFamily: "'DM Sans', sans-serif" }}
-                        aria-hidden="true"
-                      >
-                        PKR
-                      </span>
-                      <TextInput
-                        type="number"
-                        placeholder="e.g. 2500000"
-                        value={fields.price}
-                        onChange={set('price')}
-                        error={errors.price}
-                        min={0}
-                        style={{ paddingLeft: '52px' }}
-                        aria-label="Asking price in PKR"
-                      />
-                    </div>
-                    <FieldError msg={errors.price} />
-                    {fields.price && !isNaN(Number(fields.price)) && Number(fields.price) > 0 && (
-                      <p
-                        className="text-[0.72rem] mt-1 font-medium"
-                        style={{ color: '#6C3CE1', fontFamily: "'DM Sans', sans-serif" }}
-                      >
-                        ≈{' '}
-                        {Number(fields.price) >= 10000000
-                          ? `${(Number(fields.price) / 10000000).toFixed(2)} Crore`
-                          : `${(Number(fields.price) / 100000).toFixed(1)} Lac`}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex items-end pb-0.5">
-                    <label className="flex items-center gap-3 cursor-pointer group">
-                      <div className="relative flex-shrink-0">
-                        <input
-                          type="checkbox"
-                          className="peer sr-only"
-                          checked={fields.negotiable}
-                          onChange={set('negotiable')}
-                          aria-label="Price is negotiable"
-                        />
-                        <div
-                          className="w-5 h-5 rounded-md border transition-[background,border] duration-150 flex items-center justify-center"
-                          style={{
-                            border: fields.negotiable ? 'none' : '1.5px solid #C4BDD0',
-                            background: fields.negotiable ? '#6C3CE1' : 'transparent',
-                          }}
-                        >
-                          {fields.negotiable && (
-                            <Check size={11} strokeWidth={3} style={{ color: '#fff' }} />
-                          )}
-                        </div>
-                      </div>
-                      <div>
-                        <p
-                          className="text-[0.82rem] font-semibold"
-                          style={{ color: '#1A1523', fontFamily: "'DM Sans', sans-serif" }}
-                        >
-                          Price is negotiable
-                        </p>
-                        <p
-                          className="text-[0.72rem]"
-                          style={{ color: '#8A8390', fontFamily: "'DM Sans', sans-serif" }}
-                        >
-                          Buyers will know they can make an offer
-                        </p>
-                      </div>
-                    </label>
-                  </div>
-                </div>
-              </SectionCard>
-
-              {/* ══ STEP 6 — Location & Contact ═══════════════ */}
-              <SectionCard id="step-contact">
-                <SectionTitle step="6" sub="Where is the car located and how can buyers reach you">
-                  Location & Contact
-                </SectionTitle>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <FieldLabel required>City</FieldLabel>
-                    <SelectInput
-                      value={fields.city}
-                      onChange={set('city')}
-                      error={errors.city}
-                      aria-label="City"
+                  <FieldError msg={errors.price} />
+                  {fields.price && !isNaN(Number(fields.price)) && Number(fields.price) > 0 && (
+                    <p
+                      className="text-[0.72rem] mt-1 font-medium"
+                      style={{ color: '#6C3CE1', fontFamily: "'DM Sans', sans-serif" }}
                     >
-                      <option value="">Select City</option>
-                      {CITIES.map((c) => (
-                        <option key={c} value={c}>
-                          {c}
-                        </option>
-                      ))}
-                    </SelectInput>
-                    <FieldError msg={errors.city} />
-                  </div>
-                  <div>
-                    <FieldLabel>Area / Neighbourhood</FieldLabel>
-                    <div className="relative">
-                      <MapPin
-                        size={14}
-                        strokeWidth={1.9}
-                        className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
-                        style={{ color: '#C4BDD0' }}
-                        aria-hidden="true"
-                      />
-                      <TextInput
-                        type="text"
-                        placeholder="e.g. DHA Phase 5"
-                        value={fields.area}
-                        onChange={set('area')}
-                        style={{ paddingLeft: '38px' }}
-                        aria-label="Area or neighbourhood"
-                      />
-                    </div>
-                  </div>
+                      ≈{' '}
+                      {Number(fields.price) >= 10000000
+                        ? `${(Number(fields.price) / 10000000).toFixed(2)} Crore`
+                        : `${(Number(fields.price) / 100000).toFixed(1)} Lac`}
+                    </p>
+                  )}
                 </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <FieldLabel required>Contact Number</FieldLabel>
-                    <div className="relative">
-                      <Phone
-                        size={14}
-                        strokeWidth={1.9}
-                        className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
-                        style={{ color: '#C4BDD0' }}
-                        aria-hidden="true"
+                <div className="flex items-end pb-0.5">
+                  <label className="flex items-center gap-3 cursor-pointer group">
+                    <div className="relative flex-shrink-0">
+                      <input
+                        type="checkbox"
+                        className="peer sr-only"
+                        checked={fields.negotiable}
+                        onChange={set('negotiable')}
+                        aria-label="Price is negotiable"
                       />
-                      <TextInput
-                        type="tel"
-                        placeholder="03001234567"
-                        value={fields.phone}
-                        onChange={set('phone')}
-                        error={errors.phone}
-                        style={{ paddingLeft: '38px' }}
-                        autoComplete="tel"
-                        aria-label="Contact phone number"
-                      />
-                    </div>
-                    <FieldError msg={errors.phone} />
-                  </div>
-                  <div className="flex items-end pb-0.5">
-                    <label className="flex items-center gap-3 cursor-pointer">
                       <div
-                        className="w-5 h-5 rounded-md border flex items-center justify-center transition-[background,border] duration-150"
+                        className="w-5 h-5 rounded-md border transition-[background,border] duration-150 flex items-center justify-center"
                         style={{
-                          border: fields.whatsapp ? 'none' : '1.5px solid #C4BDD0',
-                          background: fields.whatsapp ? '#25D366' : 'transparent',
+                          border: fields.negotiable ? 'none' : '1.5px solid #C4BDD0',
+                          background: fields.negotiable ? '#6C3CE1' : 'transparent',
                         }}
-                        aria-hidden="true"
                       >
-                        {fields.whatsapp && (
+                        {fields.negotiable && (
                           <Check size={11} strokeWidth={3} style={{ color: '#fff' }} />
                         )}
                       </div>
-                      <input
-                        type="checkbox"
-                        className="sr-only"
-                        checked={fields.whatsapp}
-                        onChange={set('whatsapp')}
-                        aria-label="WhatsApp available on this number"
-                      />
-                      <div>
-                        <p
-                          className="text-[0.82rem] font-semibold"
-                          style={{ color: '#1A1523', fontFamily: "'DM Sans', sans-serif" }}
-                        >
-                          WhatsApp available
-                        </p>
-                        <p
-                          className="text-[0.72rem]"
-                          style={{ color: '#8A8390', fontFamily: "'DM Sans', sans-serif" }}
-                        >
-                          Show WhatsApp button on your listing
-                        </p>
-                      </div>
-                    </label>
+                    </div>
+                    <div>
+                      <p
+                        className="text-[0.82rem] font-semibold"
+                        style={{ color: '#1A1523', fontFamily: "'DM Sans', sans-serif" }}
+                      >
+                        Price is negotiable
+                      </p>
+                      <p
+                        className="text-[0.72rem]"
+                        style={{ color: '#8A8390', fontFamily: "'DM Sans', sans-serif" }}
+                      >
+                        Buyers will know they can make an offer
+                      </p>
+                    </div>
+                  </label>
+                </div>
+              </div>
+            </SectionCard>
+
+            {/* ══ STEP 6 — Location & Contact ═══════════════ */}
+            <SectionCard id="step-contact">
+              <SectionTitle step="6" sub="Where is the car located and how can buyers reach you">
+                Location & Contact
+              </SectionTitle>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <FieldLabel required>City</FieldLabel>
+                  <SelectInput
+                    value={fields.city}
+                    onChange={set('city')}
+                    error={errors.city}
+                    aria-label="City"
+                  >
+                    <option value="">Select City</option>
+                    {CITIES.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </SelectInput>
+                  <FieldError msg={errors.city} />
+                </div>
+                <div>
+                  <FieldLabel>Area / Neighbourhood</FieldLabel>
+                  <div className="relative">
+                    <MapPin
+                      size={14}
+                      strokeWidth={1.9}
+                      className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
+                      style={{ color: '#C4BDD0' }}
+                      aria-hidden="true"
+                    />
+                    <TextInput
+                      type="text"
+                      placeholder="e.g. DHA Phase 5"
+                      value={fields.area}
+                      onChange={set('area')}
+                      style={{ paddingLeft: '38px' }}
+                      aria-label="Area or neighbourhood"
+                    />
                   </div>
                 </div>
-              </SectionCard>
-
-              {/* ══ Submit ════════════════════════════════════ */}
-              <div
-                className="rounded-2xl p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
-                style={{
-                  background: 'linear-gradient(135deg, #1A1523 0%, #231930 100%)',
-                  border: '1.5px solid rgba(255,255,255,0.06)',
-                }}
-              >
-                <div>
-                  <p
-                    className="text-[0.95rem] font-extrabold text-white tracking-[-0.02em]"
-                    style={{ fontFamily: "'Syne', sans-serif" }}
-                  >
-                    Ready to post your ad?
-                  </p>
-                  <p
-                    className="text-[0.75rem] mt-0.5"
-                    style={{ color: 'rgba(255,255,255,0.45)', fontFamily: "'DM Sans', sans-serif" }}
-                  >
-                    Your listing will be reviewed and go live shortly.
-                  </p>
-                </div>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="pa-submit-btn flex items-center gap-2.5 text-white text-[0.9rem] font-semibold px-7 py-3.5 rounded-xl flex-shrink-0 disabled:opacity-60 disabled:cursor-not-allowed"
-                  style={{ fontFamily: "'DM Sans', sans-serif" }}
-                  aria-label="Post your ad"
-                >
-                  {loading ? (
-                    <>
-                      <span className="pa-spinner" aria-hidden="true" />
-                      Posting…
-                    </>
-                  ) : (
-                    <>
-                      Post Ad
-                      <ArrowRight size={15} strokeWidth={2.2} aria-hidden="true" />
-                    </>
-                  )}
-                </button>
               </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <FieldLabel required>Contact Number</FieldLabel>
+                  <div className="relative">
+                    <Phone
+                      size={14}
+                      strokeWidth={1.9}
+                      className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
+                      style={{ color: '#C4BDD0' }}
+                      aria-hidden="true"
+                    />
+                    <TextInput
+                      type="tel"
+                      placeholder="03001234567"
+                      value={fields.phone}
+                      onChange={set('phone')}
+                      error={errors.phone}
+                      style={{ paddingLeft: '38px' }}
+                      autoComplete="tel"
+                      aria-label="Contact phone number"
+                    />
+                  </div>
+                  <FieldError msg={errors.phone} />
+                </div>
+                <div className="flex items-end pb-0.5">
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <div
+                      className="w-5 h-5 rounded-md border flex items-center justify-center transition-[background,border] duration-150"
+                      style={{
+                        border: fields.whatsapp ? 'none' : '1.5px solid #C4BDD0',
+                        background: fields.whatsapp ? '#25D366' : 'transparent',
+                      }}
+                      aria-hidden="true"
+                    >
+                      {fields.whatsapp && (
+                        <Check size={11} strokeWidth={3} style={{ color: '#fff' }} />
+                      )}
+                    </div>
+                    <input
+                      type="checkbox"
+                      className="sr-only"
+                      checked={fields.whatsapp}
+                      onChange={set('whatsapp')}
+                      aria-label="WhatsApp available on this number"
+                    />
+                    <div>
+                      <p
+                        className="text-[0.82rem] font-semibold"
+                        style={{ color: '#1A1523', fontFamily: "'DM Sans', sans-serif" }}
+                      >
+                        WhatsApp available
+                      </p>
+                      <p
+                        className="text-[0.72rem]"
+                        style={{ color: '#8A8390', fontFamily: "'DM Sans', sans-serif" }}
+                      >
+                        Show WhatsApp button on your listing
+                      </p>
+                    </div>
+                  </label>
+                </div>
+              </div>
+            </SectionCard>
+
+            {/* ══ Submit ════════════════════════════════════ */}
+            <div
+              className="rounded-2xl p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+              style={{
+                background: 'linear-gradient(135deg, #1A1523 0%, #231930 100%)',
+                border: '1.5px solid rgba(255,255,255,0.06)',
+              }}
+            >
+              <div>
+                <p
+                  className="text-[0.95rem] font-extrabold text-white tracking-[-0.02em]"
+                  style={{ fontFamily: "'Syne', sans-serif" }}
+                >
+                  Ready to post your ad?
+                </p>
+                <p
+                  className="text-[0.75rem] mt-0.5"
+                  style={{ color: 'rgba(255,255,255,0.45)', fontFamily: "'DM Sans', sans-serif" }}
+                >
+                  Your listing will be reviewed and go live shortly.
+                </p>
+              </div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="pa-submit-btn flex items-center gap-2.5 text-white text-[0.9rem] font-semibold px-7 py-3.5 rounded-xl shrink-0 disabled:opacity-60 disabled:cursor-not-allowed"
+                style={{ fontFamily: "'DM Sans', sans-serif" }}
+                aria-label="Post your ad"
+              >
+                {loading ? (
+                  <>
+                    <span className="pa-spinner" aria-hidden="true" />
+                    Posting…
+                  </>
+                ) : (
+                  <>
+                    Post Ad
+                    <ArrowRight size={15} strokeWidth={2.2} aria-hidden="true" />
+                  </>
+                )}
+              </button>
             </div>
-          </form>
-        </div>
+          </div>
+        </form>
       </div>
-    </>
+    </div>
   );
 }
-
-// ── Styles ────────────────────────────────────────────────────────
-const STYLES = `
-  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap');
-
-  .pa-bg {
-    background-color: #F7F4F0;
-    background-image:
-      radial-gradient(ellipse 50% 40% at 5% 20%, rgba(108,60,225,0.05) 0%, transparent 70%),
-      radial-gradient(ellipse 40% 30% at 95% 80%, rgba(232,98,42,0.04) 0%, transparent 65%);
-    min-height: 100vh;
-  }
-
-  .pa-inner {
-    max-width: 860px;
-    margin: 0 auto;
-    padding: 36px 24px 72px;
-  }
-
-  .pa-card {
-    background: #FFFFFF;
-    border: 1.5px solid #E8E3DC;
-    box-shadow: 0 2px 12px rgba(26,21,35,0.04), 0 1px 3px rgba(26,21,35,0.03);
-  }
-
-  .pa-input, .pa-select {
-    width: 100%;
-    height: 44px;
-    background: #FAFAF9;
-    border: 1.5px solid #E8E3DC;
-    border-radius: 12px;
-    font-size: 0.875rem;
-    color: #1A1523;
-    padding: 0 14px;
-    outline: none;
-    font-family: 'DM Sans', sans-serif;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
-    appearance: none;
-    -webkit-appearance: none;
-    display: block;
-  }
-
-  .pa-input:focus, .pa-select:focus {
-    border-color: rgba(108,60,225,0.4);
-    box-shadow: 0 0 0 3px rgba(108,60,225,0.08);
-    background-color: #FFFFFF;
-  }
-
-  .pa-input::placeholder { color: #C4BDD0; }
-  .pa-input:disabled, .pa-select:disabled { opacity: 0.5; cursor: not-allowed; }
-
-  /* Dropzone */
-  .pa-dropzone {
-    border: 2px dashed #E8E3DC;
-    background: #FAFAF9;
-    transition: border-color 0.2s ease, background-color 0.2s ease;
-    padding: 32px 24px;
-  }
-
-  .pa-dropzone:hover, .pa-dropzone:focus-within {
-    border-color: rgba(108,60,225,0.38);
-    background-color: rgba(108,60,225,0.02);
-    outline: none;
-  }
-
-  /* Submit button */
-  .pa-submit-btn {
-    background: linear-gradient(135deg, #E8622A 0%, #C4531F 100%);
-    box-shadow: 0 2px 12px rgba(232,98,42,0.32);
-    position: relative; overflow: hidden;
-    border: none; cursor: pointer;
-    transition: transform 0.18s ease, box-shadow 0.18s ease;
-  }
-
-  .pa-submit-btn::before {
-    content: '';
-    position: absolute; inset: 0;
-    background: linear-gradient(135deg, #D4521C 0%, #AA3E12 100%);
-    opacity: 0;
-    transition: opacity 0.18s ease;
-    border-radius: inherit;
-  }
-
-  .pa-submit-btn:not(:disabled):hover::before { opacity: 1; }
-  .pa-submit-btn:not(:disabled):hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 20px rgba(232,98,42,0.4);
-  }
-  .pa-submit-btn:not(:disabled):active { transform: translateY(0); }
-
-  /* Spinner */
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .pa-spinner {
-    width: 17px; height: 17px;
-    border: 2px solid rgba(255,255,255,0.3);
-    border-top-color: #fff;
-    border-radius: 50%;
-    animation: spin 0.7s linear infinite;
-    flex-shrink: 0;
-  }
-
-  /* Success pop */
-  @keyframes successPop {
-    0%   { opacity: 0; transform: scale(0.88) translateY(16px); }
-    100% { opacity: 1; transform: scale(1) translateY(0); }
-  }
-  .success-pop { animation: successPop 0.45s cubic-bezier(0.34,1.56,0.64,1) both; }
-
-  @media (max-width: 640px) {
-    .pa-inner { padding: 24px 16px 56px; }
-  }
-`;

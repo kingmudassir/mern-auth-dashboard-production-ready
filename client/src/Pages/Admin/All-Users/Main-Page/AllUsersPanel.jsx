@@ -15,11 +15,15 @@ import {
 import ActionMenu from '../../../../Admin-Components/Dashboard/ActionMenu';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAllUsers } from '../../../../Hooks/Admin-Hook/All-Users/useAllUsers.hook';
+
 import SectionHeader from '../Components/SectionHeader';
 import StatCard from '../Components/StatCard';
 import RolePill from '../Components/RolePill';
 import StatusPill from '../Components/StatusPill';
 import ReportDot from '../Components/ReportDot';
+import { useUpdateUserStatus } from '../../../../Hooks/Admin-Hook/All-Users/useUpdateUserStatus';
+import ConfirmModal from '../../User-Profile/Components/Common/ConfirmModal';
+import Toast from '../../User-Profile/Components/Common/Toast';
 
 const PAGE_SIZE = 5;
 
@@ -71,7 +75,17 @@ const STATUS_STYLES = {
 function AllUsersPanel() {
   const navigate = useNavigate();
   const { data, isLoading } = useAllUsers();
+  const [toast, setToast] = useState({ msg: '', type: 'success' });
+  const [modal, setModal] = useState(null);
+
   const users = data?.users ?? [];
+
+  const { mutate: updateStatus } = useUpdateUserStatus();
+
+  const showToast = (msg, type = 'success') => {
+    setToast({ msg, type });
+    setTimeout(() => setToast({ msg: '', type: 'success' }), 4000);
+  };
 
   const totalUsers = data?.stats?.totalUsers ?? 0;
   const totalBannedUsers = data?.stats?.totalBannedUsers ?? 0;
@@ -99,6 +113,24 @@ function AllUsersPanel() {
     );
   }, [users, search]);
 
+  const handleStatusChange = (status) => {
+    if (!modal?.user?._id) return;
+
+    updateStatus(
+      { userId: modal.user._id, status }, // Pass the ID and new status
+      {
+        onSuccess: () => {
+          showToast(`User ${status === 'banned' ? 'banned' : 'activated'} successfully.`);
+          setModal(null);
+        },
+        onError: (err) => {
+          showToast(err?.message || 'Failed to update status.', 'error');
+          setModal(null);
+        },
+      }
+    );
+  };
+
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
@@ -106,6 +138,35 @@ function AllUsersPanel() {
   return (
     <>
       <style>{STYLES}</style>
+
+      {/* 1. Add Toast */}
+      {toast.msg && (
+        <Toast
+          msg={toast.msg}
+          type={toast.type}
+          onClose={() => setToast({ msg: '', type: 'success' })}
+        />
+      )}
+
+      {/* 2. Add Modals */}
+      <ConfirmModal
+        open={modal?.type === 'ban'}
+        title="Ban this user?"
+        message={`Are you sure you want to ban ${modal?.user?.name}? They will lose access to their account immediately.`}
+        confirmLabel="Ban User"
+        onConfirm={() => handleStatusChange('banned')}
+        onCancel={() => setModal(null)}
+        danger
+      />
+
+      <ConfirmModal
+        open={modal?.type === 'activate'}
+        title="Activate this user?"
+        message={`Restore access for ${modal?.user?.name}? Their listings will become visible again.`}
+        confirmLabel="Activate"
+        onConfirm={() => handleStatusChange('active')}
+        onCancel={() => setModal(null)}
+      />
 
       <div className="max-w-400 mx-auto">
         {/* Header */}
@@ -323,7 +384,16 @@ function AllUsersPanel() {
                             },
                           },
                           { label: 'Edit', icon: Pencil },
-                          { label: u.isBanned ? 'Unban' : 'Ban', icon: Ban, danger: true },
+                          {
+                            label: u.isBanned ? 'Unban' : 'Ban',
+                            icon: Ban,
+                            danger: !u.isBanned,
+                            onClick: () =>
+                              setModal({
+                                type: u.isBanned ? 'activate' : 'ban',
+                                user: u,
+                              }),
+                          },
                         ]}
                       />
                     </div>

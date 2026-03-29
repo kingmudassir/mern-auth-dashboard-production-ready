@@ -164,7 +164,7 @@ export default function BannedUsers() {
     const { user } = modal;
     unbanUser(user._id, {
       onSuccess: () => {
-        showToast(`${user.name}'s account has been unbanned`);
+        showToast(`${user.name}'s has been unbanned`);
         setModal(null);
       },
       onError: (err) => {
