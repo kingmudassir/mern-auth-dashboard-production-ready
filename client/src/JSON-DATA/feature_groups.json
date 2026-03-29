@@ -1,0 +1,140 @@
+{
+  "FEATURE_GROUPS": [
+    {
+      "group": "Safety",
+      "items": [
+        "ABS (Anti-lock Brakes)",
+        "Airbags",
+        "Traction Control",
+        "Stability Control",
+        "Electronic Brakeforce Distribution (EBD)",
+        "Brake Assist",
+        "Rear Cross Traffic Alert",
+        "Forward Collision Warning",
+        "Automatic Emergency Braking",
+        "Lane Departure Warning",
+        "Lane Keeping Assist",
+        "Blind Spot Monitor",
+        "Parking Sensors (Front/Rear)",
+        "Reverse Camera",
+        "Hill Start Assist",
+        "Tire Pressure Monitoring System (TPMS)",
+        "Child Safety Locks",
+        "ISOFIX Child Seat Anchors",
+        "Adaptive Cruise Control",
+        "Traffic Sign Recognition"
+      ]
+    },
+    {
+      "group": "Comfort & Interior",
+      "items": [
+        "Air Conditioning",
+        "Climate Control (Dual/Triple Zone)",
+        "Heated Seats (Front/Rear)",
+        "Ventilated Seats",
+        "Leather Seats",
+        "Fabric Seats",
+        "Memory Seats",
+        "Lumbar Support",
+        "Adjustable Steering Wheel",
+        "Sunroof / Moonroof",
+        "Panoramic Roof",
+        "Cruise Control",
+        "Keyless Entry",
+        "Push Start",
+        "Ambient Lighting",
+        "Rear Armrest",
+        "Cup Holders",
+        "Foldable Rear Seats"
+      ]
+    },
+    {
+      "group": "Technology & Infotainment",
+      "items": [
+        "Navigation System",
+        "Rear Entertainment System",
+        "USB Input",
+        "Aux Input",
+        "Bluetooth Connectivity",
+        "Apple CarPlay",
+        "Android Auto",
+        "Wireless Charging",
+        "Touchscreen Display",
+        "Voice Control",
+        "Heads-Up Display (HUD)",
+        "Wi-Fi Hotspot",
+        "Digital Instrument Cluster",
+        "Premium Sound System (Bose, JBL, etc.)"
+      ]
+    },
+    {
+      "group": "Exterior",
+      "items": [
+        "Alloy Wheels",
+        "Steel Wheels",
+        "Fog Lights",
+        "LED Headlights",
+        "Daytime Running Lights",
+        "Xenon/HID Headlights",
+        "Roof Rails",
+        "Sunroof",
+        "Power Mirrors",
+        "Heated Mirrors",
+        "Auto-Folding Mirrors",
+        "Tinted Windows",
+        "Rear Spoiler",
+        "Sport Body Kit",
+        "Tow Hitch",
+        "Shark Fin Antenna"
+      ]
+    },
+    {
+      "group": "Power & Convenience",
+      "items": [
+        "Power Windows",
+        "Power Steering",
+        "Power Seats (Manual/Auto)",
+        "Power Tailgate / Trunk",
+        "Auto Headlights",
+        "Auto Wipers",
+        "Auto Dimming Rearview Mirror",
+        "Remote Start",
+        "Keyless Entry & Start",
+        "Push Button Start",
+        "Hands-Free Tailgate",
+        "Parking Assist / Auto Parking",
+        "Fuel Cap Release (Power)"
+      ]
+    },
+    {
+      "group": "Performance & Drive",
+      "items": [
+        "AWD / 4WD",
+        "Rear-Wheel Drive (RWD)",
+        "Front-Wheel Drive (FWD)",
+        "CVT Transmission",
+        "Sport Mode / Drive Mode Selector",
+        "Adaptive Suspension",
+        "Air Suspension",
+        "Hill Descent Control"
+      ]
+    },
+    {
+      "group": "Luxury & Extras",
+      "items": [
+        "Heated Steering Wheel",
+        "Massage Seats",
+        "Ventilated Steering Wheel",
+        "Rear Sunshade",
+        "Power Sunshade",
+        "Gesture Controls",
+        "Automatic Climate Control with Air Purifier",
+        "Fragrance Dispenser",
+        "Wireless Phone Charger",
+        "Rear Seat Entertainment Screens",
+        "Premium Carpet Mats",
+        "Customizable Interior Trim"
+      ]
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 import { catchAsyncError } from "../../../middlewares/catchAsyncError.js";
 import ErrorHandler from "../../../middlewares/errors.js";
 import { Report } from "../../../models/reportSchema.js";
-import { CarListing } from "../../../models/carSchema.js";
+import { Car } from "../../../models/carSchema.js";
 import { User } from "../../../models/userSchema.js";
 
 export const getReports = catchAsyncError(async (req, res, next) => {
@@ -42,7 +42,7 @@ export const getReportById = catchAsyncError(async (req, res, next) => {
     }
 
     // Populate target info based on targetModel
-    if (report.targetModel === "CarListing") {
+    if (report.targetModel === "Car") {
         await report.populate("targetId", "title price city make model year");
     } else if (report.targetModel === "User") {
         await report.populate("targetId", "name email phone");
@@ -80,7 +80,7 @@ export const resolveReport = catchAsyncError(async (req, res, next) => {
 
     // If user_banned, also ban the user who created the report target
     if (resolution === "user_banned" && report.category === "listing") {
-        const listing = await CarListing.findById(report.targetId);
+        const listing = await Car.findById(report.targetId);
         if (listing) {
             await User.findByIdAndUpdate(listing.createdBy, { isBanned: true });
         }

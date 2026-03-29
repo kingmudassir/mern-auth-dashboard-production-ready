@@ -1,0 +1,13 @@
+{
+    "BODY_TYPES": [
+        "Sedan",
+        "SUV",
+        "Hatchback",
+        "Pickup / Truck",
+        "Van / Minivan",
+        "Coupe",
+        "Crossover",
+        "Wagon",
+        "Convertible"
+    ]
+}
