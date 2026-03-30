@@ -1,6 +1,5 @@
 import { catchAsyncError } from "../middlewares/catchAsyncError.js";
 import ErrorHandler from "../middlewares/errors.js";
-import validator from "validator"
 import { User } from "../models/userSchema.js";
 import { sendEmail } from "../utilities/sendEmail.js";
 import crypto from "crypto";

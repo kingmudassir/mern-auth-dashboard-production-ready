@@ -54,10 +54,7 @@ export const isAuthenticated = catchAsyncError(async (req, res, next) => {
             return next(new ErrorHandler("This account has been deleted.", 401));
         }
 
-        req.user = {
-            ...existingUser.toObject(),
-            role: existingUser.role // comes from JWT
-        };
+        req.user = existingUser;
         next();
     } catch (error) {
         if (error.name === "TokenExpiredError" && refreshToken) {

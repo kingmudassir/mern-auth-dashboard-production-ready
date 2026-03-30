@@ -12,11 +12,14 @@ import SelectInput from '../Components/SelectInput';
 import TextInput from '../Components/TextInput';
 import FieldError from '../Components/FieldError';
 
-// Process city list (removing 'Un-registered' if it exists in this list)
-const CITIES = Object.values(CITY_DATA)
-  .flat()
-  .filter((city) => city !== 'Un-registered')
-  .sort();
+// Process city list (removing duplicates and 'Un-registered')
+const CITIES = [
+  ...new Set(
+    Object.values(CITY_DATA)
+      .flat()
+      .filter((city) => city !== 'Un-registered')
+  ),
+].sort();
 
 const LocationContactSection = ({ fields, errors, set }) => {
   return (

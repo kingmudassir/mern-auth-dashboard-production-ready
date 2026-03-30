@@ -28,6 +28,7 @@ import LocationContactSection from './Post-Ad/Functions/LocationContactSection';
 import SubmitSection from './Post-Ad/Functions/SubmitSection';
 import SuccessSection from './Post-Ad/Functions/SuccessSection';
 import ProgressBar from './Post-Ad/Functions/ProgressBar';
+import { usePostAd } from '../Hooks/Post-Ad/usePostAd';
 
 const MAX_IMAGES = 10;
 
@@ -282,6 +283,7 @@ const STEPS = [
 // ── Main component ────────────────────────────────────────────────
 export default function PostAd() {
   const navigate = useNavigate();
+  const [submitted, setSubmitted] = useState(false);
 
   const [activeStep, setActiveStep] = React.useState(0);
   const [fields, setFields] = useState({
@@ -310,8 +312,6 @@ export default function PostAd() {
   const [images, setImages] = useState([]);
   const [features, setFeatures] = useState([]);
   const [errors, setErrors] = useState({});
-  const [loading, setLoading] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
   const [globalErr, setGlobalErr] = useState('');
 
   const set = (key) => (e) => {
@@ -388,12 +388,16 @@ export default function PostAd() {
       return next;
     });
 
+  const postAdMutation = usePostAd({
+    onSuccess: () => setSubmitted(true),
+    onError: (msg) => setGlobalErr(msg),
+  });
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const errs = validateAll(fields);
     if (Object.keys(errs).length) {
       setErrors(errs);
-      // scroll to first error
       const firstErr = document.querySelector('[aria-invalid="true"]');
       firstErr?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
@@ -405,13 +409,8 @@ export default function PostAd() {
         ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
-    setLoading(true);
     setGlobalErr('');
-
-    // ← REPLACE with: postAdMutation.mutate(formData)
-    await new Promise((r) => setTimeout(r, 1600));
-    setLoading(false);
-    setSubmitted(true);
+    postAdMutation.mutate({ fields, images, features });
   };
 
   const handleReset = () => {
@@ -535,7 +534,7 @@ export default function PostAd() {
               <LocationContactSection fields={fields} errors={errors} set={set} />
             </div>
             {/* ══ Submit ════════════════════════════════════ */}
-            <SubmitSection loading={loading} />
+            <SubmitSection loading={postAdMutation.isPending} />
           </div>
         </form>
       </div>

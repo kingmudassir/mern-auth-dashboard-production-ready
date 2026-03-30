@@ -1,18 +1,30 @@
-import { catchAsyncError } from "../middlewares/catchAsyncError.js";
-import ErrorHandler from "../middlewares/errors.js";
+import { catchAsyncError } from "../../middlewares/catchAsyncError.js";
+import ErrorHandler from "../../middlewares/errors.js";
 import { Car } from "../../models/carSchema.js";
 import cloudinary from "cloudinary";
+import streamifier from "streamifier";
 
 // ── Helper: upload a single base64 image to Cloudinary ───────────
-async function uploadToCloudinary(base64String) {
-    const result = await cloudinary.v2.uploader.upload(base64String, {
-        folder: "paiyya/cars",
-        transformation: [{ width: 1200, crop: "limit" }, { quality: "auto:good" }],
+function uploadBufferToCloudinary(buffer) {
+    return new Promise((resolve, reject) => {
+        const stream = cloudinary.v2.uploader.upload_stream(
+            {
+                folder: "paiyya/cars",
+                transformation: [
+                    { width: 1200, crop: "limit" },
+                    { quality: "auto:good" },
+                ],
+            },
+            (error, result) => {
+                if (error) return reject(error);
+                resolve({ url: result.secure_url, publicId: result.public_id });
+            }
+        );
+        streamifier.createReadStream(buffer).pipe(stream);
     });
-    return { url: result.secure_url, publicId: result.public_id };
 }
 
-// ── POST /api/cars  ───────────────────────────────────────────────
+// ── POST /api/v2/cars ─────────────────────────────────────────────
 export const postAd = catchAsyncError(async (req, res, next) => {
     const {
         make, model, variant, year, condition,
@@ -20,10 +32,9 @@ export const postAd = catchAsyncError(async (req, res, next) => {
         transmission, fuel, mileage, registeredIn,
         features, price, negotiable,
         description, city, area, phone, whatsapp,
-        images, // array of base64 strings from the client
     } = req.body;
 
-    // ── Validate required fields ──────────────────────────────────
+    // ── Validate ──────────────────────────────────────────────────
     if (!make || !model || !year)
         return next(new ErrorHandler("Make, model, and year are required.", 400));
 
@@ -45,21 +56,28 @@ export const postAd = catchAsyncError(async (req, res, next) => {
     if (!phone || !/^(\+92|0)[0-9]{10}$/.test(phone))
         return next(new ErrorHandler("Enter a valid Pakistani phone number.", 400));
 
-    if (!images || !Array.isArray(images) || images.length === 0)
+    if (!req.files || req.files.length === 0)
         return next(new ErrorHandler("At least one photo is required.", 400));
 
-    if (images.length > 10)
-        return next(new ErrorHandler("Maximum 10 photos allowed.", 400));
-
-    // ── Upload images to Cloudinary ───────────────────────────────
+    // ── Upload buffers to Cloudinary ──────────────────────────────
     let uploadedImages;
     try {
-        uploadedImages = await Promise.all(images.map(uploadToCloudinary));
+        uploadedImages = await Promise.all(
+            req.files.map((f) => uploadBufferToCloudinary(f.buffer))
+        );
     } catch (err) {
         return next(new ErrorHandler(`Image upload failed: ${err.message}`, 500));
     }
 
-    // ── Create the ad ─────────────────────────────────────────────
+    // ── Parse features (sent as JSON string from FormData) ─────────
+    let parsedFeatures = [];
+    try {
+        parsedFeatures = features ? JSON.parse(features) : [];
+    } catch {
+        parsedFeatures = [];
+    }
+
+    // ── Create ────────────────────────────────────────────────────
     const car = await Car.create({
         make: make.trim(),
         model: model.trim(),
@@ -74,14 +92,14 @@ export const postAd = catchAsyncError(async (req, res, next) => {
         fuel: fuel.trim(),
         mileage: mileage ? Number(mileage) : undefined,
         registeredIn: registeredIn?.trim() || undefined,
-        features: Array.isArray(features) ? features : [],
+        features: parsedFeatures,
         price: Number(price),
-        negotiable: Boolean(negotiable),
+        negotiable: negotiable === "true" || negotiable === true,
         description: description.trim(),
         city: city.trim(),
         area: area?.trim() || undefined,
         phone: phone.trim(),
-        whatsapp: Boolean(whatsapp),
+        whatsapp: whatsapp === "true" || whatsapp === true,
         images: uploadedImages,
         postedBy: req.user._id,
     });

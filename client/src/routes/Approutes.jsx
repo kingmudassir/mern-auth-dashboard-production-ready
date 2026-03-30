@@ -26,6 +26,7 @@ import SettingsPanel from '../Pages/Admin/Settings/Main-Page/SettingsPanel';
 import PostAd from '../Pages/PostAd';
 import SavedAds from '../Pages/SavedAds';
 import AllUsersPanel from '../Pages/Admin/All-Users/Main-Page/AllUsersPanel';
+import DashboardLayout from '../Layout/DashboardLayout';
 
 function Approutes() {
   return (
@@ -38,13 +39,14 @@ function Approutes() {
         <Route path="/forgotpassword" element={<ForgotPassword />} />
         <Route path="/verifyotp" element={<VerifyOTP />} />
         <Route path="/password/reset/:token" element={<ResetPassword />} />
-        <Route path="/profile" element={<Profile />} />
+        {/* <Route path="/profile" element={<Profile />} /> */}
         <Route path="/confirm-email-change" element={<ConfirmEmailChange />} />
         {/* <Route path="/admin/dashboard" element={<Dashboard />} /> */}
         <Route path="/cars" element={<CarMarketplace />} />
         <Route path="cars/:carId" element={<CarListing />} />
         <Route path="post-ad" element={<PostAd />} />
         <Route path="saved" element={<SavedAds />} />
+        <Route path="/profile" element={<DashboardLayout />}></Route>
       </Route>
       <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<Dashboard />} />

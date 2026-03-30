@@ -10,6 +10,7 @@ const AUTH_PAGES = [
   '/verifyotp',
   '/forgotpassword',
   '/confirm-email-change',
+  '/profile',
 ];
 
 export default function Navbar() {
@@ -24,6 +25,8 @@ export default function Navbar() {
   const navigate = useNavigate();
 
   const isAuthPage = AUTH_PAGES.includes(location.pathname);
+  const isDashboard = location.pathname.startsWith('/profile');
+
   // Scroll listener
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 10);

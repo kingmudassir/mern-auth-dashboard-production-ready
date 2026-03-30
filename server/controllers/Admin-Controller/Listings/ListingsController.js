@@ -1,6 +1,6 @@
 import { catchAsyncError } from "../../../middlewares/catchAsyncError.js";
 import ErrorHandler from "../../../middlewares/errors.js";
-import { CarListing } from "../../../models/carSchema.js";
+import { Car } from "../../../models/carSchema.js";
 
 export const getPendingListings = catchAsyncError(async (req, res, next) => {
     const { page = 1, limit = 10, sortBy = "createdAt", order = "desc" } = req.query;
@@ -9,13 +9,13 @@ export const getPendingListings = catchAsyncError(async (req, res, next) => {
     const sort = {};
     sort[sortBy] = order === "desc" ? -1 : 1;
 
-    const listings = await CarListing.find({ status: "pending", isDeleted: false })
+    const listings = await Car.find({ status: "pending", isDeleted: false })
         .populate("createdBy", "name email phone")
         .sort(sort)
         .skip(skip)
         .limit(Number(limit));
 
-    const total = await CarListing.countDocuments({ status: "pending", isDeleted: false });
+    const total = await Car.countDocuments({ status: "pending", isDeleted: false });
 
     res.status(200).json({
         success: true,
@@ -33,13 +33,13 @@ export const getFlaggedListings = catchAsyncError(async (req, res, next) => {
     const sort = {};
     sort[sortBy] = order === "desc" ? -1 : 1;
 
-    const listings = await CarListing.find({ reportCount: { $gt: 0 }, isDeleted: false })
+    const listings = await Car.find({ reportCount: { $gt: 0 }, isDeleted: false })
         .populate("createdBy", "name email phone")
         .sort(sort)
         .skip(skip)
         .limit(Number(limit));
 
-    const total = await CarListing.countDocuments({ reportCount: { $gt: 0 }, isDeleted: false });
+    const total = await Car.countDocuments({ reportCount: { $gt: 0 }, isDeleted: false });
 
     res.status(200).json({
         success: true,
@@ -53,7 +53,7 @@ export const getFlaggedListings = catchAsyncError(async (req, res, next) => {
 export const approveListing = catchAsyncError(async (req, res, next) => {
     const { listingId } = req.params;
 
-    const listing = await CarListing.findByIdAndUpdate(
+    const listing = await Car.findByIdAndUpdate(
         listingId,
         {
             status: "approved",
@@ -82,7 +82,7 @@ export const rejectListing = catchAsyncError(async (req, res, next) => {
         return next(new ErrorHandler("Rejection reason is required", 400));
     }
 
-    const listing = await CarListing.findByIdAndUpdate(
+    const listing = await Car.findByIdAndUpdate(
         listingId,
         {
             status: "rejected",
@@ -107,7 +107,7 @@ export const rejectListing = catchAsyncError(async (req, res, next) => {
 export const removeFlaggedListing = catchAsyncError(async (req, res, next) => {
     const { listingId } = req.params;
 
-    const listing = await CarListing.findByIdAndUpdate(
+    const listing = await Car.findByIdAndUpdate(
         listingId,
         {
             isDeleted: true,

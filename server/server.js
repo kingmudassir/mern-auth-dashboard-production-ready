@@ -1,11 +1,13 @@
 import dotenv from "dotenv";
+dotenv.config();
+
 import app from "./app.js";
 import connection from "./config/dbConnection.js";
+import './config/cloudinary.js'
 import "./utilities/Crons/cleanupUnverifiedUsers.js"
 import './utilities/Crons/deleteScheduledAccounts.js'
 import './utilities/Crons/accountDeletionWatcher.js'
 
-dotenv.config()
 
 const PORT = process.env.PORT || 5001
 
