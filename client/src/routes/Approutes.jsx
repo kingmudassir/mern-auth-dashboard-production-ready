@@ -3,7 +3,6 @@ import UserLayout from '../Layout/UserLayout';
 import Home from '../Pages/Home';
 import Login from '../Pages/Shared/Login';
 import Register from '../Pages/Shared/Register';
-import UserProfile from '../Pages/UserProfile';
 import ForgotPassword from '../Pages/Shared/ForgotPassword';
 import VerifyOTP from '../Pages/Shared/VerifyOTP';
 import ResetPassword from '../Pages/Shared/ResetPassword';
@@ -35,7 +34,6 @@ function Approutes() {
         <Route index element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/userprofile" element={<UserProfile />} />
         <Route path="/forgotpassword" element={<ForgotPassword />} />
         <Route path="/verifyotp" element={<VerifyOTP />} />
         <Route path="/password/reset/:token" element={<ResetPassword />} />
@@ -46,7 +44,10 @@ function Approutes() {
         <Route path="cars/:carId" element={<CarListing />} />
         <Route path="post-ad" element={<PostAd />} />
         <Route path="saved" element={<SavedAds />} />
-        <Route path="/profile" element={<DashboardLayout />}></Route>
+        <Route path="/profile" element={<DashboardLayout />}>
+          <Route index element={<Profile />} />
+          <Route path="info" element={<Profile />} />
+        </Route>
       </Route>
       <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<Dashboard />} />

@@ -48,9 +48,13 @@ export default function DashboardLayout() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // ← REPLACE with your actual hooks:
-  // const { data: user }    = useUser();
-  // const { mutate: logout } = useLogout();
+  useEffect(() => {
+    // If the user is exactly on /profile, move them to /profile/info
+    if (location.pathname === '/profile' || location.pathname === '/profile/') {
+      navigate('/profile/info', { replace: true });
+    }
+  }, [location.pathname, navigate]);
+
   const user = {
     name: 'Mudassir Khan',
     email: 'mudassir@paiyya.pk',

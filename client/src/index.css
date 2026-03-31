@@ -1709,11 +1709,18 @@ select {
 /* ********** Styling for Posting Ad here ********** */
 
 /* ********** Styling for User Dashboard here ********** */
-.dl-root {
+/* .dl-root {
   background: #f7f4f0;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+} */
+
+.dl-root {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0; /* Critical for nested flex scrolling */
 }
 
 .dl-header {
@@ -1722,7 +1729,7 @@ select {
   left: 0;
   right: 0;
   z-index: 50;
-  background: #0f0c17;
+  background: linear-gradient(135deg, #1a1523 0%, #231930 60%, #1f1a2e 100%);
   border-bottom: 1px solid rgba(108, 60, 225, 0.18);
   box-shadow: 0 4px 32px rgba(15, 12, 23, 0.28);
 }

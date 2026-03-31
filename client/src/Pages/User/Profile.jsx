@@ -10,7 +10,6 @@ import {
   CheckCircle2,
   AlertCircle,
   Trash2,
-  ArrowRight,
   Camera,
   Shield,
   LogOut,
@@ -18,7 +17,7 @@ import {
 import { useUser } from '../../Hooks/useUser';
 import { useUpdateProfile } from '../../Hooks/useUpdateProfile';
 import authService from '../../Services/authService';
-import { replace, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { validatePhone } from '../../utilities/PhoneValidator';
 import { useEmailChange } from '../../Hooks/useEmailChange';
 import { validateEmail } from '../../utilities/EmailValidator';
@@ -28,9 +27,6 @@ import { useLogout } from '../../Hooks/useLogout';
 import { useDeleteAccount } from '../../Hooks/useDeleteAccount';
 
 // ── Helpers ──────────────────────────────────────────────────────
-const isEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
-const isPhone = (v) => /^(\+92|0)[0-9]{10}$/.test(v);
-
 const pwStrength = (pw) => {
   if (!pw) return 0;
   let s = 0;
@@ -160,12 +156,12 @@ function SaveBtn({ loading, disabled, label = 'Save Changes' }) {
     <button
       type="submit"
       disabled={loading || disabled}
-      className="save-btn inline-flex items-center gap-2 text-white text-[0.82rem] font-semibold px-5 py-2.5 rounded-xl"
+      className="prof-save-btn inline-flex items-center gap-2 text-white text-[0.82rem] font-semibold px-5 py-2.5 rounded-xl"
       style={{ fontFamily: "'DM Sans', sans-serif" }}
     >
       {loading ? (
         <>
-          <span className="spinner" aria-hidden="true" />
+          <span className="prof-spinner" aria-hidden="true" />
           <span className="relative z-10">Saving…</span>
         </>
       ) : (
@@ -200,7 +196,7 @@ function Toast({ msg, type = 'success' }) {
 }
 
 function SectionCard({ children }) {
-  return <div className="profile-card rounded-2xl p-6 flex flex-col gap-5">{children}</div>;
+  return <div className="prof-card rounded-2xl p-6 flex flex-col gap-5">{children}</div>;
 }
 
 function SectionHeader({ title, subtitle }) {
@@ -238,7 +234,6 @@ function AvatarPane({ user }) {
     if (!file) return;
     setPreview(URL.createObjectURL(file));
     setLoading(true);
-
     // ← REPLACE with: uploadAvatarMutation.mutate(file)
     await new Promise((r) => setTimeout(r, 1000));
     setLoading(false);
@@ -258,11 +253,9 @@ function AvatarPane({ user }) {
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-
     const day = date.getDate();
     const month = date.toLocaleString('en-GB', { month: 'long' });
     const year = date.getFullYear();
-
     const getOrdinal = (n) => {
       if (n > 3 && n < 21) return 'th';
       switch (n % 10) {
@@ -276,21 +269,18 @@ function AvatarPane({ user }) {
           return 'th';
       }
     };
-
     return `${day}${getOrdinal(day)} ${month}, ${year}`;
   };
 
   return (
     <SectionCard>
       <SectionHeader title="Profile Photo" subtitle="Click the photo to upload a new one" />
-
       <div className="flex items-center gap-5">
-        {/* Avatar circle */}
         <div className="relative shrink-0 group">
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
-            className="avatar-trigger w-20 h-20 rounded-2xl overflow-hidden flex items-center justify-center"
+            className="prof-avatar-trigger w-20 h-20 rounded-2xl overflow-hidden flex items-center justify-center"
             aria-label="Change profile photo"
             disabled={loading}
           >
@@ -305,24 +295,21 @@ function AvatarPane({ user }) {
                 {initials(user?.name)}
               </span>
             )}
-            {/* Hover overlay */}
             <div
-              className="avatar-overlay absolute inset-0 rounded-2xl flex items-center justify-center"
+              className="prof-avatar-overlay absolute inset-0 rounded-2xl flex items-center justify-center"
               aria-hidden="true"
             >
               {loading ? (
-                <span className="spinner-sm" />
+                <span className="prof-spinner-sm" />
               ) : (
                 <Camera size={18} strokeWidth={2} className="text-white" />
               )}
             </div>
           </button>
-
-          {/* Pencil badge */}
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
-            className="pencil-badge absolute -bottom-1.5 -right-1.5 w-7 h-7 rounded-full border-2 border-white flex items-center justify-center"
+            className="prof-pencil-badge absolute -bottom-1.5 -right-1.5 w-7 h-7 rounded-full border-2 border-white flex items-center justify-center"
             aria-label="Edit profile photo"
             disabled={loading}
           >
@@ -339,7 +326,6 @@ function AvatarPane({ user }) {
           aria-label="Upload profile photo"
         />
 
-        {/* Info + actions */}
         <div className="flex flex-col gap-2">
           <div>
             <p
@@ -425,7 +411,6 @@ function PersonalInfoCard({ user }) {
       <form onSubmit={handleSave} noValidate aria-label="Personal info form">
         <div className="flex flex-col gap-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Name */}
             <div className="flex flex-col gap-1.5">
               <FieldLabel>Full Name</FieldLabel>
               <TextInput
@@ -443,8 +428,6 @@ function PersonalInfoCard({ user }) {
               />
               <FieldError msg={errors.name} />
             </div>
-
-            {/* Phone */}
             <div className="flex flex-col gap-1.5">
               <FieldLabel>Phone Number</FieldLabel>
               <TextInput
@@ -463,14 +446,11 @@ function PersonalInfoCard({ user }) {
               <FieldError msg={errors.phone} />
             </div>
           </div>
-
           <div className="flex items-center gap-3 flex-wrap">
             <SaveBtn loading={isUpdatingProfile} />
-
             {isUpdateProfileSuccessful && (
               <Toast msg="Personal info updated successfully" type="success" />
             )}
-
             {isUpdateProfileError && (
               <Toast msg={updateProfileError?.message || 'Something went wrong.'} type="error" />
             )}
@@ -499,22 +479,19 @@ function EmailCard({ user }) {
 
   const handleSave = async (ev) => {
     ev.preventDefault();
-
     const emailError = validateEmail(newEmail);
     if (emailError) {
       setError(emailError);
       return;
     }
-
     setError('');
-
     try {
       await requestEmailChange({ newEmail });
       setToast({ msg: 'Verification link sent. Check your new inbox.', type: 'success' });
       setTimeout(() => setToast({ msg: '', type: 'success' }), 4000);
       setNewEmail('');
     } catch {
-      // error handled via isError
+      /* error handled via isError */
     }
   };
 
@@ -526,7 +503,6 @@ function EmailCard({ user }) {
       />
       <form onSubmit={handleSave} noValidate aria-label="Email form">
         <div className="flex flex-col gap-4">
-          {/* Current email — read only */}
           <div className="flex flex-col gap-1.5">
             <FieldLabel>Current Email</FieldLabel>
             <TextInput
@@ -537,8 +513,6 @@ function EmailCard({ user }) {
               aria-label="Current email address"
             />
           </div>
-
-          {/* New email */}
           <div className="flex flex-col gap-1.5">
             <FieldLabel>New Email</FieldLabel>
             <TextInput
@@ -556,7 +530,6 @@ function EmailCard({ user }) {
             />
             <FieldError msg={error || (isError ? emailChangeError?.message : '')} />
           </div>
-
           <div className="flex items-center gap-3 flex-wrap">
             <SaveBtn loading={isPending} label="Update Email" />
             {toast.msg && <Toast msg={toast.msg} type={toast.type} />}
@@ -596,18 +569,11 @@ function PasswordCard() {
 
   const validate = () => {
     const e = {};
-
     if (!fields.current) e.current = 'Current password is required';
-
     const passwordError = validatePasswordStrict(fields.next);
     if (passwordError) e.next = passwordError;
-
-    if (!fields.confirm) {
-      e.confirm = 'Please confirm your new password';
-    } else if (fields.next !== fields.confirm) {
-      e.confirm = 'Passwords do not match';
-    }
-
+    if (!fields.confirm) e.confirm = 'Please confirm your new password';
+    else if (fields.next !== fields.confirm) e.confirm = 'Passwords do not match';
     return e;
   };
 
@@ -618,18 +584,13 @@ function PasswordCard() {
       setErrors(e);
       return;
     }
-
     changePassword(
       {
         currentPassword: fields.current,
         newPassword: fields.next,
         confirmNewPassword: fields.confirm,
       },
-      {
-        onSuccess: () => {
-          setFields({ current: '', next: '', confirm: '' });
-        },
-      }
+      { onSuccess: () => setFields({ current: '', next: '', confirm: '' }) }
     );
   };
 
@@ -638,7 +599,6 @@ function PasswordCard() {
       <SectionHeader title="Password" subtitle="Use a strong password you haven't used before" />
       <form onSubmit={handleSave} noValidate aria-label="Change password form">
         <div className="flex flex-col gap-4">
-          {/* Current */}
           <div className="flex flex-col gap-1.5">
             <FieldLabel>Current Password</FieldLabel>
             <PwInput
@@ -655,7 +615,6 @@ function PasswordCard() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* New */}
             <div className="flex flex-col gap-1.5">
               <FieldLabel>New Password</FieldLabel>
               <PwInput
@@ -689,8 +648,6 @@ function PasswordCard() {
                 </div>
               )}
             </div>
-
-            {/* Confirm */}
             <div className="flex flex-col gap-1.5">
               <FieldLabel>Confirm New Password</FieldLabel>
               <PwInput
@@ -719,9 +676,7 @@ function PasswordCard() {
 
           <div className="flex items-center gap-3 flex-wrap">
             <SaveBtn loading={isPending} label="Change Password" />
-
             {isSuccess && <Toast msg="Password changed successfully" type="success" />}
-
             {isError && <Toast msg={error?.message || 'Something went wrong.'} type="error" />}
           </div>
         </div>
@@ -740,7 +695,6 @@ function DangerZoneCard() {
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
 
   const navigate = useNavigate();
-
   const { mutateAsync: logout, isPending: isLoggingOut } = useLogout();
   const {
     mutateAsync: deleteAccount,
@@ -752,7 +706,6 @@ function DangerZoneCard() {
 
   const handleDeleteAccount = async () => {
     if (!deletePassword) return;
-
     try {
       await deleteAccount({ currentPassword: deletePassword });
       setConfirmOpen(false);
@@ -760,7 +713,7 @@ function DangerZoneCard() {
       setShowDeletePw(false);
       navigate('/', { replace: true });
     } catch {
-      // error shown via isError/error
+      /* error shown via isError/error */
     }
   };
 
@@ -768,7 +721,7 @@ function DangerZoneCard() {
     try {
       await logout();
     } catch {
-      // silent — clear local state regardless
+      /* silent */
     }
     setLogoutConfirmOpen(false);
     navigate('/', { replace: true });
@@ -849,7 +802,7 @@ function DangerZoneCard() {
       </div>
 
       <div className="flex flex-col gap-3">
-        {/* Log out */}
+        {/* Log out row */}
         <div className="flex items-center justify-between gap-4 p-4 rounded-xl bg-white border border-[#E8E3DC]">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-[#F2EEE9] flex items-center justify-center shrink-0">
@@ -880,7 +833,7 @@ function DangerZoneCard() {
           </button>
         </div>
 
-        {/* Delete account */}
+        {/* Delete account row */}
         <div className="flex items-center justify-between gap-4 p-4 rounded-xl bg-white border border-[rgba(232,98,42,0.2)]">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-[rgba(232,98,42,0.08)] flex items-center justify-center shrink-0">
@@ -912,7 +865,7 @@ function DangerZoneCard() {
         </div>
       </div>
 
-      {/* Confirm delete modal */}
+      {/* Delete confirm modal */}
       {confirmOpen && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center px-4"
@@ -942,12 +895,7 @@ function DangerZoneCard() {
               password to confirm.
             </p>
 
-            {/* Password input */}
-            <div
-              className="relative flex items-center border border-[#E8E3DC] rounded-xl h-11 bg-[#FAFAF9] mb-4
-                   focus-within:border-[rgba(232,98,42,0.4)] focus-within:shadow-[0_0_0_3px_rgba(232,98,42,0.08)]
-                   transition-[border-color,box-shadow] duration-200"
-            >
+            <div className="relative flex items-center border border-[#E8E3DC] rounded-xl h-11 bg-[#FAFAF9] mb-4 focus-within:border-[rgba(232,98,42,0.4)] focus-within:shadow-[0_0_0_3px_rgba(232,98,42,0.08)] transition-[border-color,box-shadow] duration-200">
               <Lock
                 size={14}
                 strokeWidth={1.9}
@@ -1024,140 +972,25 @@ function DangerZoneCard() {
   );
 }
 
-function ProfileSkeleton() {
+// ── Skeleton ─────────────────────────────────────────────────────
+// Used by DashboardLayout or a parent suspense boundary if needed.
+// Exported so DashboardLayout can show it while auth is being checked.
+export function ProfileSkeleton() {
   return (
-    <div className="profile-page-bg min-h-screen pt-16.5">
-      <div className="max-w-215 mx-auto px-4 sm:px-6 py-10 md:py-14">
-        {/* Page heading */}
+    <div className="prof-page-bg min-h-screen">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-10 md:py-14">
         <div className="mb-8 flex flex-col gap-2">
           <div className="w-32 h-3 rounded bg-gray-200 animate-pulse" />
           <div className="w-44 h-8 rounded-md bg-gray-200 animate-pulse" />
           <div className="w-80 h-4 rounded bg-gray-200 animate-pulse" />
         </div>
-
         <div className="flex flex-col gap-4">
-          {/* AvatarPane */}
-          <div className="profile-card rounded-2xl p-6 flex flex-col gap-5">
-            {/* Section header */}
-            <div className="flex flex-col gap-1.5">
-              <div className="w-28 h-4 rounded bg-gray-200 animate-pulse" />
-              <div className="w-48 h-3 rounded bg-gray-200 animate-pulse" />
-            </div>
-            <div className="flex items-center gap-5">
-              {/* Avatar circle */}
-              <div className="w-20 h-20 rounded-2xl bg-gray-200 animate-pulse shrink-0" />
-              {/* Info + buttons */}
-              <div className="flex flex-col gap-2 flex-1">
-                <div className="w-36 h-4 rounded bg-gray-200 animate-pulse" />
-                <div className="w-48 h-3 rounded bg-gray-200 animate-pulse" />
-                <div className="flex gap-2">
-                  <div className="w-24 h-7 rounded-lg bg-gray-200 animate-pulse" />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* PersonalInfoCard */}
-          <div className="profile-card rounded-2xl p-6 flex flex-col gap-5">
-            <div className="flex flex-col gap-1.5">
-              <div className="w-40 h-4 rounded bg-gray-200 animate-pulse" />
-              <div className="w-56 h-3 rounded bg-gray-200 animate-pulse" />
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="flex flex-col gap-1.5">
-                <div className="w-16 h-3 rounded bg-gray-200 animate-pulse" />
-                <div className="w-full h-11 rounded-xl bg-gray-200 animate-pulse" />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <div className="w-24 h-3 rounded bg-gray-200 animate-pulse" />
-                <div className="w-full h-11 rounded-xl bg-gray-200 animate-pulse" />
-              </div>
-            </div>
-            <div className="w-28 h-9 rounded-xl bg-gray-200 animate-pulse" />
-          </div>
-
-          {/* EmailCard */}
-          <div className="profile-card rounded-2xl p-6 flex flex-col gap-5">
-            <div className="flex flex-col gap-1.5">
-              <div className="w-28 h-4 rounded bg-gray-200 animate-pulse" />
-              <div className="w-64 h-3 rounded bg-gray-200 animate-pulse" />
-            </div>
-            <div className="flex flex-col gap-4">
-              <div className="flex flex-col gap-1.5">
-                <div className="w-10 h-3 rounded bg-gray-200 animate-pulse" />
-                <div className="w-full h-11 rounded-xl bg-gray-200 animate-pulse" />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <div className="w-16 h-3 rounded bg-gray-200 animate-pulse" />
-                <div className="w-full h-11 rounded-xl bg-gray-200 animate-pulse" />
-              </div>
-            </div>
-            <div className="w-28 h-9 rounded-xl bg-gray-200 animate-pulse" />
-          </div>
-
-          {/* PasswordCard */}
-          <div className="profile-card rounded-2xl p-6 flex flex-col gap-5">
-            <div className="flex flex-col gap-1.5">
-              <div className="w-20 h-4 rounded bg-gray-200 animate-pulse" />
-              <div className="w-60 h-3 rounded bg-gray-200 animate-pulse" />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <div className="w-32 h-3 rounded bg-gray-200 animate-pulse" />
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="prof-card rounded-2xl p-6">
+              <div className="w-40 h-4 rounded bg-gray-200 animate-pulse mb-3" />
               <div className="w-full h-11 rounded-xl bg-gray-200 animate-pulse" />
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="flex flex-col gap-1.5">
-                <div className="w-24 h-3 rounded bg-gray-200 animate-pulse" />
-                <div className="w-full h-11 rounded-xl bg-gray-200 animate-pulse" />
-                {/* Strength bars */}
-                <div className="flex gap-1 mt-1">
-                  {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="h-0.75 flex-1 rounded-full bg-gray-200 animate-pulse" />
-                  ))}
-                </div>
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <div className="w-36 h-3 rounded bg-gray-200 animate-pulse" />
-                <div className="w-full h-11 rounded-xl bg-gray-200 animate-pulse" />
-              </div>
-            </div>
-            <div className="w-36 h-9 rounded-xl bg-gray-200 animate-pulse" />
-          </div>
-
-          {/* DangerZoneCard */}
-          <div
-            className="rounded-2xl p-6 flex flex-col gap-5"
-            style={{ background: '#FFFAF9', border: '1.5px solid rgba(232,98,42,0.18)' }}
-          >
-            <div className="flex flex-col gap-1.5">
-              <div className="w-24 h-4 rounded bg-gray-200 animate-pulse" />
-              <div className="w-56 h-3 rounded bg-gray-200 animate-pulse" />
-            </div>
-            <div className="flex flex-col gap-3">
-              {/* Logout row */}
-              <div className="flex items-center justify-between gap-4 p-4 rounded-xl bg-white border border-[#E8E3DC]">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-gray-200 animate-pulse shrink-0" />
-                  <div className="flex flex-col gap-1.5">
-                    <div className="w-12 h-3.5 rounded bg-gray-200 animate-pulse" />
-                    <div className="w-44 h-3 rounded bg-gray-200 animate-pulse" />
-                  </div>
-                </div>
-                <div className="w-16 h-8 rounded-lg bg-gray-200 animate-pulse shrink-0" />
-              </div>
-              {/* Delete row */}
-              <div className="flex items-center justify-between gap-4 p-4 rounded-xl bg-white border border-[rgba(232,98,42,0.2)]">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-gray-200 animate-pulse shrink-0" />
-                  <div className="flex flex-col gap-1.5">
-                    <div className="w-24 h-3.5 rounded bg-gray-200 animate-pulse" />
-                    <div className="w-52 h-3 rounded bg-gray-200 animate-pulse" />
-                  </div>
-                </div>
-                <div className="w-16 h-8 rounded-lg bg-gray-200 animate-pulse shrink-0" />
-              </div>
-            </div>
-          </div>
+          ))}
         </div>
       </div>
     </div>
@@ -1165,46 +998,40 @@ function ProfileSkeleton() {
 }
 
 // ─────────────────────────────────────────────────────────────────
-// Profile (page root)
+// Profile — page root (rendered as <Outlet /> inside DashboardLayout)
 // ─────────────────────────────────────────────────────────────────
 export default function Profile() {
   const navigate = useNavigate();
 
-  const {
-    data: authenticatedUser,
-    isPending: isFetchingUser,
-    isError: isUserFetchError,
-    isSuccess: isUserFetchSuccessful,
-    error: userFetchError,
-    reset: resetUserState,
-  } = useUser();
+  const { data: authenticatedUser, isPending: isFetchingUser } = useUser();
 
-  const [checking, setChecking] = useState(true);
-
+  // Auth guard: redirect to home if not logged in
   useEffect(() => {
     const checkIfAlreadyLoggedIn = async () => {
       try {
         const data = await authService.checkAuth();
-        if (!data.alreadyLoggedIn) {
-          navigate('/');
-        }
-      } catch (err) {
-      } finally {
-        setChecking(false);
+        if (!data.alreadyLoggedIn) navigate('/');
+      } catch {
+        navigate('/');
       }
     };
-
     checkIfAlreadyLoggedIn();
   }, []);
 
-  if (checking) return <ProfileSkeleton />; // Prevent rendering profile form while checking
+  // Show skeleton while user data is loading
+  if (isFetchingUser) return <ProfileSkeleton />;
 
   return (
     <>
       <style>{STYLES}</style>
 
-      <div className="profile-page-bg min-h-screen pt-16.5">
-        <div className="max-w-215 mx-auto px-4 sm:px-6 py-10 md:py-14">
+      {/* 
+        No outer page wrapper or pt-16.5 needed here.
+        DashboardLayout's .dl-content already handles the header offset
+        and fills the remaining viewport height.
+      */}
+      <div className="prof-page-bg min-h-full">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-10 md:py-14">
           {/* Page heading */}
           <div className="mb-8">
             <div className="flex items-center gap-2.5 mb-1">
@@ -1245,75 +1072,60 @@ export default function Profile() {
 }
 
 // ── Styles ────────────────────────────────────────────────────────
+// Prefixed with "prof-" to avoid collisions with DashboardLayout's
+// own CSS classes (e.g. .profile-card → .prof-card).
 const STYLES = `
   @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap');
 
-  :root {
-    --paiyya-ink:     #1A1523;
-    --paiyya-border:  #E8E3DC;
-    --paiyya-muted:   #8A8390;
-    --paiyya-violet:  #6C3CE1;
-    --paiyya-ember:   #E8622A;
-    --paiyya-ember-d: #C4531F;
-    --paiyya-gold:    #C9A84C;
-  }
-
-  .profile-page-bg {
+  .prof-page-bg {
     background-color: #F7F4F0;
     background-image:
       radial-gradient(ellipse 55% 40% at 5% 20%, rgba(108,60,225,0.05) 0%, transparent 70%),
       radial-gradient(ellipse 45% 35% at 95% 80%, rgba(232,98,42,0.04) 0%, transparent 65%);
   }
 
-  .profile-card {
+  .prof-card {
     background: #FFFFFF;
     border: 1.5px solid #E8E3DC;
     box-shadow: 0 2px 12px rgba(26,21,35,0.04), 0 1px 3px rgba(26,21,35,0.03);
     transition: box-shadow 0.2s ease;
   }
-
-  .profile-card:hover {
+  .prof-card:hover {
     box-shadow: 0 4px 20px rgba(26,21,35,0.07), 0 1px 4px rgba(26,21,35,0.04);
   }
 
-  /* Avatar */
-  .avatar-trigger {
+  .prof-avatar-trigger {
     background: linear-gradient(135deg, rgba(108,60,225,0.08) 0%, rgba(108,60,225,0.04) 100%);
     border: 2px solid rgba(108,60,225,0.15);
     position: relative;
     cursor: pointer;
     transition: border-color 0.2s ease;
   }
+  .prof-avatar-trigger:hover { border-color: rgba(108,60,225,0.4); }
 
-  .avatar-trigger:hover { border-color: rgba(108,60,225,0.4); }
-
-  .avatar-overlay {
+  .prof-avatar-overlay {
     background: rgba(26,21,35,0);
     transition: background-color 0.2s ease;
   }
-
-  .avatar-trigger:hover .avatar-overlay {
+  .prof-avatar-trigger:hover .prof-avatar-overlay {
     background: rgba(26,21,35,0.45);
   }
 
-  .pencil-badge {
+  .prof-pencil-badge {
     background: linear-gradient(135deg, #6C3CE1 0%, #5A2FCA 100%);
     box-shadow: 0 2px 6px rgba(108,60,225,0.35);
     cursor: pointer;
     transition: transform 0.18s ease;
   }
+  .prof-pencil-badge:hover { transform: scale(1.1); }
 
-  .pencil-badge:hover { transform: scale(1.1); }
-
-  /* Save button */
-  .save-btn {
+  .prof-save-btn {
     background: linear-gradient(135deg, #E8622A 0%, #C4531F 100%);
     box-shadow: 0 2px 8px rgba(232,98,42,0.25);
     position: relative; overflow: hidden;
     transition: transform 0.18s ease, box-shadow 0.18s ease;
   }
-
-  .save-btn::before {
+  .prof-save-btn::before {
     content: '';
     position: absolute; inset: 0;
     background: linear-gradient(135deg, #D4521C 0%, #AA3E12 100%);
@@ -1321,33 +1133,30 @@ const STYLES = `
     transition: opacity 0.18s ease;
     border-radius: inherit;
   }
-
-  .save-btn:not(:disabled):hover::before { opacity: 1; }
-  .save-btn:not(:disabled):hover {
+  .prof-save-btn:not(:disabled):hover::before { opacity: 1; }
+  .prof-save-btn:not(:disabled):hover {
     transform: translateY(-1px);
     box-shadow: 0 4px 16px rgba(232,98,42,0.35);
   }
-  .save-btn:not(:disabled):active { transform: translateY(0); }
-  .save-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+  .prof-save-btn:not(:disabled):active { transform: translateY(0); }
+  .prof-save-btn:disabled { opacity: 0.55; cursor: not-allowed; }
 
-  /* Spinners */
-  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes prof-spin { to { transform: rotate(360deg); } }
 
-  .spinner {
+  .prof-spinner {
     width: 16px; height: 16px;
     border: 2px solid rgba(255,255,255,0.3);
     border-top-color: #fff;
     border-radius: 50%;
-    animation: spin 0.7s linear infinite;
+    animation: prof-spin 0.7s linear infinite;
     flex-shrink: 0;
   }
-
-  .spinner-sm {
+  .prof-spinner-sm {
     display: inline-block;
     width: 18px; height: 18px;
     border: 2px solid rgba(255,255,255,0.3);
     border-top-color: #fff;
     border-radius: 50%;
-    animation: spin 0.7s linear infinite;
+    animation: prof-spin 0.7s linear infinite;
   }
 `;
