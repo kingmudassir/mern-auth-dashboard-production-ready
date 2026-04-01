@@ -1,5 +1,6 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useGetCars } from '../Hooks/Car-MarketPlace/useGetCars'; // adjust path to your hooks dir
 import {
   Search,
   SlidersHorizontal,
@@ -18,23 +19,7 @@ import {
   Check,
 } from 'lucide-react';
 
-// ─────────────────────────────────────────────────────────────────
-// 💡 TANSTACK INTEGRATION
-//
-//  Replace MOCK_CARS + client-side filtering with:
-//
-//  const { data, isLoading } = useQuery({
-//    queryKey: ['cars', filters, page],
-//    queryFn: () => axios.get('/api/cars', { params: { ...filters, page, limit: 30 } })
-//                        .then(r => r.data),
-//    keepPreviousData: true,
-//  });
-//  const { cars, total, totalPages } = data ?? {};
-//
-//  Remove the useMemo filtering block and use `cars` directly.
-// ─────────────────────────────────────────────────────────────────
-
-// ── Mock data ─────────────────────────────────────────────────────
+// ── Static option lists ───────────────────────────────────────────
 const MAKES = [
   'Toyota',
   'Honda',
@@ -62,71 +47,6 @@ const CITIES = [
 const FUELS = ['Petrol', 'Diesel', 'Hybrid', 'Electric', 'CNG'];
 const TRANSMISSIONS = ['Automatic', 'Manual'];
 const BODY_TYPES = ['Sedan', 'SUV', 'Hatchback', 'Pickup', 'Van', 'Coupe', 'Crossover'];
-const COLORS = ['White', 'Black', 'Silver', 'Red', 'Blue', 'Grey', 'Brown', 'Green'];
-
-const CAR_NAMES = [
-  ['Toyota', 'Corolla', 'Sedan'],
-  ['Toyota', 'Fortuner', 'SUV'],
-  ['Toyota', 'Yaris', 'Sedan'],
-  ['Toyota', 'Hilux', 'Pickup'],
-  ['Honda', 'Civic', 'Sedan'],
-  ['Honda', 'City', 'Sedan'],
-  ['Honda', 'HR-V', 'Crossover'],
-  ['Honda', 'BR-V', 'SUV'],
-  ['Suzuki', 'Alto', 'Hatchback'],
-  ['Suzuki', 'Swift', 'Hatchback'],
-  ['Suzuki', 'Cultus', 'Hatchback'],
-  ['Suzuki', 'Vitara', 'SUV'],
-  ['Hyundai', 'Tucson', 'SUV'],
-  ['Hyundai', 'Elantra', 'Sedan'],
-  ['Hyundai', 'Sonata', 'Sedan'],
-  ['Kia', 'Sportage', 'SUV'],
-  ['Kia', 'Picanto', 'Hatchback'],
-  ['Kia', 'Stonic', 'Crossover'],
-  ['Nissan', 'Sunny', 'Sedan'],
-  ['Nissan', 'Dayz', 'Hatchback'],
-  ['BMW', '3 Series', 'Sedan'],
-  ['BMW', 'X3', 'SUV'],
-  ['Mercedes-Benz', 'C-Class', 'Sedan'],
-  ['Mercedes-Benz', 'GLC', 'SUV'],
-  ['Audi', 'A4', 'Sedan'],
-  ['Daihatsu', 'Mira', 'Hatchback'],
-  ['Mitsubishi', 'Outlander', 'SUV'],
-  ['Changan', 'Alsvin', 'Sedan'],
-  ['Changan', 'CS35', 'SUV'],
-  ['Toyota', 'Prado', 'SUV'],
-];
-
-const rand = (arr) => arr[Math.floor(Math.random() * arr.length)];
-const randNum = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
-
-const MOCK_CARS = Array.from({ length: 120 }, (_, i) => {
-  const [make, model, body] = CAR_NAMES[i % CAR_NAMES.length];
-  const year = randNum(2015, 2024);
-  const price = randNum(8, 120) * 100000;
-  const km = randNum(0, 150000);
-  const fuel =
-    make === 'BMW' || make === 'Mercedes-Benz' || make === 'Audi'
-      ? rand(['Petrol', 'Diesel'])
-      : rand(['Petrol', 'Hybrid', 'CNG']);
-  return {
-    id: i + 1,
-    make,
-    model,
-    bodyType: body,
-    year,
-    price,
-    city: rand(CITIES),
-    fuel,
-    transmission: rand(TRANSMISSIONS),
-    color: rand(COLORS),
-    mileage: km,
-    condition: km < 10000 ? 'New' : 'Used',
-    featured: i % 13 === 0,
-    postedAt: `${randNum(1, 30)} days ago`,
-    seller: rand(['Ali Khan', 'Sara Ahmed', 'Bilal Motors', 'City Cars', 'Fast Auto']),
-  };
-});
 
 const PRICE_BANDS = [
   { label: 'Under 10 Lac', min: 0, max: 1000000 },
@@ -139,13 +59,12 @@ const PRICE_BANDS = [
 
 const SORT_OPTIONS = [
   { value: 'newest', label: 'Newest First' },
-  { value: 'price-asc', label: 'Price: Low → High' },
-  { value: 'price-desc', label: 'Price: High → Low' },
-  { value: 'mileage-asc', label: 'Lowest Mileage' },
-  { value: 'year-desc', label: 'Newest Year' },
+  { value: 'price_asc', label: 'Price: Low → High' },
+  { value: 'price_desc', label: 'Price: High → Low' },
+  { value: 'year_desc', label: 'Newest Year' },
 ];
 
-const PER_PAGE = 30;
+const PER_PAGE = 20; // match your controller's default limit
 
 // ── Format helpers ────────────────────────────────────────────────
 const fmtPrice = (n) => {
@@ -153,10 +72,9 @@ const fmtPrice = (n) => {
   if (n >= 100000) return `${(n / 100000).toFixed(0)} Lac`;
   return `PKR ${n.toLocaleString()}`;
 };
+const fmtMileage = (n) => (!n || n === 0 ? '0 km' : `${Number(n).toLocaleString()} km`);
 
-const fmtMileage = (n) => (n === 0 ? '0 km' : `${n.toLocaleString()} km`);
-
-// ── Shared primitives ─────────────────────────────────────────────
+// ── Shared primitives (unchanged from your original) ──────────────
 function FilterSection({ title, children, defaultOpen = true }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
@@ -227,45 +145,40 @@ function CheckPill({ label, checked, onChange }) {
 function CarCard({ car, view }) {
   const [liked, setLiked] = useState(false);
 
+  // Real data: car.images[0].url for photo, car._id for link
+  const thumbUrl = car.images?.[0]?.url;
+
   if (view === 'list') {
     return (
       <div className="car-card-list rounded-2xl overflow-hidden flex">
-        {/* Image placeholder */}
         <div
           className="flex-shrink-0 flex items-center justify-center relative"
           style={{
             width: '220px',
-            background: `linear-gradient(135deg, ${car.featured ? '#1A1523' : '#F2EEE9'} 0%, ${car.featured ? '#231930' : '#EAE5DD'} 100%)`,
+            background: thumbUrl ? 'none' : 'linear-gradient(135deg, #F2EEE9 0%, #EAE5DD 100%)',
+            overflow: 'hidden',
           }}
         >
-          {car.featured && (
-            <span
-              className="absolute top-3 left-3 text-[0.62rem] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
-              style={{
-                background: '#C9A84C',
-                color: '#1A1523',
-                fontFamily: "'DM Sans', sans-serif",
-              }}
-            >
-              Featured
-            </span>
-          )}
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '2.5rem' }} aria-hidden="true">
-              🚗
+          {thumbUrl ? (
+            <img
+              src={thumbUrl}
+              alt={`${car.year} ${car.make} ${car.model}`}
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            />
+          ) : (
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '2.5rem' }} aria-hidden="true">
+                🚗
+              </div>
+              <p
+                className="text-[0.7rem] font-semibold mt-1"
+                style={{ color: '#C4BDD0', fontFamily: "'DM Sans', sans-serif" }}
+              >
+                {car.year} · {car.color}
+              </p>
             </div>
-            <p
-              className="text-[0.7rem] font-semibold mt-1"
-              style={{
-                color: car.featured ? 'rgba(255,255,255,0.4)' : '#C4BDD0',
-                fontFamily: "'DM Sans', sans-serif",
-              }}
-            >
-              {car.year} · {car.color}
-            </p>
-          </div>
+          )}
         </div>
-
         <div className="flex-1 p-5 flex flex-col justify-between min-w-0">
           <div>
             <div className="flex items-start justify-between gap-3 mb-2">
@@ -275,6 +188,7 @@ function CarCard({ car, view }) {
                   style={{ color: '#1A1523', fontFamily: "'Syne', sans-serif" }}
                 >
                   {car.year} {car.make} {car.model}
+                  {car.variant ? ` ${car.variant}` : ''}
                 </h3>
                 <div className="flex items-center gap-1.5 mt-0.5">
                   <MapPin
@@ -288,13 +202,6 @@ function CarCard({ car, view }) {
                     style={{ color: '#8A8390', fontFamily: "'DM Sans', sans-serif" }}
                   >
                     {car.city}
-                  </span>
-                  <span style={{ color: '#E8E3DC' }}>·</span>
-                  <span
-                    className="text-[0.75rem]"
-                    style={{ color: '#8A8390', fontFamily: "'DM Sans', sans-serif" }}
-                  >
-                    {car.postedAt}
                   </span>
                 </div>
               </div>
@@ -350,9 +257,17 @@ function CarCard({ car, view }) {
               style={{ color: '#E8622A', fontFamily: "'Syne', sans-serif" }}
             >
               {fmtPrice(car.price)}
+              {car.negotiable && (
+                <span
+                  className="text-[0.65rem] font-semibold ml-2"
+                  style={{ color: '#8A8390', fontFamily: "'DM Sans', sans-serif" }}
+                >
+                  Negotiable
+                </span>
+              )}
             </p>
             <a
-              href={`/cars/${car.id}`}
+              href={`/cars/${car._id}`}
               className="inline-flex items-center gap-1.5 text-[0.8rem] font-semibold text-white px-4 py-2 rounded-xl transition-transform duration-150 hover:-translate-y-px"
               style={{
                 background: 'linear-gradient(135deg, #6C3CE1 0%, #5A2FCA 100%)',
@@ -368,24 +283,34 @@ function CarCard({ car, view }) {
     );
   }
 
-  // Grid view
   return (
     <div className="car-card-grid rounded-2xl overflow-hidden flex flex-col">
-      {/* Image area */}
       <div
         className="relative flex items-center justify-center"
         style={{
           height: '160px',
-          background: `linear-gradient(135deg, ${car.featured ? '#1A1523' : '#F2EEE9'} 0%, ${car.featured ? '#231930' : '#EAE5DD'} 100%)`,
+          background: thumbUrl ? 'none' : 'linear-gradient(135deg, #F2EEE9 0%, #EAE5DD 100%)',
+          overflow: 'hidden',
         }}
       >
-        {car.featured && (
-          <span
-            className="absolute top-3 left-3 text-[0.6rem] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
-            style={{ background: '#C9A84C', color: '#1A1523', fontFamily: "'DM Sans', sans-serif" }}
-          >
-            Featured
-          </span>
+        {thumbUrl ? (
+          <img
+            src={thumbUrl}
+            alt={`${car.year} ${car.make} ${car.model}`}
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          />
+        ) : (
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '2.8rem' }} aria-hidden="true">
+              🚗
+            </div>
+            <p
+              className="text-[0.68rem]"
+              style={{ color: '#C4BDD0', fontFamily: "'DM Sans', sans-serif" }}
+            >
+              {car.year} · {car.color}
+            </p>
+          </div>
         )}
         <button
           type="button"
@@ -400,23 +325,7 @@ function CarCard({ car, view }) {
             style={{ color: liked ? '#E8622A' : '#C4BDD0', fill: liked ? '#E8622A' : 'none' }}
           />
         </button>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '2.8rem' }} aria-hidden="true">
-            🚗
-          </div>
-          <p
-            className="text-[0.68rem]"
-            style={{
-              color: car.featured ? 'rgba(255,255,255,0.35)' : '#C4BDD0',
-              fontFamily: "'DM Sans', sans-serif",
-            }}
-          >
-            {car.year} · {car.color}
-          </p>
-        </div>
       </div>
-
-      {/* Info */}
       <div className="flex-1 p-4 flex flex-col gap-3">
         <div>
           <h3
@@ -424,6 +333,7 @@ function CarCard({ car, view }) {
             style={{ color: '#1A1523', fontFamily: "'Syne', sans-serif" }}
           >
             {car.year} {car.make} {car.model}
+            {car.variant ? ` ${car.variant}` : ''}
           </h3>
           <div className="flex items-center gap-1">
             <MapPin size={10} strokeWidth={2} style={{ color: '#C4BDD0' }} aria-hidden="true" />
@@ -431,11 +341,10 @@ function CarCard({ car, view }) {
               className="text-[0.72rem]"
               style={{ color: '#8A8390', fontFamily: "'DM Sans', sans-serif" }}
             >
-              {car.city} · {car.postedAt}
+              {car.city}
             </span>
           </div>
         </div>
-
         <div className="flex flex-wrap gap-1.5">
           {[car.fuel, fmtMileage(car.mileage), car.transmission].map((v) => (
             <span
@@ -451,19 +360,28 @@ function CarCard({ car, view }) {
             </span>
           ))}
         </div>
-
         <div
           className="flex items-center justify-between mt-auto pt-2"
           style={{ borderTop: '1px solid #F2EEE9' }}
         >
-          <p
-            className="text-[1.05rem] font-extrabold tracking-[-0.03em]"
-            style={{ color: '#E8622A', fontFamily: "'Syne', sans-serif" }}
-          >
-            {fmtPrice(car.price)}
-          </p>
+          <div>
+            <p
+              className="text-[1.05rem] font-extrabold tracking-[-0.03em]"
+              style={{ color: '#E8622A', fontFamily: "'Syne', sans-serif" }}
+            >
+              {fmtPrice(car.price)}
+            </p>
+            {car.negotiable && (
+              <p
+                className="text-[0.62rem]"
+                style={{ color: '#8A8390', fontFamily: "'DM Sans', sans-serif", marginTop: '-1px' }}
+              >
+                Negotiable
+              </p>
+            )}
+          </div>
           <a
-            href={`/cars/${car.id}`}
+            href={`/cars/${car._id}`}
             className="text-[0.72rem] font-semibold px-3 py-1.5 rounded-lg transition-[background-color,color] duration-150 hover:bg-[rgba(108,60,225,0.1)]"
             style={{
               color: '#6C3CE1',
@@ -479,15 +397,91 @@ function CarCard({ car, view }) {
   );
 }
 
-// ── Pagination ────────────────────────────────────────────────────
+// ── Skeleton card ─────────────────────────────────────────────────
+function SkeletonCard({ view }) {
+  if (view === 'list') {
+    return (
+      <div className="car-card-list rounded-2xl overflow-hidden flex animate-pulse">
+        <div style={{ width: '220px', background: '#F2EEE9', flexShrink: 0 }} />
+        <div className="flex-1 p-5 flex flex-col gap-3 justify-between">
+          <div className="flex flex-col gap-2">
+            <div
+              style={{ height: '18px', width: '60%', background: '#F2EEE9', borderRadius: '8px' }}
+            />
+            <div
+              style={{ height: '13px', width: '35%', background: '#F2EEE9', borderRadius: '8px' }}
+            />
+            <div className="flex gap-2 mt-2">
+              {[80, 100, 90].map((w) => (
+                <div
+                  key={w}
+                  style={{
+                    height: '26px',
+                    width: `${w}px`,
+                    background: '#F2EEE9',
+                    borderRadius: '999px',
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+          <div className="flex items-center justify-between">
+            <div
+              style={{ height: '22px', width: '100px', background: '#F2EEE9', borderRadius: '8px' }}
+            />
+            <div
+              style={{
+                height: '34px',
+                width: '100px',
+                background: '#F2EEE9',
+                borderRadius: '12px',
+              }}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="car-card-grid rounded-2xl overflow-hidden flex flex-col animate-pulse">
+      <div style={{ height: '160px', background: '#F2EEE9' }} />
+      <div className="p-4 flex flex-col gap-3">
+        <div style={{ height: '16px', width: '70%', background: '#F2EEE9', borderRadius: '8px' }} />
+        <div style={{ height: '12px', width: '40%', background: '#F2EEE9', borderRadius: '8px' }} />
+        <div className="flex gap-1.5">
+          {[60, 80, 70].map((w) => (
+            <div
+              key={w}
+              style={{
+                height: '22px',
+                width: `${w}px`,
+                background: '#F2EEE9',
+                borderRadius: '999px',
+              }}
+            />
+          ))}
+        </div>
+        <div style={{ height: '1px', background: '#F2EEE9' }} />
+        <div className="flex justify-between">
+          <div
+            style={{ height: '20px', width: '80px', background: '#F2EEE9', borderRadius: '8px' }}
+          />
+          <div
+            style={{ height: '20px', width: '50px', background: '#F2EEE9', borderRadius: '8px' }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Pagination (unchanged) ────────────────────────────────────────
 function Pagination({ page, totalPages, onChange }) {
   if (totalPages <= 1) return null;
-
   const pages = [];
   const delta = 2;
   const left = Math.max(2, page - delta);
   const right = Math.min(totalPages - 1, page + delta);
-
   pages.push(1);
   if (left > 2) pages.push('…');
   for (let i = left; i <= right; i++) pages.push(i);
@@ -506,7 +500,6 @@ function Pagination({ page, totalPages, onChange }) {
       >
         <ChevronLeft size={15} strokeWidth={2} />
       </button>
-
       {pages.map((p, i) =>
         p === '…' ? (
           <span
@@ -535,7 +528,6 @@ function Pagination({ page, totalPages, onChange }) {
           </button>
         )
       )}
-
       <button
         type="button"
         onClick={() => onChange(page + 1)}
@@ -550,11 +542,42 @@ function Pagination({ page, totalPages, onChange }) {
   );
 }
 
+// ── Active filter chip (unchanged) ────────────────────────────────
+function ActiveChip({ label, onRemove }) {
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[0.72rem] font-medium"
+      style={{
+        background: 'rgba(108,60,225,0.08)',
+        color: '#6C3CE1',
+        fontFamily: "'DM Sans', sans-serif",
+      }}
+    >
+      {label}
+      <button
+        type="button"
+        onClick={onRemove}
+        aria-label={`Remove ${label} filter`}
+        style={{
+          background: 'none',
+          border: 'none',
+          cursor: 'pointer',
+          color: '#6C3CE1',
+          padding: 0,
+          display: 'flex',
+        }}
+      >
+        <X size={11} strokeWidth={2.5} />
+      </button>
+    </span>
+  );
+}
+
 // ── Main component ────────────────────────────────────────────────
 export default function CarMarketplace() {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
 
-  // Read initial state from URL query params (passed from hero search)
+  // ── Filter state ──────────────────────────────────────────────
   const [search, setSearch] = useState(searchParams.get('q') ?? '');
   const [selectedMakes, setSelectedMakes] = useState(() =>
     searchParams.get('make') ? [searchParams.get('make')] : []
@@ -569,18 +592,64 @@ export default function CarMarketplace() {
   const [condition, setCondition] = useState('');
   const [sortBy, setSortBy] = useState('newest');
   const [page, setPage] = useState(1);
-  const [view, setView] = useState('grid'); // 'grid' | 'list'
+  const [view, setView] = useState('grid');
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Scroll to top on page change
+  // ── Debounce search so we don't fire on every keystroke ───────
+  const [debouncedSearch, setDebouncedSearch] = useState(search);
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 400);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  // Reset to page 1 whenever any filter changes
+  // (but not on page change itself — that's intentional)
+  useEffect(() => {
+    setPage(1);
+  }, [
+    debouncedSearch,
+    selectedMakes,
+    selectedCity,
+    selectedFuels,
+    selectedTrans,
+    selectedBody,
+    yearMin,
+    yearMax,
+    priceBand,
+    condition,
+    sortBy,
+  ]);
+
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [page]);
 
-  // Reset page when filters change
-  const resetPage = () => setPage(1);
+  // ── Build query params for the backend ────────────────────────
+  const band = PRICE_BANDS.find((b) => b.label === priceBand);
 
-  // Active filter count (for mobile badge)
+  const queryParams = {
+    ...(debouncedSearch && { model: debouncedSearch }), // backend uses `model` regex — or add a `q` param server-side
+    ...(selectedMakes.length === 1 && { make: selectedMakes[0] }), // single make; see note below
+    ...(selectedCity && { city: selectedCity }),
+    ...(selectedFuels.length === 1 && { fuel: selectedFuels[0] }),
+    ...(selectedTrans.length === 1 && { transmission: selectedTrans[0] }),
+    ...(selectedBody.length === 1 && { bodyType: selectedBody[0] }),
+    ...(condition && { condition }),
+    ...(yearMin && { minYear: yearMin }),
+    ...(yearMax && { maxYear: yearMax }),
+    ...(band && { minPrice: band.min, ...(band.max !== Infinity && { maxPrice: band.max }) }),
+    sort: sortBy,
+    page,
+    limit: PER_PAGE,
+  };
+
+  const { data, isLoading, isError, error } = useGetCars(queryParams);
+
+  const cars = data?.cars ?? [];
+  const total = data?.total ?? 0;
+  const totalPages = data?.pages ?? 1;
+
+  // ── Active filter count ───────────────────────────────────────
   const activeFilterCount = [
     selectedMakes.length > 0,
     !!selectedCity,
@@ -591,63 +660,6 @@ export default function CarMarketplace() {
     !!priceBand,
     !!condition,
   ].filter(Boolean).length;
-
-  // ── Client-side filter + sort (replace with useQuery when wiring backend) ──
-  const filtered = useMemo(() => {
-    let cars = [...MOCK_CARS];
-
-    if (search)
-      cars = cars.filter((c) =>
-        `${c.make} ${c.model} ${c.year}`.toLowerCase().includes(search.toLowerCase())
-      );
-    if (selectedMakes.length) cars = cars.filter((c) => selectedMakes.includes(c.make));
-    if (selectedCity) cars = cars.filter((c) => c.city === selectedCity);
-    if (selectedFuels.length) cars = cars.filter((c) => selectedFuels.includes(c.fuel));
-    if (selectedTrans.length) cars = cars.filter((c) => selectedTrans.includes(c.transmission));
-    if (selectedBody.length) cars = cars.filter((c) => selectedBody.includes(c.bodyType));
-    if (condition) cars = cars.filter((c) => c.condition === condition);
-    if (yearMin) cars = cars.filter((c) => c.year >= Number(yearMin));
-    if (yearMax) cars = cars.filter((c) => c.year <= Number(yearMax));
-    if (priceBand) {
-      const band = PRICE_BANDS.find((b) => b.label === priceBand);
-      if (band) cars = cars.filter((c) => c.price >= band.min && c.price < band.max);
-    }
-
-    switch (sortBy) {
-      case 'price-asc':
-        cars.sort((a, b) => a.price - b.price);
-        break;
-      case 'price-desc':
-        cars.sort((a, b) => b.price - a.price);
-        break;
-      case 'mileage-asc':
-        cars.sort((a, b) => a.mileage - b.mileage);
-        break;
-      case 'year-desc':
-        cars.sort((a, b) => b.year - a.year);
-        break;
-      default:
-        cars.sort((a, b) => b.id - a.id);
-        break;
-    }
-
-    return cars;
-  }, [
-    search,
-    selectedMakes,
-    selectedCity,
-    selectedFuels,
-    selectedTrans,
-    selectedBody,
-    condition,
-    yearMin,
-    yearMax,
-    priceBand,
-    sortBy,
-  ]);
-
-  const totalPages = Math.ceil(filtered.length / PER_PAGE);
-  const paginated = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
   const clearAll = () => {
     setSearch('');
@@ -660,13 +672,11 @@ export default function CarMarketplace() {
     setYearMax('');
     setPriceBand('');
     setCondition('');
-    resetPage();
   };
 
-  // ── Sidebar content (shared between desktop + mobile drawer) ────
+  // ── Sidebar content ───────────────────────────────────────────
   const SidebarContent = () => (
     <div className="flex flex-col gap-0">
-      {/* Header */}
       <div
         className="flex items-center justify-between mb-2 pb-3"
         style={{ borderBottom: '1px solid #F2EEE9' }}
@@ -696,7 +706,6 @@ export default function CarMarketplace() {
         )}
       </div>
 
-      {/* Make */}
       <FilterSection title="Make">
         <div className="flex flex-col">
           {MAKES.map((m) => (
@@ -704,18 +713,13 @@ export default function CarMarketplace() {
               key={m}
               label={m}
               checked={selectedMakes.includes(m)}
-              onChange={(v) => {
-                setSelectedMakes((p) => (v ? [...p, m] : p.filter((x) => x !== m)));
-                resetPage();
-              }}
+              onChange={(v) => setSelectedMakes((p) => (v ? [...p, m] : p.filter((x) => x !== m)))}
             />
           ))}
         </div>
       </FilterSection>
-
       <div className="filter-divider" aria-hidden="true" />
 
-      {/* City */}
       <FilterSection title="City">
         <div className="flex flex-col">
           {CITIES.map((c) => (
@@ -723,18 +727,13 @@ export default function CarMarketplace() {
               key={c}
               label={c}
               checked={selectedCity === c}
-              onChange={(v) => {
-                setSelectedCity(v ? c : '');
-                resetPage();
-              }}
+              onChange={(v) => setSelectedCity(v ? c : '')}
             />
           ))}
         </div>
       </FilterSection>
-
       <div className="filter-divider" aria-hidden="true" />
 
-      {/* Price */}
       <FilterSection title="Price Range">
         <div className="flex flex-col">
           {PRICE_BANDS.map((b) => (
@@ -742,18 +741,13 @@ export default function CarMarketplace() {
               key={b.label}
               label={b.label}
               checked={priceBand === b.label}
-              onChange={(v) => {
-                setPriceBand(v ? b.label : '');
-                resetPage();
-              }}
+              onChange={(v) => setPriceBand(v ? b.label : '')}
             />
           ))}
         </div>
       </FilterSection>
-
       <div className="filter-divider" aria-hidden="true" />
 
-      {/* Year */}
       <FilterSection title="Year">
         <div className="flex gap-2">
           {[
@@ -765,10 +759,7 @@ export default function CarMarketplace() {
               type="number"
               placeholder={placeholder}
               value={value}
-              onChange={(e) => {
-                setter(e.target.value);
-                resetPage();
-              }}
+              onChange={(e) => setter(e.target.value)}
               min={2000}
               max={2025}
               className="flex-1 h-9 rounded-xl border text-[0.8rem] px-3 outline-none transition-[border-color,box-shadow] duration-200 focus:border-[rgba(108,60,225,0.4)] focus:shadow-[0_0_0_3px_rgba(108,60,225,0.08)]"
@@ -783,10 +774,8 @@ export default function CarMarketplace() {
           ))}
         </div>
       </FilterSection>
-
       <div className="filter-divider" aria-hidden="true" />
 
-      {/* Fuel */}
       <FilterSection title="Fuel Type">
         <div className="flex flex-col">
           {FUELS.map((f) => (
@@ -794,18 +783,13 @@ export default function CarMarketplace() {
               key={f}
               label={f}
               checked={selectedFuels.includes(f)}
-              onChange={(v) => {
-                setSelectedFuels((p) => (v ? [...p, f] : p.filter((x) => x !== f)));
-                resetPage();
-              }}
+              onChange={(v) => setSelectedFuels((p) => (v ? [...p, f] : p.filter((x) => x !== f)))}
             />
           ))}
         </div>
       </FilterSection>
-
       <div className="filter-divider" aria-hidden="true" />
 
-      {/* Transmission */}
       <FilterSection title="Transmission">
         <div className="flex flex-col">
           {TRANSMISSIONS.map((t) => (
@@ -813,18 +797,13 @@ export default function CarMarketplace() {
               key={t}
               label={t}
               checked={selectedTrans.includes(t)}
-              onChange={(v) => {
-                setSelectedTrans((p) => (v ? [...p, t] : p.filter((x) => x !== t)));
-                resetPage();
-              }}
+              onChange={(v) => setSelectedTrans((p) => (v ? [...p, t] : p.filter((x) => x !== t)))}
             />
           ))}
         </div>
       </FilterSection>
-
       <div className="filter-divider" aria-hidden="true" />
 
-      {/* Body type */}
       <FilterSection title="Body Type" defaultOpen={false}>
         <div className="flex flex-col">
           {BODY_TYPES.map((b) => (
@@ -832,18 +811,13 @@ export default function CarMarketplace() {
               key={b}
               label={b}
               checked={selectedBody.includes(b)}
-              onChange={(v) => {
-                setSelectedBody((p) => (v ? [...p, b] : p.filter((x) => x !== b)));
-                resetPage();
-              }}
+              onChange={(v) => setSelectedBody((p) => (v ? [...p, b] : p.filter((x) => x !== b)))}
             />
           ))}
         </div>
       </FilterSection>
-
       <div className="filter-divider" aria-hidden="true" />
 
-      {/* Condition */}
       <FilterSection title="Condition" defaultOpen={false}>
         <div className="flex flex-col">
           {['New', 'Used'].map((c) => (
@@ -851,10 +825,7 @@ export default function CarMarketplace() {
               key={c}
               label={c}
               checked={condition === c}
-              onChange={(v) => {
-                setCondition(v ? c : '');
-                resetPage();
-              }}
+              onChange={(v) => setCondition(v ? c : '')}
             />
           ))}
         </div>
@@ -865,9 +836,8 @@ export default function CarMarketplace() {
   return (
     <>
       <style>{STYLES}</style>
-
       <div className="cm-page" style={{ paddingTop: '66px' }}>
-        {/* ── Mobile filter drawer ── */}
+        {/* Mobile drawer backdrop */}
         {sidebarOpen && (
           <div
             className="fixed inset-0 z-40 lg:hidden"
@@ -876,6 +846,8 @@ export default function CarMarketplace() {
             aria-hidden="true"
           />
         )}
+
+        {/* Mobile drawer */}
         <div
           className="fixed top-0 left-0 bottom-0 z-50 lg:hidden overflow-y-auto"
           style={{
@@ -908,18 +880,14 @@ export default function CarMarketplace() {
         </div>
 
         <div className="cm-inner">
-          {/* ── Top bar ── */}
+          {/* Top bar */}
           <div className="cm-topbar">
-            {/* Search */}
             <div className="cm-search-wrap">
               <Search size={15} strokeWidth={2} className="cm-search-icon" aria-hidden="true" />
               <input
                 type="search"
                 value={search}
-                onChange={(e) => {
-                  setSearch(e.target.value);
-                  resetPage();
-                }}
+                onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search make, model, keyword…"
                 className="cm-search-input"
                 aria-label="Search cars"
@@ -927,10 +895,7 @@ export default function CarMarketplace() {
               {search && (
                 <button
                   type="button"
-                  onClick={() => {
-                    setSearch('');
-                    resetPage();
-                  }}
+                  onClick={() => setSearch('')}
                   className="cm-search-clear"
                   aria-label="Clear search"
                 >
@@ -939,9 +904,7 @@ export default function CarMarketplace() {
               )}
             </div>
 
-            {/* Right controls */}
             <div className="flex items-center gap-2 flex-shrink-0">
-              {/* Mobile filter toggle */}
               <button
                 type="button"
                 onClick={() => setSidebarOpen(true)}
@@ -966,7 +929,6 @@ export default function CarMarketplace() {
                 )}
               </button>
 
-              {/* Sort */}
               <div className="relative cm-sort-wrap">
                 <ArrowUpDown
                   size={13}
@@ -976,10 +938,7 @@ export default function CarMarketplace() {
                 />
                 <select
                   value={sortBy}
-                  onChange={(e) => {
-                    setSortBy(e.target.value);
-                    resetPage();
-                  }}
+                  onChange={(e) => setSortBy(e.target.value)}
                   className="cm-sort-select"
                   aria-label="Sort by"
                 >
@@ -991,7 +950,6 @@ export default function CarMarketplace() {
                 </select>
               </div>
 
-              {/* View toggle */}
               <div
                 className="hidden sm:flex items-center border rounded-xl overflow-hidden"
                 style={{ borderColor: '#E8E3DC' }}
@@ -1021,89 +979,93 @@ export default function CarMarketplace() {
             </div>
           </div>
 
-          {/* Results count + active filters */}
+          {/* Results count + active chips */}
           <div className="flex items-center gap-3 mb-5 flex-wrap">
             <p
               className="text-[0.8rem]"
               style={{ color: '#8A8390', fontFamily: "'DM Sans', sans-serif" }}
             >
-              <span className="font-bold" style={{ color: '#1A1523' }}>
-                {filtered.length.toLocaleString()}
-              </span>{' '}
-              cars found
-              {page > 1 && ` · Page ${page} of ${totalPages}`}
+              {isLoading ? (
+                <span style={{ color: '#C4BDD0' }}>Loading…</span>
+              ) : (
+                <>
+                  <span className="font-bold" style={{ color: '#1A1523' }}>
+                    {total.toLocaleString()}
+                  </span>{' '}
+                  cars found{page > 1 && ` · Page ${page} of ${totalPages}`}
+                </>
+              )}
             </p>
-
-            {/* Active filter chips */}
             {selectedMakes.map((m) => (
               <ActiveChip
                 key={m}
                 label={m}
-                onRemove={() => {
-                  setSelectedMakes((p) => p.filter((x) => x !== m));
-                  resetPage();
-                }}
+                onRemove={() => setSelectedMakes((p) => p.filter((x) => x !== m))}
               />
             ))}
             {selectedCity && (
-              <ActiveChip
-                label={selectedCity}
-                onRemove={() => {
-                  setSelectedCity('');
-                  resetPage();
-                }}
-              />
+              <ActiveChip label={selectedCity} onRemove={() => setSelectedCity('')} />
             )}
-            {priceBand && (
-              <ActiveChip
-                label={priceBand}
-                onRemove={() => {
-                  setPriceBand('');
-                  resetPage();
-                }}
-              />
-            )}
+            {priceBand && <ActiveChip label={priceBand} onRemove={() => setPriceBand('')} />}
             {selectedFuels.map((f) => (
               <ActiveChip
                 key={f}
                 label={f}
-                onRemove={() => {
-                  setSelectedFuels((p) => p.filter((x) => x !== f));
-                  resetPage();
-                }}
+                onRemove={() => setSelectedFuels((p) => p.filter((x) => x !== f))}
               />
             ))}
-            {condition && (
-              <ActiveChip
-                label={condition}
-                onRemove={() => {
-                  setCondition('');
-                  resetPage();
-                }}
-              />
-            )}
+            {condition && <ActiveChip label={condition} onRemove={() => setCondition('')} />}
             {(yearMin || yearMax) && (
               <ActiveChip
                 label={`${yearMin || '…'} – ${yearMax || '…'}`}
                 onRemove={() => {
                   setYearMin('');
                   setYearMax('');
-                  resetPage();
                 }}
               />
             )}
           </div>
 
-          {/* ── Body ── */}
+          {/* Body */}
           <div className="cm-body">
-            {/* Desktop sidebar */}
             <aside className="cm-sidebar hidden lg:block" aria-label="Filters">
               <SidebarContent />
             </aside>
 
-            {/* Car grid / list */}
             <main className="cm-results" aria-label="Car listings">
-              {paginated.length === 0 ? (
+              {isError ? (
+                <div className="flex flex-col items-center justify-center py-24 text-center">
+                  <div style={{ fontSize: '3rem', marginBottom: '16px' }} aria-hidden="true">
+                    ⚠️
+                  </div>
+                  <h3
+                    className="text-[1.1rem] font-extrabold mb-2"
+                    style={{ color: '#1A1523', fontFamily: "'Syne', sans-serif" }}
+                  >
+                    Something went wrong
+                  </h3>
+                  <p
+                    className="text-[0.85rem]"
+                    style={{ color: '#8A8390', fontFamily: "'DM Sans', sans-serif" }}
+                  >
+                    {error?.response?.data?.message ?? 'Could not load listings. Try again.'}
+                  </p>
+                </div>
+              ) : isLoading ? (
+                view === 'grid' ? (
+                  <div className="cm-grid">
+                    {Array.from({ length: PER_PAGE }).map((_, i) => (
+                      <SkeletonCard key={i} view="grid" />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-3">
+                    {Array.from({ length: 8 }).map((_, i) => (
+                      <SkeletonCard key={i} view="list" />
+                    ))}
+                  </div>
+                )
+              ) : cars.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-24 text-center">
                   <div style={{ fontSize: '3rem', marginBottom: '16px' }} aria-hidden="true">
                     🔍
@@ -1134,25 +1096,21 @@ export default function CarMarketplace() {
                 </div>
               ) : view === 'grid' ? (
                 <div className="cm-grid">
-                  {paginated.map((car) => (
-                    <CarCard key={car.id} car={car} view="grid" />
+                  {cars.map((car) => (
+                    <CarCard key={car._id} car={car} view="grid" />
                   ))}
                 </div>
               ) : (
                 <div className="flex flex-col gap-3">
-                  {paginated.map((car) => (
-                    <CarCard key={car.id} car={car} view="list" />
+                  {cars.map((car) => (
+                    <CarCard key={car._id} car={car} view="list" />
                   ))}
                 </div>
               )}
 
-              <Pagination
-                page={page}
-                totalPages={totalPages}
-                onChange={(p) => {
-                  setPage(p);
-                }}
-              />
+              {!isLoading && !isError && (
+                <Pagination page={page} totalPages={totalPages} onChange={setPage} />
+              )}
             </main>
           </div>
         </div>
@@ -1161,226 +1119,36 @@ export default function CarMarketplace() {
   );
 }
 
-// ── Active filter chip ────────────────────────────────────────────
-function ActiveChip({ label, onRemove }) {
-  return (
-    <span
-      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[0.72rem] font-medium"
-      style={{
-        background: 'rgba(108,60,225,0.08)',
-        color: '#6C3CE1',
-        fontFamily: "'DM Sans', sans-serif",
-      }}
-    >
-      {label}
-      <button
-        type="button"
-        onClick={onRemove}
-        aria-label={`Remove ${label} filter`}
-        style={{
-          background: 'none',
-          border: 'none',
-          cursor: 'pointer',
-          color: '#6C3CE1',
-          padding: 0,
-          display: 'flex',
-        }}
-      >
-        <X size={11} strokeWidth={2.5} />
-      </button>
-    </span>
-  );
-}
-
-// ── Styles ────────────────────────────────────────────────────────
+// ── Styles (unchanged) ────────────────────────────────────────────
 const STYLES = `
   @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap');
-
-  .cm-page {
-    background: #F7F4F0;
-    min-height: 100vh;
-  }
-
-  .cm-inner {
-    max-width: 1380px;
-    margin: 0 auto;
-    padding: 28px 24px 60px;
-  }
-
-  /* Top bar */
-  .cm-topbar {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 16px;
-    flex-wrap: wrap;
-  }
-
-  .cm-search-wrap {
-    position: relative;
-    flex: 1;
-    min-width: 200px;
-    display: flex;
-    align-items: center;
-    height: 44px;
-    background: #FFFFFF;
-    border: 1.5px solid #E8E3DC;
-    border-radius: 14px;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
-  }
-
-  .cm-search-wrap:focus-within {
-    border-color: rgba(108,60,225,0.4);
-    box-shadow: 0 0 0 3px rgba(108,60,225,0.08);
-  }
-
-  .cm-search-icon {
-    position: absolute;
-    left: 14px;
-    color: #C4BDD0;
-    pointer-events: none;
-  }
-
-  .cm-search-input {
-    flex: 1;
-    height: 100%;
-    background: transparent;
-    border: none;
-    outline: none;
-    font-size: 0.875rem;
-    color: #1A1523;
-    padding-left: 40px;
-    padding-right: 36px;
-    font-family: 'DM Sans', sans-serif;
-  }
-
+  .cm-page { background: #F7F4F0; min-height: 100vh; }
+  .cm-inner { max-width: 1380px; margin: 0 auto; padding: 28px 24px 60px; }
+  .cm-topbar { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+  .cm-search-wrap { position: relative; flex: 1; min-width: 200px; display: flex; align-items: center; height: 44px; background: #FFFFFF; border: 1.5px solid #E8E3DC; border-radius: 14px; transition: border-color 0.2s ease, box-shadow 0.2s ease; }
+  .cm-search-wrap:focus-within { border-color: rgba(108,60,225,0.4); box-shadow: 0 0 0 3px rgba(108,60,225,0.08); }
+  .cm-search-icon { position: absolute; left: 14px; color: #C4BDD0; pointer-events: none; }
+  .cm-search-input { flex: 1; height: 100%; background: transparent; border: none; outline: none; font-size: 0.875rem; color: #1A1523; padding-left: 40px; padding-right: 36px; font-family: 'DM Sans', sans-serif; }
   .cm-search-input::placeholder { color: #C4BDD0; }
-
-  .cm-search-clear {
-    position: absolute;
-    right: 12px;
-    color: #C4BDD0;
-    background: none;
-    border: none;
-    cursor: pointer;
-    display: flex;
-    padding: 0;
-    transition: color 0.15s ease;
-  }
+  .cm-search-clear { position: absolute; right: 12px; color: #C4BDD0; background: none; border: none; cursor: pointer; display: flex; padding: 0; transition: color 0.15s ease; }
   .cm-search-clear:hover { color: #8A8390; }
-
-  /* Sort */
-  .cm-sort-wrap {
-    position: relative;
-    display: flex;
-    align-items: center;
-    height: 44px;
-    background: #FFFFFF;
-    border: 1.5px solid #E8E3DC;
-    border-radius: 14px;
-    min-width: 170px;
-    transition: border-color 0.2s ease;
-  }
-
+  .cm-sort-wrap { position: relative; display: flex; align-items: center; height: 44px; background: #FFFFFF; border: 1.5px solid #E8E3DC; border-radius: 14px; min-width: 170px; transition: border-color 0.2s ease; }
   .cm-sort-wrap:focus-within { border-color: rgba(108,60,225,0.4); }
-
-  .cm-sort-icon {
-    position: absolute;
-    left: 12px;
-    color: #C4BDD0;
-    pointer-events: none;
-  }
-
-  .cm-sort-select {
-    flex: 1;
-    height: 100%;
-    background: transparent;
-    border: none;
-    outline: none;
-    font-size: 0.82rem;
-    font-family: 'DM Sans', sans-serif;
-    color: #1A1523;
-    padding-left: 34px;
-    padding-right: 12px;
-    cursor: pointer;
-    appearance: none;
-    -webkit-appearance: none;
-  }
-
-  /* Body layout */
-  .cm-body {
-    display: flex;
-    gap: 24px;
-    align-items: flex-start;
-  }
-
-  .cm-sidebar {
-    width: 224px;
-    flex-shrink: 0;
-    background: #FFFFFF;
-    border: 1.5px solid #E8E3DC;
-    border-radius: 20px;
-    padding: 16px;
-    position: sticky;
-    top: 84px;
-    max-height: calc(100vh - 100px);
-    overflow-y: auto;
-  }
-
+  .cm-sort-icon { position: absolute; left: 12px; color: #C4BDD0; pointer-events: none; }
+  .cm-sort-select { flex: 1; height: 100%; background: transparent; border: none; outline: none; font-size: 0.82rem; font-family: 'DM Sans', sans-serif; color: #1A1523; padding-left: 34px; padding-right: 12px; cursor: pointer; appearance: none; -webkit-appearance: none; }
+  .cm-body { display: flex; gap: 24px; align-items: flex-start; }
+  .cm-sidebar { width: 224px; flex-shrink: 0; background: #FFFFFF; border: 1.5px solid #E8E3DC; border-radius: 20px; padding: 16px; position: sticky; top: 84px; max-height: calc(100vh - 100px); overflow-y: auto; }
   .cm-sidebar::-webkit-scrollbar { width: 4px; }
   .cm-sidebar::-webkit-scrollbar-track { background: transparent; }
   .cm-sidebar::-webkit-scrollbar-thumb { background: #E8E3DC; border-radius: 4px; }
-
   .cm-results { flex: 1; min-width: 0; }
-
-  /* Grid */
-  .cm-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-    gap: 16px;
-  }
-
-  /* Cards */
-  .car-card-grid {
-    background: #FFFFFF;
-    border: 1.5px solid #E8E3DC;
-    box-shadow: 0 1px 4px rgba(26,21,35,0.04);
-    transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
-  }
-
-  .car-card-grid:hover {
-    box-shadow: 0 6px 24px rgba(26,21,35,0.1);
-    transform: translateY(-2px);
-    border-color: rgba(108,60,225,0.2);
-  }
-
-  .car-card-list {
-    background: #FFFFFF;
-    border: 1.5px solid #E8E3DC;
-    box-shadow: 0 1px 4px rgba(26,21,35,0.04);
-    transition: box-shadow 0.2s ease, border-color 0.2s ease;
-  }
-
-  .car-card-list:hover {
-    box-shadow: 0 4px 20px rgba(26,21,35,0.08);
-    border-color: rgba(108,60,225,0.2);
-  }
-
-  /* Filter divider */
-  .filter-divider {
-    height: 1px;
-    background: #F2EEE9;
-    margin: 2px 0;
-  }
-
+  .cm-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+  .car-card-grid { background: #FFFFFF; border: 1.5px solid #E8E3DC; box-shadow: 0 1px 4px rgba(26,21,35,0.04); transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease; }
+  .car-card-grid:hover { box-shadow: 0 6px 24px rgba(26,21,35,0.1); transform: translateY(-2px); border-color: rgba(108,60,225,0.2); }
+  .car-card-list { background: #FFFFFF; border: 1.5px solid #E8E3DC; box-shadow: 0 1px 4px rgba(26,21,35,0.04); transition: box-shadow 0.2s ease, border-color 0.2s ease; }
+  .car-card-list:hover { box-shadow: 0 4px 20px rgba(26,21,35,0.08); border-color: rgba(108,60,225,0.2); }
+  .filter-divider { height: 1px; background: #F2EEE9; margin: 2px 0; }
   .filter-section + .filter-section { margin-top: 0; }
-
-  @media (max-width: 640px) {
-    .cm-inner { padding: 20px 16px 50px; }
-    .cm-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
-  }
-
-  @media (max-width: 400px) {
-    .cm-grid { grid-template-columns: 1fr; }
-  }
+  @media (max-width: 640px) { .cm-inner { padding: 20px 16px 50px; } .cm-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; } }
+  @media (max-width: 400px) { .cm-grid { grid-template-columns: 1fr; } }
 `;

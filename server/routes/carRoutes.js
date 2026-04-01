@@ -8,7 +8,7 @@ const router = express.Router();
 router.get("/", getCars);
 router.get("/my-ads", isAuthenticated, getMyAds);
 router.get("/:id", getCarById);
-router.post("/", isAuthenticated, upload.array("images", 10), postAd);  // ← multer here
+router.post("/", isAuthenticated, upload.array("images", 10), postAd);
 router.delete("/:id", isAuthenticated, deleteAd);
 
 export default router;

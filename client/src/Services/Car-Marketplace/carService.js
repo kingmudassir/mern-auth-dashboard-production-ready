@@ -1,4 +1,4 @@
-import { api } from "./api";
+import { api } from "../api";
 
 const carService = {
     postAd: async (fields, images, features) => {
@@ -28,12 +28,27 @@ const carService = {
         return await api.get('/cars/my-ads');
     },
 
+    deleteAd: async (id) => {
+        return await api.delete(`/cars/${id}`);
+    },
+    
+    getCars: async (params = {}) => {
+        return await api.get('/cars', { params });
+    },
+
     getCarById: async (id) => {
         return await api.get(`/cars/${id}`);
     },
 
-    deleteAd: async (id) => {
-        return await api.delete(`/cars/${id}`);
+    getSimilarCars: async (make, excludeId) => {
+        return await api.get('/cars', { params: { make, limit: 4 } })
+            .then(res => ({
+                ...res,
+                data: {
+                    ...res.data,
+                    cars: res.data.cars.filter(c => c._id !== excludeId),
+                }
+            }));
     },
 };
 

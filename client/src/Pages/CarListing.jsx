@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useGetCarById, useGetSimilarCars } from '../Hooks/Car-Listing/useGetCarById'; // adjust path
 import {
   ArrowLeft,
   Heart,
@@ -29,140 +30,6 @@ import {
   BadgeCheck,
 } from 'lucide-react';
 
-// ─────────────────────────────────────────────────────────────────
-// 💡 TANSTACK INTEGRATION
-//
-//  const { carId } = useParams();
-//
-//  const { data: car, isLoading } = useQuery({
-//    queryKey: ['car', carId],
-//    queryFn: () => axios.get(`/api/cars/${carId}`).then(r => r.data),
-//  });
-//
-//  Report:
-//  const reportMutation = useMutation({
-//    mutationFn: (data) => axios.post(`/api/cars/${carId}/report`, data),
-//    onSuccess: () => { setReportStep('done'); },
-//    onError: () => setReportErr('Something went wrong. Please try again.'),
-//  });
-//  Replace simulate() in handleSubmitReport with:
-//  reportMutation.mutate({ reason: selectedReason, detail })
-// ─────────────────────────────────────────────────────────────────
-
-// ── Mock car ──────────────────────────────────────────────────────
-const MOCK_CAR = {
-  id: 1,
-  make: 'Toyota',
-  model: 'Corolla',
-  variant: 'Altis X 1.6',
-  year: 2021,
-  price: 2800000,
-  city: 'Lahore',
-  area: 'DHA Phase 5',
-  condition: 'Used',
-  mileage: 42000,
-  fuel: 'Petrol',
-  transmission: 'Automatic',
-  bodyType: 'Sedan',
-  color: 'Pearl White',
-  engineCC: 1600,
-  assembly: 'Local',
-  registeredIn: 'Lahore',
-  lastUpdated: '2 days ago',
-  postedAt: '5 days ago',
-  featured: true,
-  description: `This well-maintained Toyota Corolla Altis X 1.6 is in excellent condition. Single owner, all original paintwork, fully documented. Regular servicing done from authorized Toyota service centre.
-
-Key highlights:
-• Original paint — never touched up
-• All documents genuine and up to date
-• New tyres installed 3 months ago
-• Recently serviced (engine oil, air filter, spark plugs)
-• Sound system upgraded — Pioneer head unit with subwoofer
-• Push start and keyless entry
-• Genuine leather seats
-
-Minor scratch on rear bumper (visible in photos). Price is slightly negotiable for serious buyers only. No exchange.`,
-
-  features: [
-    'Push Start / Keyless Entry',
-    'Cruise Control',
-    'Rear Parking Camera',
-    'Climate Control (Dual Zone)',
-    'Alloy Wheels (16")',
-    'Leather Seats',
-    'Sunroof',
-    'Fog Lights',
-    'Traction Control',
-    'ABS + EBD',
-    'Airbags (Driver + Passenger)',
-    'Power Windows (All 4)',
-    'Power Mirrors',
-    'USB + Aux Input',
-    'Navigation System',
-    'Auto Headlights',
-  ],
-
-  seller: {
-    id: 'seller-001',
-    name: 'Ali Hassan Motors',
-    type: 'Dealer',
-    city: 'Lahore',
-    phone: '0300-1234567',
-    whatsapp: '923001234567',
-    verified: true,
-    listings: 14,
-    memberSince: 'March 2022',
-    rating: 4.7,
-    reviews: 38,
-  },
-
-  images: 7,
-};
-
-const SIMILAR_CARS = [
-  {
-    id: 2,
-    make: 'Toyota',
-    model: 'Corolla',
-    year: 2020,
-    price: 2500000,
-    city: 'Lahore',
-    mileage: 65000,
-    fuel: 'Petrol',
-  },
-  {
-    id: 5,
-    make: 'Honda',
-    model: 'Civic',
-    year: 2021,
-    price: 3200000,
-    city: 'Karachi',
-    mileage: 38000,
-    fuel: 'Petrol',
-  },
-  {
-    id: 9,
-    make: 'Toyota',
-    model: 'Corolla',
-    year: 2022,
-    price: 3100000,
-    city: 'Islamabad',
-    mileage: 22000,
-    fuel: 'Hybrid',
-  },
-  {
-    id: 14,
-    make: 'Honda',
-    model: 'City',
-    year: 2021,
-    price: 2200000,
-    city: 'Lahore',
-    mileage: 50000,
-    fuel: 'CNG',
-  },
-];
-
 const REPORT_REASONS = [
   'Misleading price or description',
   'Duplicate listing',
@@ -180,15 +47,31 @@ const fmtPrice = (n) => {
   if (n >= 100000) return `${(n / 100000).toFixed(0)} Lac`;
   return `PKR ${n.toLocaleString()}`;
 };
-
-const fmtMileage = (n) => `${n.toLocaleString()} km`;
+const fmtMileage = (n) => `${Number(n).toLocaleString()} km`;
+const fmtDate = (d) => new Date(d).toLocaleDateString('en-PK', { year: 'numeric', month: 'long' });
+const timeAgo = (d) => {
+  const diff = Date.now() - new Date(d).getTime();
+  const days = Math.floor(diff / 86400000);
+  if (days === 0) return 'Today';
+  if (days === 1) return 'Yesterday';
+  if (days < 30) return `${days} days ago`;
+  const months = Math.floor(days / 30);
+  return `${months} month${months > 1 ? 's' : ''} ago`;
+};
 
 // ── Image gallery ─────────────────────────────────────────────────
-function Gallery({ count, make, model, year }) {
+// Accepts real images array: [{ url, publicId }]
+// Falls back to emoji placeholders if empty (dev convenience)
+function Gallery({ images = [], make, model, year }) {
   const [active, setActive] = useState(0);
   const [lightbox, setLightbox] = useState(false);
 
-  const BG_COLORS = [
+  const count = images.length || 1;
+  const hasReal = images.length > 0;
+  const currentUrl = hasReal ? images[active]?.url : null;
+
+  // Fallback gradient pairs for placeholder mode
+  const BG = [
     ['#1A1523', '#231930'],
     ['#F2EEE9', '#EAE5DD'],
     ['#1F1A2E', '#2D2440'],
@@ -197,8 +80,43 @@ function Gallery({ count, make, model, year }) {
     ['#EDE8E2', '#E8E3DC'],
     ['#231930', '#2D2440'],
   ];
+  const bg = (i) => `linear-gradient(135deg, ${BG[i % BG.length][0]}, ${BG[i % BG.length][1]})`;
 
-  const EMOJIS = ['🚗', '🏎️', '🚙', '🚘', '🛞', '🚗', '🏎️'];
+  const Placeholder = ({ size = '6rem' }) => (
+    <div className="text-center select-none">
+      <div style={{ fontSize: size }} aria-hidden="true">
+        🚗
+      </div>
+      <p
+        style={{
+          color: 'rgba(255,255,255,0.35)',
+          fontSize: '0.75rem',
+          fontFamily: "'DM Sans', sans-serif",
+          marginTop: '6px',
+        }}
+      >
+        {year} {make} {model}
+      </p>
+    </div>
+  );
+
+  const NavBtn = ({ onClick, label, children, style = {} }) => (
+    <button
+      type="button"
+      onClick={onClick}
+      className="absolute top-1/2 -translate-y-1/2 w-9 h-9 rounded-xl flex items-center justify-center"
+      style={{
+        background: 'rgba(255,255,255,0.15)',
+        color: '#fff',
+        border: 'none',
+        cursor: 'pointer',
+        ...style,
+      }}
+      aria-label={label}
+    >
+      {children}
+    </button>
+  );
 
   return (
     <>
@@ -240,29 +158,23 @@ function Gallery({ count, make, model, year }) {
           >
             <ChevronLeft size={20} strokeWidth={2} />
           </button>
+
           <div
-            className="lightbox-img flex items-center justify-center rounded-2xl"
-            style={{
-              background: `linear-gradient(135deg, ${BG_COLORS[active][0]}, ${BG_COLORS[active][1]})`,
-            }}
+            className="lightbox-img flex items-center justify-center rounded-2xl overflow-hidden"
+            style={{ background: currentUrl ? '#000' : bg(active) }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="text-center">
-              <div className="lightbox-emoji" aria-hidden="true">
-                {EMOJIS[active]}
-              </div>
-              <p
-                style={{
-                  color: 'rgba(255,255,255,0.4)',
-                  fontSize: '0.85rem',
-                  fontFamily: "'DM Sans', sans-serif",
-                  marginTop: '8px',
-                }}
-              >
-                {year} {make} {model} — Photo {active + 1} of {count}
-              </p>
-            </div>
+            {currentUrl ? (
+              <img
+                src={currentUrl}
+                alt={`${year} ${make} ${model} photo ${active + 1}`}
+                style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+              />
+            ) : (
+              <Placeholder size="5rem" />
+            )}
           </div>
+
           <button
             type="button"
             onClick={(e) => {
@@ -280,91 +192,61 @@ function Gallery({ count, make, model, year }) {
           >
             <ChevronRight size={20} strokeWidth={2} />
           </button>
-          <div className="absolute bottom-5 flex gap-2">
-            {Array.from({ length: count }).map((_, i) => (
-              <button
-                key={i}
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setActive(i);
-                }}
-                className="rounded-full transition-all duration-150"
-                style={{
-                  width: i === active ? '20px' : '8px',
-                  height: '8px',
-                  background: i === active ? '#E8622A' : 'rgba(255,255,255,0.3)',
-                  border: 'none',
-                  cursor: 'pointer',
-                }}
-                aria-label={`Go to photo ${i + 1}`}
-              />
-            ))}
-          </div>
+
+          <p
+            className="absolute bottom-5 text-[0.78rem]"
+            style={{ color: 'rgba(255,255,255,0.5)', fontFamily: "'DM Sans', sans-serif" }}
+          >
+            {active + 1} / {count}
+          </p>
         </div>
       )}
 
       {/* Main image */}
       <div
         className="gallery-main rounded-2xl flex items-center justify-center cursor-pointer relative overflow-hidden"
-        style={{
-          background: `linear-gradient(135deg, ${BG_COLORS[active][0]}, ${BG_COLORS[active][1]})`,
-        }}
+        style={{ background: currentUrl ? '#0D0B12' : bg(active) }}
         onClick={() => setLightbox(true)}
         role="button"
-        aria-label="Open photo gallery"
         tabIndex={0}
+        aria-label="Open photo gallery"
         onKeyDown={(e) => e.key === 'Enter' && setLightbox(true)}
       >
-        <div className="text-center select-none">
-          <div className="gallery-main-emoji" aria-hidden="true">
-            {EMOJIS[active]}
-          </div>
-          <p
-            className="gallery-hint-text text-[0.75rem] mt-2"
-            style={{ color: 'rgba(255,255,255,0.35)', fontFamily: "'DM Sans', sans-serif" }}
-          >
-            {year} {make} {model} — tap to expand
-          </p>
-        </div>
+        {currentUrl ? (
+          <img
+            src={currentUrl}
+            alt={`${year} ${make} ${model}`}
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          />
+        ) : (
+          <Placeholder />
+        )}
 
-        {/* Nav arrows */}
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            setActive((p) => (p - 1 + count) % count);
-          }}
-          className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-xl flex items-center justify-center"
-          style={{
-            background: 'rgba(255,255,255,0.12)',
-            color: '#fff',
-            border: 'none',
-            cursor: 'pointer',
-          }}
-          aria-label="Previous photo"
-        >
-          <ChevronLeft size={17} strokeWidth={2} />
-        </button>
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            setActive((p) => (p + 1) % count);
-          }}
-          className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-xl flex items-center justify-center"
-          style={{
-            background: 'rgba(255,255,255,0.12)',
-            color: '#fff',
-            border: 'none',
-            cursor: 'pointer',
-          }}
-          aria-label="Next photo"
-        >
-          <ChevronRight size={17} strokeWidth={2} />
-        </button>
+        {count > 1 && (
+          <>
+            <NavBtn
+              onClick={(e) => {
+                e.stopPropagation();
+                setActive((p) => (p - 1 + count) % count);
+              }}
+              label="Previous photo"
+              style={{ left: '12px' }}
+            >
+              <ChevronLeft size={17} strokeWidth={2} />
+            </NavBtn>
+            <NavBtn
+              onClick={(e) => {
+                e.stopPropagation();
+                setActive((p) => (p + 1) % count);
+              }}
+              label="Next photo"
+              style={{ right: '12px' }}
+            >
+              <ChevronRight size={17} strokeWidth={2} />
+            </NavBtn>
+          </>
+        )}
 
-        {/* Counter badge */}
         <span
           className="absolute bottom-3 right-3 px-3 py-1 rounded-full text-[0.72rem] font-semibold"
           style={{
@@ -375,37 +257,90 @@ function Gallery({ count, make, model, year }) {
         >
           {active + 1} / {count}
         </span>
+        {!currentUrl && (
+          <p
+            className="absolute bottom-3 left-3 text-[0.72rem]"
+            style={{ color: 'rgba(255,255,255,0.3)', fontFamily: "'DM Sans', sans-serif" }}
+          >
+            tap to expand
+          </p>
+        )}
       </div>
 
       {/* Thumbnails */}
-      <div
-        className="flex gap-2 mt-3 overflow-x-auto pb-1"
-        style={{ WebkitOverflowScrolling: 'touch' }}
-      >
-        {Array.from({ length: count }).map((_, i) => (
-          <button
-            key={i}
-            type="button"
-            onClick={() => setActive(i)}
-            className="flex-shrink-0 rounded-xl flex items-center justify-center overflow-hidden transition-all duration-150"
-            style={{
-              width: '68px',
-              height: '52px',
-              background: `linear-gradient(135deg, ${BG_COLORS[i][0]}, ${BG_COLORS[i][1]})`,
-              border: i === active ? '2px solid #E8622A' : '2px solid transparent',
-              cursor: 'pointer',
-              opacity: i === active ? 1 : 0.6,
-            }}
-            aria-label={`Photo ${i + 1}`}
-            aria-pressed={i === active}
-          >
-            <span style={{ fontSize: '1.4rem' }} aria-hidden="true">
-              {EMOJIS[i]}
-            </span>
-          </button>
-        ))}
-      </div>
+      {count > 1 && (
+        <div
+          className="flex gap-2 mt-3 overflow-x-auto pb-1"
+          style={{ WebkitOverflowScrolling: 'touch' }}
+        >
+          {images.map((img, i) => (
+            <button
+              key={img.publicId ?? i}
+              type="button"
+              onClick={() => setActive(i)}
+              className="flex-shrink-0 rounded-xl overflow-hidden transition-all duration-150"
+              style={{
+                width: '68px',
+                height: '52px',
+                border: i === active ? '2px solid #E8622A' : '2px solid transparent',
+                opacity: i === active ? 1 : 0.6,
+                background: '#0D0B12',
+                cursor: 'pointer',
+              }}
+              aria-label={`Photo ${i + 1}`}
+              aria-pressed={i === active}
+            >
+              <img
+                src={img.url}
+                alt={`Thumbnail ${i + 1}`}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+            </button>
+          ))}
+        </div>
+      )}
     </>
+  );
+}
+
+// ── Loading skeleton ──────────────────────────────────────────────
+function PageSkeleton() {
+  const Box = ({ w = '100%', h = '16px', r = '8px', mt = '0' }) => (
+    <div
+      className="animate-pulse"
+      style={{ width: w, height: h, borderRadius: r, background: '#EDE8E2', marginTop: mt }}
+    />
+  );
+  return (
+    <div className="cl-page" style={{ paddingTop: '66px' }}>
+      <div className="cl-inner">
+        <div className="cl-grid">
+          <div className="cl-left flex flex-col gap-4">
+            <Box h="420px" r="20px" />
+            <div className="cl-card flex flex-col gap-3">
+              <Box w="55%" h="22px" />
+              <Box w="35%" h="14px" />
+              <Box w="40%" h="28px" mt="8px" />
+            </div>
+            <div className="cl-card flex flex-col gap-3">
+              <Box w="40%" h="16px" />
+              {[...Array(5)].map((_, i) => (
+                <Box key={i} h="13px" w={`${70 + (i % 3) * 10}%`} />
+              ))}
+            </div>
+          </div>
+          <div className="cl-right">
+            <div className="cl-card flex flex-col gap-3">
+              <Box w="70%" h="22px" />
+              <Box w="45%" h="14px" />
+              <Box w="50%" h="32px" mt="8px" />
+              <Box h="48px" r="12px" mt="8px" />
+              <Box h="48px" r="12px" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -424,6 +359,7 @@ function ReportModal({ onClose, carId }) {
     }
     setLoading(true);
     setErr('');
+    // TODO: replace with reportMutation.mutate({ reason: selectedReason, detail })
     await new Promise((r) => setTimeout(r, 1100));
     setLoading(false);
     setStep('done');
@@ -437,19 +373,16 @@ function ReportModal({ onClose, carId }) {
       aria-modal="true"
       aria-label="Report listing"
     >
-      {/* Bottom sheet on mobile, centered modal on larger screens */}
       <div
-        className="report-modal bg-white w-full sm:max-w-md p-6 sm:p-7 sm:rounded-2xl"
+        className="report-modal bg-white w-full sm:max-w-md p-6 sm:p-7"
         style={{
           border: '1.5px solid #E8E3DC',
           boxShadow: '0 20px 60px rgba(26,21,35,0.18)',
           borderRadius: '20px 20px 0 0',
           maxHeight: '92vh',
           overflowY: 'auto',
-          WebkitOverflowScrolling: 'touch',
         }}
       >
-        {/* Drag handle on mobile */}
         <div
           className="sm:hidden mx-auto mb-4 rounded-full"
           style={{ width: '36px', height: '4px', background: '#E8E3DC' }}
@@ -464,7 +397,7 @@ function ReportModal({ onClose, carId }) {
               <CheckCircle2 size={28} strokeWidth={1.8} style={{ color: '#16a34a' }} />
             </div>
             <h3
-              className="text-[1.1rem] font-extrabold mb-2 tracking-[-0.025em]"
+              className="text-[1.1rem] font-extrabold mb-2"
               style={{ color: '#1A1523', fontFamily: "'Syne', sans-serif" }}
             >
               Report submitted
@@ -473,8 +406,7 @@ function ReportModal({ onClose, carId }) {
               className="text-[0.82rem] leading-relaxed mb-6"
               style={{ color: '#8A8390', fontFamily: "'DM Sans', sans-serif" }}
             >
-              Thank you. Our team will review this listing and take appropriate action within 24
-              hours.
+              Thank you. Our team will review this listing within 24 hours.
             </p>
             <button
               type="button"
@@ -500,7 +432,7 @@ function ReportModal({ onClose, carId }) {
                 </div>
                 <div>
                   <h3
-                    className="text-[1rem] font-extrabold tracking-[-0.025em]"
+                    className="text-[1rem] font-extrabold"
                     style={{ color: '#1A1523', fontFamily: "'Syne', sans-serif" }}
                   >
                     Report this listing
@@ -516,7 +448,7 @@ function ReportModal({ onClose, carId }) {
               <button
                 type="button"
                 onClick={onClose}
-                className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+                className="w-7 h-7 rounded-lg flex items-center justify-center"
                 style={{
                   background: '#F2EEE9',
                   color: '#8A8390',
@@ -538,12 +470,12 @@ function ReportModal({ onClose, carId }) {
                     setSelectedReason(r);
                     setErr('');
                   }}
-                  className="flex items-center justify-between px-4 py-3 rounded-xl border text-left transition-all duration-150"
+                  className="flex items-center justify-between px-4 py-3 rounded-xl text-left transition-all duration-150"
                   style={{
                     border: selectedReason === r ? '1.5px solid #6C3CE1' : '1.5px solid #E8E3DC',
                     background: selectedReason === r ? 'rgba(108,60,225,0.05)' : '#FAFAF9',
                     cursor: 'pointer',
-                    minHeight: '44px', // touch target
+                    minHeight: '44px',
                   }}
                   aria-pressed={selectedReason === r}
                 >
@@ -572,13 +504,13 @@ function ReportModal({ onClose, carId }) {
               onChange={(e) => setDetail(e.target.value)}
               placeholder="Additional details (optional)…"
               rows={3}
-              className="w-full rounded-xl border text-[0.82rem] p-3 outline-none resize-none mb-4 transition-[border-color,box-shadow] duration-200 focus:border-[rgba(108,60,225,0.4)] focus:shadow-[0_0_0_3px_rgba(108,60,225,0.08)]"
+              className="w-full rounded-xl border text-[0.82rem] p-3 outline-none resize-none mb-4"
               style={{
                 borderColor: '#E8E3DC',
                 background: '#FAFAF9',
                 color: '#1A1523',
                 fontFamily: "'DM Sans', sans-serif",
-                fontSize: '16px', // prevent iOS zoom
+                fontSize: '16px',
               }}
               aria-label="Additional details"
             />
@@ -588,8 +520,7 @@ function ReportModal({ onClose, carId }) {
                 className="flex items-center gap-1.5 text-[0.75rem] mb-3"
                 style={{ color: '#E8622A', fontFamily: "'DM Sans', sans-serif" }}
               >
-                <AlertCircle size={12} strokeWidth={2} />
-                {err}
+                <AlertCircle size={12} strokeWidth={2} /> {err}
               </p>
             )}
 
@@ -597,7 +528,7 @@ function ReportModal({ onClose, carId }) {
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 py-3 rounded-xl text-[0.82rem] font-medium border transition-colors duration-150"
+                className="flex-1 py-3 rounded-xl text-[0.82rem] font-medium border"
                 style={{
                   color: '#8A8390',
                   borderColor: '#E8E3DC',
@@ -612,7 +543,7 @@ function ReportModal({ onClose, carId }) {
                 type="button"
                 onClick={handleSubmit}
                 disabled={loading}
-                className="flex-1 py-3 rounded-xl text-[0.82rem] font-semibold text-white transition-opacity duration-150 disabled:opacity-60"
+                className="flex-1 py-3 rounded-xl text-[0.82rem] font-semibold text-white disabled:opacity-60"
                 style={{
                   background: 'linear-gradient(135deg, #E8622A, #C4531F)',
                   fontFamily: "'DM Sans', sans-serif",
@@ -649,19 +580,17 @@ function ShareModal({ onClose, title }) {
       aria-modal="true"
     >
       <div
-        className="share-modal bg-white w-full sm:max-w-sm p-6 sm:p-7 sm:rounded-2xl"
+        className="share-modal bg-white w-full sm:max-w-sm p-6 sm:p-7"
         style={{
           border: '1.5px solid #E8E3DC',
           boxShadow: '0 20px 60px rgba(26,21,35,0.18)',
           borderRadius: '20px 20px 0 0',
         }}
       >
-        {/* Drag handle on mobile */}
         <div
           className="sm:hidden mx-auto mb-4 rounded-full"
           style={{ width: '36px', height: '4px', background: '#E8E3DC' }}
         />
-
         <div className="flex items-center justify-between mb-5">
           <h3
             className="text-[1rem] font-extrabold"
@@ -698,7 +627,7 @@ function ShareModal({ onClose, title }) {
           <button
             type="button"
             onClick={copy}
-            className="flex-shrink-0 flex items-center gap-1.5 text-[0.75rem] font-semibold px-3 py-1.5 rounded-lg transition-colors duration-150"
+            className="shrink-0 flex items-center gap-1.5 text-[0.75rem] font-semibold px-3 py-1.5 rounded-lg"
             style={{
               background: copied ? 'rgba(34,197,94,0.1)' : 'rgba(108,60,225,0.1)',
               color: copied ? '#16a34a' : '#6C3CE1',
@@ -730,7 +659,7 @@ function ShareModal({ onClose, title }) {
               href={href}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 rounded-xl text-[0.8rem] font-semibold text-white transition-opacity duration-150 hover:opacity-90"
+              className="flex items-center justify-center gap-2 rounded-xl text-[0.8rem] font-semibold text-white"
               style={{
                 background: color,
                 textDecoration: 'none',
@@ -739,8 +668,7 @@ function ShareModal({ onClose, title }) {
                 minHeight: '48px',
               }}
             >
-              <ExternalLink size={13} strokeWidth={2} />
-              {label}
+              <ExternalLink size={13} strokeWidth={2} /> {label}
             </a>
           ))}
         </div>
@@ -750,7 +678,8 @@ function ShareModal({ onClose, title }) {
 }
 
 // ── Spec row ──────────────────────────────────────────────────────
-function SpecRow({ icon: Icon, label, value, accent }) {
+function SpecRow({ icon: Icon, label, value }) {
+  if (!value) return null;
   return (
     <div
       className="flex items-center justify-between py-3"
@@ -773,7 +702,7 @@ function SpecRow({ icon: Icon, label, value, accent }) {
       <span
         className="text-[0.85rem] font-semibold text-right ml-2"
         style={{
-          color: accent ? '#E8622A' : '#1A1523',
+          color: '#1A1523',
           fontFamily: "'DM Sans', sans-serif",
           maxWidth: '55%',
           wordBreak: 'break-word',
@@ -787,28 +716,40 @@ function SpecRow({ icon: Icon, label, value, accent }) {
 
 // ── Similar car card ──────────────────────────────────────────────
 function SimilarCard({ car }) {
+  const thumb = car.images?.[0]?.url;
   return (
     <a
-      href={`/cars/${car.id}`}
-      className="similar-card rounded-2xl overflow-hidden flex flex-col no-underline"
+      href={`/cars/${car._id}`}
+      className="similar-card rounded-2xl overflow-hidden flex flex-col"
       style={{ textDecoration: 'none' }}
       aria-label={`${car.year} ${car.make} ${car.model}`}
     >
       <div
-        className="flex items-center justify-center"
-        style={{ height: '110px', background: 'linear-gradient(135deg, #F2EEE9, #EAE5DD)' }}
+        className="flex items-center justify-center overflow-hidden"
+        style={{
+          height: '110px',
+          background: thumb ? '#0D0B12' : 'linear-gradient(135deg, #F2EEE9, #EAE5DD)',
+        }}
       >
-        <div className="text-center">
-          <div style={{ fontSize: '2.2rem' }} aria-hidden="true">
-            🚗
+        {thumb ? (
+          <img
+            src={thumb}
+            alt={`${car.year} ${car.make} ${car.model}`}
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          />
+        ) : (
+          <div className="text-center">
+            <div style={{ fontSize: '2.2rem' }} aria-hidden="true">
+              🚗
+            </div>
+            <p
+              className="text-[0.62rem]"
+              style={{ color: '#C4BDD0', fontFamily: "'DM Sans', sans-serif" }}
+            >
+              {car.year} · {car.fuel}
+            </p>
           </div>
-          <p
-            className="text-[0.62rem]"
-            style={{ color: '#C4BDD0', fontFamily: "'DM Sans', sans-serif" }}
-          >
-            {car.year} · {car.fuel}
-          </p>
-        </div>
+        )}
       </div>
       <div className="p-3">
         <p
@@ -816,28 +757,43 @@ function SimilarCard({ car }) {
           style={{ color: '#1A1523', fontFamily: "'Syne', sans-serif" }}
         >
           {car.year} {car.make} {car.model}
+          {car.variant ? ` ${car.variant}` : ''}
         </p>
         <p
           className="text-[0.7rem] mt-0.5"
           style={{ color: '#8A8390', fontFamily: "'DM Sans', sans-serif" }}
         >
-          {car.city} · {(car.mileage / 1000).toFixed(0)}k km
+          {car.city} · {car.mileage ? `${(car.mileage / 1000).toFixed(0)}k km` : 'N/A'}
         </p>
         <p
           className="text-[0.95rem] font-extrabold mt-1.5"
           style={{ color: '#E8622A', fontFamily: "'Syne', sans-serif" }}
         >
-          {car.price >= 100000
-            ? `${(car.price / 100000).toFixed(0)} Lac`
-            : `PKR ${car.price.toLocaleString()}`}
+          {fmtPrice(car.price)}
         </p>
       </div>
     </a>
   );
 }
 
-// ── Mobile sticky CTA bar ─────────────────────────────────────────
-function MobileCTABar({ seller, title, phoneVisible, setPhoneVisible }) {
+function SimilarSkeleton() {
+  return (
+    <div className="similar-card rounded-2xl overflow-hidden animate-pulse">
+      <div style={{ height: '110px', background: '#F2EEE9' }} />
+      <div className="p-3 flex flex-col gap-2">
+        <div style={{ height: '14px', width: '80%', background: '#F2EEE9', borderRadius: '6px' }} />
+        <div style={{ height: '11px', width: '55%', background: '#F2EEE9', borderRadius: '6px' }} />
+        <div style={{ height: '16px', width: '45%', background: '#F2EEE9', borderRadius: '6px' }} />
+      </div>
+    </div>
+  );
+}
+
+// ── Mobile sticky CTA ─────────────────────────────────────────────
+function MobileCTABar({ phone, whatsapp, title, phoneVisible, setPhoneVisible }) {
+  // whatsapp is a boolean on the schema — we use phone for both channels
+  const waNumber = phone?.replace(/^0/, '92');
+
   return (
     <div className="mobile-cta-bar">
       <button
@@ -852,28 +808,28 @@ function MobileCTABar({ seller, title, phoneVisible, setPhoneVisible }) {
           cursor: 'pointer',
           minHeight: '48px',
         }}
-        aria-label={phoneVisible ? seller.phone : 'Show phone number'}
       >
         <Phone size={15} strokeWidth={2} aria-hidden="true" />
-        {phoneVisible ? seller.phone : 'Call'}
+        {phoneVisible ? phone : 'Call'}
       </button>
-      <a
-        href={`https://wa.me/${seller.whatsapp}?text=${encodeURIComponent(`Hi, I'm interested in your ${title} listed on Paiyya.`)}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-white text-[0.82rem] font-semibold"
-        style={{
-          background: '#25D366',
-          boxShadow: '0 2px 10px rgba(37,211,102,0.3)',
-          fontFamily: "'DM Sans', sans-serif",
-          textDecoration: 'none',
-          minHeight: '48px',
-        }}
-        aria-label="Chat on WhatsApp"
-      >
-        <MessageCircle size={15} strokeWidth={2} aria-hidden="true" />
-        WhatsApp
-      </a>
+      {whatsapp && (
+        <a
+          href={`https://wa.me/${waNumber}?text=${encodeURIComponent(`Hi, I'm interested in your ${title} on Paiyya.`)}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-white text-[0.82rem] font-semibold"
+          style={{
+            background: '#25D366',
+            boxShadow: '0 2px 10px rgba(37,211,102,0.3)',
+            fontFamily: "'DM Sans', sans-serif",
+            textDecoration: 'none',
+            minHeight: '48px',
+          }}
+        >
+          <MessageCircle size={15} strokeWidth={2} aria-hidden="true" />
+          WhatsApp
+        </a>
+      )}
     </div>
   );
 }
@@ -883,15 +839,68 @@ export default function CarListing() {
   const { carId } = useParams();
   const navigate = useNavigate();
 
-  const car = MOCK_CAR;
+  const { data: carData, isLoading, isError } = useGetCarById(carId);
+  const car = carData?.car;
+  console.log('Full carData from Hook:', carData);
+  const { data: similarData, isLoading: similarLoading } = useGetSimilarCars(car?.make, car?._id);
+  const similarCars = similarData?.data?.cars?.slice(0, 4) ?? [];
 
   const [liked, setLiked] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [phoneVisible, setPhoneVisible] = useState(false);
 
-  const title = `${car.year} ${car.make} ${car.model} ${car.variant}`;
+  if (isLoading) return <PageSkeleton />;
+
+  if (isError || !car) {
+    return (
+      <div className="cl-page" style={{ paddingTop: '66px' }}>
+        <div className="cl-inner flex flex-col items-center justify-center py-24 text-center">
+          <div style={{ fontSize: '3rem', marginBottom: '16px' }}>⚠️</div>
+          <h2
+            className="text-[1.2rem] font-extrabold mb-2"
+            style={{ color: '#1A1523', fontFamily: "'Syne', sans-serif" }}
+          >
+            Listing not found
+          </h2>
+          <p
+            className="text-[0.85rem] mb-5"
+            style={{ color: '#8A8390', fontFamily: "'DM Sans', sans-serif" }}
+          >
+            This listing may have been removed or doesn't exist.
+          </p>
+          <button
+            type="button"
+            onClick={() => navigate('/cars')}
+            className="text-[0.82rem] font-semibold text-white px-5 py-2.5 rounded-xl"
+            style={{
+              background: 'linear-gradient(135deg, #6C3CE1, #5A2FCA)',
+              fontFamily: "'DM Sans', sans-serif",
+            }}
+          >
+            Browse all cars
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const title = `${car.year} ${car.make} ${car.model}${car.variant ? ' ' + car.variant : ''}`;
   const priceFormatted = fmtPrice(car.price);
+  const postedAgo = timeAgo(car.createdAt);
+  const updatedAgo = timeAgo(car.updatedAt);
+  const waNumber = car.phone?.replace(/^0/, '92');
+
+  // Seller info — postedBy is populated with { name, createdAt }
+  const seller = car.postedBy ?? {};
+  const sellerInitials = seller.name
+    ? seller.name
+        .split(' ')
+        .slice(0, 2)
+        .map((w) => w[0])
+        .join('')
+        .toUpperCase()
+    : '?';
 
   return (
     <>
@@ -900,9 +909,9 @@ export default function CarListing() {
       {showReport && <ReportModal onClose={() => setShowReport(false)} carId={carId} />}
       {showShare && <ShareModal onClose={() => setShowShare(false)} title={title} />}
 
-      {/* Mobile sticky CTA */}
       <MobileCTABar
-        seller={car.seller}
+        phone={car.phone}
+        whatsapp={car.whatsapp}
         title={title}
         phoneVisible={phoneVisible}
         setPhoneVisible={setPhoneVisible}
@@ -910,12 +919,12 @@ export default function CarListing() {
 
       <div className="cl-page">
         <div className="cl-inner">
-          {/* ── Breadcrumb ── */}
+          {/* Breadcrumb */}
           <nav className="flex items-center gap-1.5 mb-4 flex-wrap" aria-label="Breadcrumb">
             <button
               type="button"
               onClick={() => navigate(-1)}
-              className="flex items-center gap-1.5 text-[0.78rem] font-medium transition-colors duration-150"
+              className="flex items-center gap-1.5 text-[0.78rem] font-medium"
               style={{
                 color: '#8A8390',
                 background: 'none',
@@ -926,10 +935,8 @@ export default function CarListing() {
                 minHeight: '36px',
               }}
             >
-              <ArrowLeft size={13} strokeWidth={2} />
-              Back
+              <ArrowLeft size={13} strokeWidth={2} /> Back
             </button>
-            {/* Only show full breadcrumb on larger screens */}
             <span className="hidden sm:inline" style={{ color: '#E8E3DC' }}>
               /
             </span>
@@ -969,31 +976,14 @@ export default function CarListing() {
             </span>
           </nav>
 
-          {/* ── Main grid ── */}
+          {/* Main grid */}
           <div className="cl-grid">
-            {/* ── Left column ── */}
+            {/* Left column */}
             <div className="cl-left">
-              {/* Gallery */}
-              <Gallery count={car.images} make={car.make} model={car.model} year={car.year} />
+              <Gallery images={car.images} make={car.make} model={car.model} year={car.year} />
 
-              {/* Mobile: title + price shown here (before action row) */}
+              {/* Mobile title block */}
               <div className="mobile-title-block cl-card mt-4">
-                {car.featured && (
-                  <div className="flex items-center gap-1.5 mb-2">
-                    <Star
-                      size={12}
-                      strokeWidth={2}
-                      style={{ color: '#C9A84C', fill: '#C9A84C' }}
-                      aria-hidden="true"
-                    />
-                    <span
-                      className="text-[0.68rem] font-bold uppercase tracking-wider"
-                      style={{ color: '#C9A84C', fontFamily: "'DM Sans', sans-serif" }}
-                    >
-                      Featured Listing
-                    </span>
-                  </div>
-                )}
                 <h1
                   className="text-[1.2rem] font-extrabold tracking-[-0.03em] leading-tight mb-1"
                   style={{ color: '#1A1523', fontFamily: "'Syne', sans-serif" }}
@@ -1011,7 +1001,8 @@ export default function CarListing() {
                     className="text-[0.75rem]"
                     style={{ color: '#8A8390', fontFamily: "'DM Sans', sans-serif" }}
                   >
-                    {car.area}, {car.city}
+                    {car.area ? `${car.area}, ` : ''}
+                    {car.city}
                   </span>
                   <span style={{ color: '#E8E3DC' }}>·</span>
                   <Clock
@@ -1024,7 +1015,7 @@ export default function CarListing() {
                     className="text-[0.75rem]"
                     style={{ color: '#8A8390', fontFamily: "'DM Sans', sans-serif" }}
                   >
-                    {car.postedAt}
+                    {postedAgo}
                   </span>
                 </div>
                 <p
@@ -1032,21 +1023,24 @@ export default function CarListing() {
                   style={{ color: '#E8622A', fontFamily: "'Syne', sans-serif" }}
                 >
                   {priceFormatted}{' '}
-                  <span className="text-[0.75rem] font-normal" style={{ color: '#8A8390' }}>
-                    PKR
-                  </span>
+                  {car.negotiable && (
+                    <span
+                      className="text-[0.7rem] font-normal"
+                      style={{ color: '#8A8390', fontFamily: "'DM Sans', sans-serif" }}
+                    >
+                      · Negotiable
+                    </span>
+                  )}
                 </p>
-
-                {/* Quick specs (mobile) */}
                 <div className="grid grid-cols-2 gap-2 mt-3">
                   {[
                     { icon: Calendar, val: car.year },
-                    { icon: Gauge, val: fmtMileage(car.mileage) },
+                    { icon: Gauge, val: car.mileage != null ? fmtMileage(car.mileage) : 'N/A' },
                     { icon: Fuel, val: car.fuel },
                     { icon: Settings2, val: car.transmission },
                   ].map(({ icon: Icon, val }) => (
                     <div
-                      key={val}
+                      key={String(val)}
                       className="flex items-center gap-2 px-3 py-2 rounded-xl"
                       style={{ background: '#F7F4F0' }}
                     >
@@ -1102,10 +1096,8 @@ export default function CarListing() {
                     fontFamily: "'DM Sans', sans-serif",
                     minHeight: '40px',
                   }}
-                  aria-label="Share listing"
                 >
-                  <Share2 size={14} strokeWidth={2} aria-hidden="true" />
-                  Share
+                  <Share2 size={14} strokeWidth={2} aria-hidden="true" /> Share
                 </button>
                 <button
                   type="button"
@@ -1118,10 +1110,8 @@ export default function CarListing() {
                     fontFamily: "'DM Sans', sans-serif",
                     minHeight: '40px',
                   }}
-                  aria-label="Report listing"
                 >
-                  <Flag size={13} strokeWidth={2} aria-hidden="true" />
-                  Report
+                  <Flag size={13} strokeWidth={2} aria-hidden="true" /> Report
                 </button>
               </div>
 
@@ -1137,50 +1127,60 @@ export default function CarListing() {
               </div>
 
               {/* Features */}
-              <div className="cl-card mt-4">
-                <h2 className="cl-section-title">Features & Equipment</h2>
-                <div className="features-grid">
-                  {car.features.map((f) => (
-                    <div key={f} className="flex items-center gap-2.5">
-                      <CheckCircle2
-                        size={14}
-                        strokeWidth={2}
-                        style={{ color: '#6C3CE1', flexShrink: 0 }}
-                        aria-hidden="true"
-                      />
-                      <span
-                        className="text-[0.82rem]"
-                        style={{ color: '#4A4558', fontFamily: "'DM Sans', sans-serif" }}
-                      >
-                        {f}
-                      </span>
-                    </div>
-                  ))}
+              {car.features?.length > 0 && (
+                <div className="cl-card mt-4">
+                  <h2 className="cl-section-title">Features & Equipment</h2>
+                  <div className="features-grid">
+                    {car.features.map((f) => (
+                      <div key={f} className="flex items-center gap-2.5">
+                        <CheckCircle2
+                          size={14}
+                          strokeWidth={2}
+                          style={{ color: '#6C3CE1', flexShrink: 0 }}
+                          aria-hidden="true"
+                        />
+                        <span
+                          className="text-[0.82rem]"
+                          style={{ color: '#4A4558', fontFamily: "'DM Sans', sans-serif" }}
+                        >
+                          {f}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
-              {/* Specifications */}
+              {/* Specs */}
               <div className="cl-card mt-4">
                 <h2 className="cl-section-title">Full Specifications</h2>
                 <SpecRow
                   icon={Car}
                   label="Make & Model"
-                  value={`${car.make} ${car.model} ${car.variant}`}
+                  value={`${car.make} ${car.model}${car.variant ? ' ' + car.variant : ''}`}
                 />
                 <SpecRow icon={Calendar} label="Year" value={car.year} />
-                <SpecRow icon={Gauge} label="Mileage" value={fmtMileage(car.mileage)} />
+                <SpecRow
+                  icon={Gauge}
+                  label="Mileage"
+                  value={car.mileage != null ? fmtMileage(car.mileage) : undefined}
+                />
                 <SpecRow icon={Fuel} label="Fuel Type" value={car.fuel} />
                 <SpecRow icon={Settings2} label="Transmission" value={car.transmission} />
                 <SpecRow icon={Car} label="Body Type" value={car.bodyType} />
                 <SpecRow icon={Palette} label="Color" value={car.color} />
-                <SpecRow icon={Settings2} label="Engine" value={`${car.engineCC}cc`} />
+                <SpecRow
+                  icon={Settings2}
+                  label="Engine"
+                  value={car.engineCC ? `${car.engineCC}cc` : undefined}
+                />
                 <SpecRow icon={Shield} label="Assembly" value={car.assembly} />
                 <SpecRow icon={MapPin} label="Registered In" value={car.registeredIn} />
                 <SpecRow icon={Shield} label="Condition" value={car.condition} />
-                <SpecRow icon={Clock} label="Last Updated" value={car.lastUpdated} />
+                <SpecRow icon={Clock} label="Last Updated" value={updatedAgo} />
               </div>
 
-              {/* Seller card — mobile only, shown inline */}
+              {/* Mobile seller card */}
               <div className="mobile-seller cl-card mt-4">
                 <h2 className="cl-section-title">Seller</h2>
                 <div className="flex items-start gap-3 mb-4">
@@ -1193,82 +1193,77 @@ export default function CarListing() {
                     }}
                     aria-hidden="true"
                   >
-                    {car.seller.name
-                      .split(' ')
-                      .slice(0, 2)
-                      .map((w) => w[0])
-                      .join('')}
+                    {sellerInitials}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <p
-                        className="text-[0.9rem] font-bold"
-                        style={{ color: '#1A1523', fontFamily: "'Syne', sans-serif" }}
-                      >
-                        {car.seller.name}
-                      </p>
-                      {car.seller.verified && (
-                        <BadgeCheck
-                          size={15}
-                          strokeWidth={2}
-                          style={{ color: '#6C3CE1', flexShrink: 0 }}
-                          aria-label="Verified seller"
-                        />
-                      )}
-                    </div>
                     <p
-                      className="text-[0.75rem]"
-                      style={{ color: '#8A8390', fontFamily: "'DM Sans', sans-serif" }}
+                      className="text-[0.9rem] font-bold"
+                      style={{ color: '#1A1523', fontFamily: "'Syne', sans-serif" }}
                     >
-                      {car.seller.type} · {car.seller.city}
+                      {seller.name ?? 'Unknown'}
                     </p>
+                    {seller.createdAt && (
+                      <p
+                        className="text-[0.75rem]"
+                        style={{ color: '#8A8390', fontFamily: "'DM Sans', sans-serif" }}
+                      >
+                        Member since {fmtDate(seller.createdAt)}
+                      </p>
+                    )}
                   </div>
                 </div>
                 <div className="flex flex-col gap-2 mb-4">
-                  {[
-                    {
-                      icon: Star,
-                      val: `${car.seller.rating} / 5  (${car.seller.reviews} reviews)`,
-                      color: '#C9A84C',
-                    },
-                    { icon: Car, val: `${car.seller.listings} active listings` },
-                    { icon: Calendar, val: `Member since ${car.seller.memberSince}` },
-                    { icon: MapPin, val: car.seller.city },
-                  ].map(({ icon: Icon, val, color }) => (
-                    <div key={val} className="flex items-center gap-2.5">
-                      <Icon
-                        size={13}
-                        strokeWidth={1.9}
-                        style={{ color: color ?? '#C4BDD0', flexShrink: 0 }}
-                        aria-hidden="true"
-                      />
-                      <span
-                        className="text-[0.78rem]"
-                        style={{ color: '#8A8390', fontFamily: "'DM Sans', sans-serif" }}
-                      >
-                        {val}
-                      </span>
-                    </div>
-                  ))}
+                  <div className="flex items-center gap-2.5">
+                    <MapPin
+                      size={13}
+                      strokeWidth={1.9}
+                      style={{ color: '#C4BDD0', flexShrink: 0 }}
+                      aria-hidden="true"
+                    />
+                    <span
+                      className="text-[0.78rem]"
+                      style={{ color: '#8A8390', fontFamily: "'DM Sans', sans-serif" }}
+                    >
+                      {car.city}
+                    </span>
+                  </div>
                 </div>
-                <a
-                  href={`/sellers/${car.seller.id}`}
-                  className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border text-[0.8rem] font-medium"
-                  style={{
-                    borderColor: '#E8E3DC',
-                    color: '#6C3CE1',
-                    background: 'transparent',
-                    textDecoration: 'none',
-                    fontFamily: "'DM Sans', sans-serif",
-                    minHeight: '44px',
-                  }}
-                >
-                  <Users size={13} strokeWidth={2} aria-hidden="true" />
-                  View all listings by seller
-                </a>
+                {/* Contact buttons (mobile inline) */}
+                <div className="flex flex-col gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPhoneVisible((p) => !p)}
+                    className="w-full flex items-center justify-center gap-2.5 py-3 rounded-xl text-white text-[0.85rem] font-semibold"
+                    style={{
+                      background: 'linear-gradient(135deg, #6C3CE1, #5A2FCA)',
+                      fontFamily: "'DM Sans', sans-serif",
+                      border: 'none',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <Phone size={15} strokeWidth={2} aria-hidden="true" />
+                    {phoneVisible ? car.phone : 'Show Phone Number'}
+                  </button>
+                  {car.whatsapp && (
+                    <a
+                      href={`https://wa.me/${waNumber}?text=${encodeURIComponent(`Hi, I'm interested in your ${title} on Paiyya.`)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full flex items-center justify-center gap-2.5 py-3 rounded-xl text-white text-[0.85rem] font-semibold"
+                      style={{
+                        background: '#25D366',
+                        fontFamily: "'DM Sans', sans-serif",
+                        textDecoration: 'none',
+                      }}
+                    >
+                      <MessageCircle size={15} strokeWidth={2} aria-hidden="true" />
+                      Chat on WhatsApp
+                    </a>
+                  )}
+                </div>
               </div>
 
-              {/* Safety & tips */}
+              {/* Safety tips */}
               <div
                 className="mt-4 p-5 rounded-2xl"
                 style={{
@@ -1310,34 +1305,15 @@ export default function CarListing() {
               </div>
             </div>
 
-            {/* ── Right column (desktop only) ── */}
+            {/* Right column (desktop) */}
             <div className="cl-right">
-              {/* Price card */}
               <div className="cl-card">
-                {car.featured && (
-                  <div className="flex items-center gap-1.5 mb-3">
-                    <Star
-                      size={12}
-                      strokeWidth={2}
-                      style={{ color: '#C9A84C', fill: '#C9A84C' }}
-                      aria-hidden="true"
-                    />
-                    <span
-                      className="text-[0.68rem] font-bold uppercase tracking-wider"
-                      style={{ color: '#C9A84C', fontFamily: "'DM Sans', sans-serif" }}
-                    >
-                      Featured Listing
-                    </span>
-                  </div>
-                )}
-
                 <h1
                   className="text-[1.4rem] font-extrabold tracking-[-0.035em] leading-tight mb-1"
                   style={{ color: '#1A1523', fontFamily: "'Syne', sans-serif" }}
                 >
                   {title}
                 </h1>
-
                 <div className="flex items-center gap-2 mb-4 flex-wrap">
                   <MapPin
                     size={13}
@@ -1349,7 +1325,8 @@ export default function CarListing() {
                     className="text-[0.78rem]"
                     style={{ color: '#8A8390', fontFamily: "'DM Sans', sans-serif" }}
                   >
-                    {car.area}, {car.city}
+                    {car.area ? `${car.area}, ` : ''}
+                    {car.city}
                   </span>
                   <span style={{ color: '#E8E3DC' }}>·</span>
                   <Clock
@@ -1362,10 +1339,9 @@ export default function CarListing() {
                     className="text-[0.78rem]"
                     style={{ color: '#8A8390', fontFamily: "'DM Sans', sans-serif" }}
                   >
-                    {car.postedAt}
+                    {postedAgo}
                   </span>
                 </div>
-
                 <div
                   className="flex items-baseline gap-2 mb-5 pb-5"
                   style={{ borderBottom: '1px solid #F2EEE9' }}
@@ -1382,18 +1358,29 @@ export default function CarListing() {
                   >
                     PKR
                   </span>
+                  {car.negotiable && (
+                    <span
+                      className="text-[0.72rem] font-semibold px-2 py-0.5 rounded-full"
+                      style={{
+                        background: 'rgba(34,197,94,0.1)',
+                        color: '#16a34a',
+                        fontFamily: "'DM Sans', sans-serif",
+                      }}
+                    >
+                      Negotiable
+                    </span>
+                  )}
                 </div>
 
-                {/* Quick specs */}
                 <div className="grid grid-cols-2 gap-2 mb-5">
                   {[
                     { icon: Calendar, val: car.year },
-                    { icon: Gauge, val: fmtMileage(car.mileage) },
+                    { icon: Gauge, val: car.mileage != null ? fmtMileage(car.mileage) : 'N/A' },
                     { icon: Fuel, val: car.fuel },
                     { icon: Settings2, val: car.transmission },
                   ].map(({ icon: Icon, val }) => (
                     <div
-                      key={val}
+                      key={String(val)}
                       className="flex items-center gap-2 px-3 py-2.5 rounded-xl"
                       style={{ background: '#F7F4F0' }}
                     >
@@ -1413,12 +1400,11 @@ export default function CarListing() {
                   ))}
                 </div>
 
-                {/* Contact buttons */}
                 <div className="flex flex-col gap-2.5">
                   <button
                     type="button"
                     onClick={() => setPhoneVisible((p) => !p)}
-                    className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-xl text-white text-[0.9rem] font-semibold transition-transform duration-150 hover:-translate-y-px"
+                    className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-xl text-white text-[0.9rem] font-semibold"
                     style={{
                       background: 'linear-gradient(135deg, #6C3CE1, #5A2FCA)',
                       boxShadow: '0 2px 12px rgba(108,60,225,0.3)',
@@ -1426,31 +1412,31 @@ export default function CarListing() {
                       border: 'none',
                       cursor: 'pointer',
                     }}
-                    aria-label={phoneVisible ? car.seller.phone : 'Show phone number'}
                   >
                     <Phone size={16} strokeWidth={2} aria-hidden="true" />
-                    {phoneVisible ? car.seller.phone : 'Show Phone Number'}
+                    {phoneVisible ? car.phone : 'Show Phone Number'}
                   </button>
-                  <a
-                    href={`https://wa.me/${car.seller.whatsapp}?text=${encodeURIComponent(`Hi, I'm interested in your ${title} listed on Paiyya.`)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-xl text-white text-[0.9rem] font-semibold transition-transform duration-150 hover:-translate-y-px"
-                    style={{
-                      background: '#25D366',
-                      boxShadow: '0 2px 10px rgba(37,211,102,0.3)',
-                      fontFamily: "'DM Sans', sans-serif",
-                      textDecoration: 'none',
-                    }}
-                    aria-label="Chat on WhatsApp"
-                  >
-                    <MessageCircle size={16} strokeWidth={2} aria-hidden="true" />
-                    Chat on WhatsApp
-                  </a>
+                  {car.whatsapp && (
+                    <a
+                      href={`https://wa.me/${waNumber}?text=${encodeURIComponent(`Hi, I'm interested in your ${title} on Paiyya.`)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-xl text-white text-[0.9rem] font-semibold"
+                      style={{
+                        background: '#25D366',
+                        boxShadow: '0 2px 10px rgba(37,211,102,0.3)',
+                        fontFamily: "'DM Sans', sans-serif",
+                        textDecoration: 'none',
+                      }}
+                    >
+                      <MessageCircle size={16} strokeWidth={2} aria-hidden="true" />
+                      Chat on WhatsApp
+                    </a>
+                  )}
                 </div>
               </div>
 
-              {/* Seller card */}
+              {/* Desktop seller card */}
               <div className="cl-card mt-4">
                 <h2 className="cl-section-title">Seller</h2>
                 <div className="flex items-start gap-3 mb-4">
@@ -1463,80 +1449,39 @@ export default function CarListing() {
                     }}
                     aria-hidden="true"
                   >
-                    {car.seller.name
-                      .split(' ')
-                      .slice(0, 2)
-                      .map((w) => w[0])
-                      .join('')}
+                    {sellerInitials}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <p
-                        className="text-[0.9rem] font-bold"
-                        style={{ color: '#1A1523', fontFamily: "'Syne', sans-serif" }}
-                      >
-                        {car.seller.name}
-                      </p>
-                      {car.seller.verified && (
-                        <BadgeCheck
-                          size={15}
-                          strokeWidth={2}
-                          style={{ color: '#6C3CE1', flexShrink: 0 }}
-                          aria-label="Verified seller"
-                        />
-                      )}
-                    </div>
                     <p
-                      className="text-[0.75rem]"
-                      style={{ color: '#8A8390', fontFamily: "'DM Sans', sans-serif" }}
+                      className="text-[0.9rem] font-bold"
+                      style={{ color: '#1A1523', fontFamily: "'Syne', sans-serif" }}
                     >
-                      {car.seller.type} · {car.seller.city}
+                      {seller.name ?? 'Unknown'}
                     </p>
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-2 mb-4">
-                  {[
-                    {
-                      icon: Star,
-                      val: `${car.seller.rating} / 5  (${car.seller.reviews} reviews)`,
-                      color: '#C9A84C',
-                    },
-                    { icon: Car, val: `${car.seller.listings} active listings` },
-                    { icon: Calendar, val: `Member since ${car.seller.memberSince}` },
-                    { icon: MapPin, val: car.seller.city },
-                  ].map(({ icon: Icon, val, color }) => (
-                    <div key={val} className="flex items-center gap-2.5">
-                      <Icon
-                        size={13}
-                        strokeWidth={1.9}
-                        style={{ color: color ?? '#C4BDD0', flexShrink: 0 }}
-                        aria-hidden="true"
-                      />
-                      <span
-                        className="text-[0.78rem]"
+                    {seller.createdAt && (
+                      <p
+                        className="text-[0.75rem]"
                         style={{ color: '#8A8390', fontFamily: "'DM Sans', sans-serif" }}
                       >
-                        {val}
-                      </span>
-                    </div>
-                  ))}
+                        Member since {fmtDate(seller.createdAt)}
+                      </p>
+                    )}
+                  </div>
                 </div>
-
-                <a
-                  href={`/sellers/${car.seller.id}`}
-                  className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border text-[0.8rem] font-medium transition-colors duration-150"
-                  style={{
-                    borderColor: '#E8E3DC',
-                    color: '#6C3CE1',
-                    background: 'transparent',
-                    textDecoration: 'none',
-                    fontFamily: "'DM Sans', sans-serif",
-                  }}
-                >
-                  <Users size={13} strokeWidth={2} aria-hidden="true" />
-                  View all listings by seller
-                </a>
+                <div className="flex items-center gap-2.5 mb-4">
+                  <MapPin
+                    size={13}
+                    strokeWidth={1.9}
+                    style={{ color: '#C4BDD0', flexShrink: 0 }}
+                    aria-hidden="true"
+                  />
+                  <span
+                    className="text-[0.78rem]"
+                    style={{ color: '#8A8390', fontFamily: "'DM Sans', sans-serif" }}
+                  >
+                    {car.city}
+                  </span>
+                </div>
               </div>
 
               {/* Posted info */}
@@ -1554,14 +1499,14 @@ export default function CarListing() {
                   className="text-[0.75rem]"
                   style={{ color: '#8A8390', fontFamily: "'DM Sans', sans-serif" }}
                 >
-                  Posted <strong style={{ color: '#1A1523' }}>{car.postedAt}</strong> · Last updated{' '}
-                  <strong style={{ color: '#1A1523' }}>{car.lastUpdated}</strong>
+                  Posted <strong style={{ color: '#1A1523' }}>{postedAgo}</strong> · Updated{' '}
+                  <strong style={{ color: '#1A1523' }}>{updatedAgo}</strong>
                 </p>
               </div>
             </div>
           </div>
 
-          {/* ── Similar listings ── */}
+          {/* Similar listings */}
           <div className="similar-section mt-10 mb-6">
             <h2
               className="text-[1.1rem] font-extrabold tracking-[-0.03em] mb-4"
@@ -1570,9 +1515,18 @@ export default function CarListing() {
               Similar Listings
             </h2>
             <div className="similar-grid">
-              {SIMILAR_CARS.map((c) => (
-                <SimilarCard key={c.id} car={c} />
-              ))}
+              {similarLoading ? (
+                [...Array(4)].map((_, i) => <SimilarSkeleton key={i} />)
+              ) : similarCars.length > 0 ? (
+                similarCars.map((c) => <SimilarCard key={c._id} car={c} />)
+              ) : (
+                <p
+                  className="text-[0.82rem]"
+                  style={{ color: '#8A8390', fontFamily: "'DM Sans', sans-serif" }}
+                >
+                  No similar listings found.
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -1581,289 +1535,56 @@ export default function CarListing() {
   );
 }
 
-// ── Styles ────────────────────────────────────────────────────────
+// ── Styles (unchanged from original) ─────────────────────────────
 const STYLES = `
   @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap');
-
-  /* ── Base ── */
-  .cl-page {
-    background: #F7F4F0;
-    /* flex column so the element stretches to fit ALL content, not just viewport */
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
-    width: 100%;
-    overflow-x: hidden;
-    padding-top: 66px;
-    box-sizing: border-box;
-  }
-
-  .cl-inner {
-    max-width: 1200px;
-    width: 100%;
-    margin: 0 auto;
-    padding: 32px 24px 80px;
-    box-sizing: border-box;
-  }
-
-  /* ── Main grid ── */
-  .cl-grid {
-    display: grid;
-    grid-template-columns: 1fr 360px;
-    gap: 24px;
-    align-items: start;
-    width: 100%;
-    min-width: 0;
-  }
-
-  /* Grid children must not overflow their column */
-  .cl-left,
-  .cl-right {
-    min-width: 0;
-    width: 100%;
-  }
-
-  .cl-right {
-    position: sticky;
-    top: 82px;
-  }
-
-  /* Similar section always full-width — lives outside cl-grid */
-  .similar-section {
-    width: 100%;
-    box-sizing: border-box;
-  }
-
-  /* ── Card ── */
-  .cl-card {
-    background: #FFFFFF;
-    border: 1.5px solid #E8E3DC;
-    border-radius: 20px;
-    padding: 24px;
-    box-shadow: 0 1px 4px rgba(26,21,35,0.04);
-  }
-
-  .cl-section-title {
-    font-family: 'Syne', sans-serif;
-    font-size: 0.95rem;
-    font-weight: 800;
-    color: #1A1523;
-    letter-spacing: -0.02em;
-    margin-bottom: 16px;
-  }
-
-  /* ── Gallery ── */
-  .gallery-main {
-    height: 420px;
-    transition: opacity 0.15s ease;
-  }
-
-  .gallery-main-emoji {
-    font-size: 6rem;
-  }
-
-  /* ── Lightbox ── */
-  .lightbox-img {
-    width: 70vw;
-    height: 60vh;
-  }
-
-  .lightbox-emoji {
-    font-size: 5rem;
-  }
-
-  /* ── Features grid ── */
-  .features-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px 16px;
-  }
-
-  /* ── Similar cars ── */
-  .similar-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 16px;
-  }
-
-  .similar-card {
-    background: #FFFFFF;
-    border: 1.5px solid #E8E3DC;
-    box-shadow: 0 1px 4px rgba(26,21,35,0.04);
-    transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
-  }
-
-  .similar-card:hover {
-    box-shadow: 0 6px 24px rgba(26,21,35,0.1);
-    transform: translateY(-2px);
-    border-color: rgba(108,60,225,0.2);
-  }
-
-  /* ── Mobile sticky CTA ── */
-  .mobile-cta-bar {
-    display: none;
-  }
-
-  /* ── Mobile-only blocks hidden by default ── */
-  .mobile-title-block,
-  .mobile-seller {
-    display: none;
-  }
-
-  /* ── Report / Share modals: desktop = centered ── */
-  .report-modal,
-  .share-modal {
-    border-radius: 20px !important;
-  }
-
-  /* ════════════════════════════════════
-     TABLET  ≤ 1024px
-  ════════════════════════════════════ */
+  .cl-page { background: #F7F4F0; display: flex; flex-direction: column; min-height: 100vh; width: 100%; overflow-x: hidden; padding-top: 66px; box-sizing: border-box; }
+  .cl-inner { max-width: 1200px; width: 100%; margin: 0 auto; padding: 32px 24px 80px; box-sizing: border-box; }
+  .cl-grid { display: grid; grid-template-columns: 1fr 360px; gap: 24px; align-items: start; width: 100%; min-width: 0; }
+  .cl-left, .cl-right { min-width: 0; width: 100%; }
+  .cl-right { position: sticky; top: 82px; }
+  .similar-section { width: 100%; box-sizing: border-box; }
+  .cl-card { background: #FFFFFF; border: 1.5px solid #E8E3DC; border-radius: 20px; padding: 24px; box-shadow: 0 1px 4px rgba(26,21,35,0.04); }
+  .cl-section-title { font-family: 'Syne', sans-serif; font-size: 0.95rem; font-weight: 800; color: #1A1523; letter-spacing: -0.02em; margin-bottom: 16px; }
+  .gallery-main { height: 420px; transition: opacity 0.15s ease; }
+  .gallery-main-emoji { font-size: 6rem; }
+  .lightbox-img { width: 70vw; height: 60vh; }
+  .lightbox-emoji { font-size: 5rem; }
+  .features-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px 16px; }
+  .similar-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .similar-card { background: #FFFFFF; border: 1.5px solid #E8E3DC; box-shadow: 0 1px 4px rgba(26,21,35,0.04); transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease; }
+  .similar-card:hover { box-shadow: 0 6px 24px rgba(26,21,35,0.1); transform: translateY(-2px); border-color: rgba(108,60,225,0.2); }
+  .mobile-cta-bar { display: none; }
+  .mobile-title-block, .mobile-seller { display: none; }
+  .report-modal, .share-modal { border-radius: 20px !important; }
   @media (max-width: 1024px) {
-    .cl-grid {
-      grid-template-columns: 1fr;
-      width: 100%;
-    }
-
-    .cl-left,
-    .cl-right {
-      width: 100%;
-      max-width: 100%;
-    }
-
-    .cl-right {
-      position: static;
-    }
-
-    .similar-grid {
-      grid-template-columns: repeat(2, 1fr);
-    }
+    .cl-grid { grid-template-columns: 1fr; width: 100%; }
+    .cl-left, .cl-right { width: 100%; max-width: 100%; }
+    .cl-right { position: static; }
+    .similar-grid { grid-template-columns: repeat(2, 1fr); }
   }
-
-  /* ════════════════════════════════════
-     MOBILE  ≤ 768px
-  ════════════════════════════════════ */
   @media (max-width: 768px) {
-    /* Page spacing */
-    .cl-page {
-      padding-top: 0;
-    }
-
-    .cl-inner {
-      padding: 16px 14px 100px;
-      /* Guarantee full-width on mobile */
-      width: 100%;
-      max-width: 100%;
-    }
-
-    /* Switch grid off entirely — block stacking is simpler and bulletproof */
-    .cl-grid {
-      display: block;
-      width: 100%;
-    }
-
-    .cl-left {
-      width: 100%;
-    }
-
-    /* Gallery: shorter on mobile */
-    .gallery-main {
-      height: 260px;
-      border-radius: 16px;
-    }
-
-    .gallery-main-emoji {
-      font-size: 4rem;
-    }
-
-    /* Lightbox: full width on mobile */
-    .lightbox-img {
-      width: 92vw;
-      height: 50vw;
-      min-height: 200px;
-    }
-
-    .lightbox-emoji {
-      font-size: 3.5rem;
-    }
-
-    /* Cards */
-    .cl-card {
-      padding: 18px 16px;
-      border-radius: 16px;
-    }
-
-    /* Show mobile title + seller blocks */
-    .mobile-title-block,
-    .mobile-seller {
-      display: block;
-    }
-
-    /* Hide desktop right column entirely */
-    .cl-right {
-      display: none;
-    }
-
-    /* Features: single column */
-    .features-grid {
-      grid-template-columns: 1fr;
-      gap: 8px;
-    }
-
-    /* Similar section + grid: explicitly full width */
-    .similar-section {
-      width: 100%;
-    }
-
-    .similar-grid {
-      grid-template-columns: repeat(2, 1fr);
-      gap: 10px;
-      width: 100%;
-    }
-
-    /* Show sticky CTA bar */
-    .mobile-cta-bar {
-      display: flex;
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      z-index: 40;
-      gap: 10px;
-      padding: 12px 14px;
-      padding-bottom: calc(12px + env(safe-area-inset-bottom));
-      background: rgba(247, 244, 240, 0.95);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      border-top: 1px solid #E8E3DC;
-    }
-
-    /* Modals: bottom sheet */
-    .report-modal,
-    .share-modal {
-      border-radius: 20px 20px 0 0 !important;
-    }
+    .cl-page { padding-top: 0; }
+    .cl-inner { padding: 16px 14px 100px; width: 100%; max-width: 100%; }
+    .cl-grid { display: block; width: 100%; }
+    .cl-left { width: 100%; }
+    .gallery-main { height: 260px; border-radius: 16px; }
+    .gallery-main-emoji { font-size: 4rem; }
+    .lightbox-img { width: 92vw; height: 50vw; min-height: 200px; }
+    .lightbox-emoji { font-size: 3.5rem; }
+    .cl-card { padding: 18px 16px; border-radius: 16px; }
+    .mobile-title-block, .mobile-seller { display: block; }
+    .cl-right { display: none; }
+    .features-grid { grid-template-columns: 1fr; gap: 8px; }
+    .similar-section { width: 100%; }
+    .similar-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; width: 100%; }
+    .mobile-cta-bar { display: flex; position: fixed; bottom: 0; left: 0; right: 0; z-index: 40; gap: 10px; padding: 12px 14px; padding-bottom: calc(12px + env(safe-area-inset-bottom)); background: rgba(247,244,240,0.95); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-top: 1px solid #E8E3DC; }
+    .report-modal, .share-modal { border-radius: 20px 20px 0 0 !important; }
   }
-
-  /* ════════════════════════════════════
-     SMALL MOBILE  ≤ 390px
-  ════════════════════════════════════ */
   @media (max-width: 390px) {
-    .cl-inner {
-      padding: 12px 12px 100px;
-    }
-
-    .gallery-main {
-      height: 220px;
-    }
-
-    .gallery-main-emoji {
-      font-size: 3rem;
-    }
-
-    .similar-grid {
-      grid-template-columns: repeat(2, 1fr);
-      gap: 8px;
-    }
+    .cl-inner { padding: 12px 12px 100px; }
+    .gallery-main { height: 220px; }
+    .gallery-main-emoji { font-size: 3rem; }
+    .similar-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
   }
 `;

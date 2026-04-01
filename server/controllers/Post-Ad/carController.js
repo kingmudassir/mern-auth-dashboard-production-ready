@@ -156,6 +156,8 @@ export const getCars = catchAsyncError(async (req, res, next) => {
         oldest:      { createdAt: 1  },
         price_asc:   { price: 1      },
         price_desc:  { price: -1     },
+        year_desc:   { year: -1      },
+        year_asc:    { year: 1       },
     };
     const sortQuery = sortMap[sort] || sortMap.newest;
 
@@ -185,6 +187,7 @@ export const getCarById = catchAsyncError(async (req, res, next) => {
         _id: req.params.id,
         isActive: true,
         isDeleted: false,
+        isSold: false,
     }).populate("postedBy", "name createdAt");
 
     if (!car) return next(new ErrorHandler("Listing not found.", 404));
