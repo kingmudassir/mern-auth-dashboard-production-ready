@@ -4,20 +4,24 @@ const carService = {
     postAd: async (fields, images, features) => {
         const formData = new FormData();
 
-        // Append all scalar fields
+        // 1. Append scalar fields (strings/numbers)
         Object.entries(fields).forEach(([key, value]) => {
             if (value !== undefined && value !== null && value !== "") {
                 formData.append(key, value);
             }
         });
 
-        // Features array must be JSON-stringified — FormData can't serialize arrays
-        formData.append("features", JSON.stringify(features));
+        // 2. Features must be stringified for Multer to handle via FormData
+        formData.append("features", JSON.stringify(features || []));
 
-        // Append each File object under the key "images"
-        images.forEach((img) => {
-            formData.append("images", img.file);
-        });
+        // 3. Append images. Note: controller expects 'images' key
+        if (Array.isArray(images)) {
+            images.forEach((img) => {
+                // Ensure we are sending the actual File object
+                const fileToUpload = img.file || img; 
+                formData.append("images", fileToUpload);
+            });
+        }
 
         return await api.post('/cars', formData, {
             headers: { "Content-Type": "multipart/form-data" },
@@ -25,13 +29,14 @@ const carService = {
     },
 
     getMyAds: async () => {
-        return await api.get('/cars/my-ads');
+        const data = await api.get('/cars/my-ads');
+        return data.ads || []; 
     },
 
-    deleteAd: async (id) => {
-        return await api.delete(`/cars/${id}`);
+    deleteMyAd: async (adId) => {
+        return await api.delete(`/cars/${adId}`);
     },
-    
+
     getCars: async (params = {}) => {
         return await api.get('/cars', { params });
     },
@@ -41,15 +46,18 @@ const carService = {
     },
 
     getSimilarCars: async (make, excludeId) => {
-        return await api.get('/cars', { params: { make, limit: 4 } })
-            .then(res => ({
-                ...res,
-                data: {
-                    ...res.data,
-                    cars: res.data.cars.filter(c => c._id !== excludeId),
-                }
-            }));
+        // Fetch 5 to ensure you can show 4 after filtering out the current car
+        const data = await api.get('/cars', { params: { make, limit: 5 } });
+        
+        return {
+            ...data,
+            cars: (data.cars || []).filter(c => c._id !== excludeId).slice(0, 4),
+        };
     },
+
+    updateAdStatus: async (adId, status) => {
+        return await api.patch(`/cars/${adId}/status`, { status });
+    }
 };
 
 export default carService;

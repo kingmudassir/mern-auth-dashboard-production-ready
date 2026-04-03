@@ -8,4 +8,4 @@ export const useAllListings = (filters = {}) => {
         retry: false,
         staleTime: 30 * 1000,
     });
-}
+};

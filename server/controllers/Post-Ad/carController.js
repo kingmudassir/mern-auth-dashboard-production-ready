@@ -198,39 +198,144 @@ export const getCarById = catchAsyncError(async (req, res, next) => {
     res.status(200).json({ success: true, car });
 });
 
-// ── GET /api/cars/my-ads  ─────────────────────────────────────────
-export const getMyAds = catchAsyncError(async (req, res, next) => {
-    const cars = await Car.find({
-        postedBy: req.user._id,
-        isDeleted: false,
-    })
-        .sort({ createdAt: -1 })
-        .select("make model variant year price city images isActive isSold createdAt");
+// ── Helpers ───────────────────────────────────────────────────────
 
-    res.status(200).json({ success: true, count: cars.length, cars });
+const formatRelativeTime = (date) => {
+    if (!date) return 'Unknown';
+    const seconds = Math.floor((Date.now() - new Date(date)) / 1000);
+    if (seconds < 60) return 'Just now';
+    if (seconds < 3600) return `${Math.floor(seconds / 60)} min ago`;
+    if (seconds < 86400) {
+        const h = Math.floor(seconds / 3600);
+        return `${h} hour${h !== 1 ? 's' : ''} ago`;
+    }
+    const days = Math.floor(seconds / 86400);
+    if (days < 7) return `${days} day${days !== 1 ? 's' : ''} ago`;
+    if (days < 30) {
+        const weeks = Math.floor(days / 7);
+        return `${weeks} week${weeks !== 1 ? 's' : ''} ago`;
+    }
+    const months = Math.floor(days / 30);
+    return `${months} month${months !== 1 ? 's' : ''} ago`;
+};
+
+const normalizeAd = (doc) => {
+  const now = new Date();
+  let expiresIn = null;
+
+  if (doc.expiresAt) {
+    const msLeft = new Date(doc.expiresAt) - now;
+    if (msLeft > 0) {
+      const daysLeft = Math.ceil(msLeft / (1000 * 60 * 60 * 24));
+      expiresIn = `${daysLeft} day${daysLeft !== 1 ? 's' : ''}`;
+    }
+  }
+
+  // Derive status logic
+  let derivedStatus = 'pending';
+  if (doc.isDeleted) derivedStatus = 'rejected';
+  else if (doc.isSold) derivedStatus = 'expired';
+  else if (doc.isActive) derivedStatus = 'active';
+
+  return {
+    _id: doc._id.toString(),
+    id: doc._id.toString(), 
+    make: doc.make,
+    model: doc.model,
+    variant: doc.variant ?? null,
+    year: doc.year,
+    price: doc.price,
+    city: doc.city,
+    fuel: doc.fuel,
+    transmission: doc.transmission,
+    mileage: doc.mileage,
+    condition: doc.condition,
+    color: doc.color,
+    status: derivedStatus,
+
+    // CLEANED UP: Just return the array or an empty array.
+    // No more via.placeholder strings.
+    images: (doc.images && doc.images.length > 0) ? doc.images : [],
+
+    views: doc.views ?? 0,
+    saves: doc.saves ?? 0,
+    postedAt: formatRelativeTime(doc.createdAt),
+    expiresIn,
+    featured: doc.featured ?? false,
+  };
+};
+
+// ── Controllers ───────────────────────────────────────────────────
+
+/**
+ * GET /api/v2/cars/my-ads
+ * Returns all non-deleted ads posted by the authenticated user.
+ */
+export const getMyAds = catchAsyncError(async (req, res, next) => {
+    const ads = await Car.find({ postedBy: req.user._id, isDeleted: false })
+        .select(
+            'make model variant year price city fuel transmission mileage ' +
+            'condition color status views saves expiresAt featured createdAt images' // Added images here
+        )
+        .sort({ createdAt: -1 })
+        .lean();
+
+    res.status(200).json({
+        success: true,
+        count: ads.length,
+        ads: ads.map(normalizeAd),
+    });
 });
 
-// ── DELETE /api/cars/:id  ─────────────────────────────────────────
+/**
+ * DELETE /api/v2/cars/:id
+ * Hard-deletes an ad owned by the authenticated user.
+ */
 export const deleteAd = catchAsyncError(async (req, res, next) => {
-    const car = await Car.findOne({
+    const ad = await Car.findOneAndDelete({
         _id: req.params.id,
-        isDeleted: false,
+        postedBy: req.user._id,
     });
 
-    if (!car) return next(new ErrorHandler("Listing not found.", 404));
+    if (!ad) {
+        return next(new ErrorHandler('Ad not found or access denied', 404));
+    }
 
-    // Only the owner or an admin can delete
-    const isOwner = car.postedBy.toString() === req.user._id.toString();
-    const isAdmin = req.user.role === "admin" || req.user.role === "moderator";
+    res.status(200).json({
+        success: true,
+        message: 'Ad deleted successfully',
+    });
+});
 
-    if (!isOwner && !isAdmin)
-        return next(new ErrorHandler("Not authorized to delete this listing.", 403));
+/**
+ * PATCH /api/v2/cars/:id/status
+ * User-facing status patch. Only allows transitioning to 'expired' (mark as sold)
+ * or 'pending' (repost). Admin status changes go through the admin routes.
+ */
+export const patchMyAdStatus = catchAsyncError(async (req, res, next) => {
+    const { status } = req.body;
+    const updateFields = { status };
 
-    // Soft delete
-    car.isDeleted = true;
-    car.isActive  = false;
-    car.deletedAt = new Date();
-    await car.save({ validateModifiedOnly: true });
+    if (status === 'expired') {
+        updateFields.isSold = true;
+        updateFields.isActive = false;
+    } else if (status === 'pending') {
+        updateFields.isActive = false; // Requires admin re-approval
+        updateFields.isSold = false;
+    }
 
-    res.status(200).json({ success: true, message: "Listing deleted." });
+    const ad = await Car.findOneAndUpdate(
+        { _id: req.params.id, postedBy: req.user._id, isDeleted: false },
+        updateFields,
+        { new: true, runValidators: true }
+    ).lean();
+
+    if (!ad) {
+        return next(new ErrorHandler('Ad not found or access denied', 404));
+    }
+
+    res.status(200).json({
+        success: true,
+        ad: normalizeAd(ad),
+    });
 });

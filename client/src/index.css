@@ -2230,3 +2230,184 @@ select {
   }
 }
 /* ********** Styling for User Dashboard here ********** */
+
+/* ********** Styling for User-Ads here ********** */
+.upa-page {
+  background: #f7f4f0;
+  min-height: 100vh;
+}
+
+.upa-inner {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 40px 32px 72px;
+}
+
+/* ── Stats ── */
+.upa-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+/* ── Card grid ── */
+.upa-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(238px, 1fr));
+  gap: 16px;
+}
+
+/* ── Cards ── */
+.upa-grid-card {
+  background: #ffffff;
+  border: 1.5px solid #e8e3dc;
+  box-shadow: 0 1px 4px rgba(26, 21, 35, 0.04);
+  transition:
+    box-shadow 0.2s ease,
+    transform 0.2s ease,
+    border-color 0.2s ease;
+}
+.upa-grid-card:hover {
+  box-shadow: 0 6px 24px rgba(26, 21, 35, 0.09);
+  transform: translateY(-2px);
+  border-color: rgba(108, 60, 225, 0.18);
+}
+
+.upa-list-card {
+  background: #ffffff;
+  border: 1.5px solid #e8e3dc;
+  box-shadow: 0 1px 4px rgba(26, 21, 35, 0.04);
+  transition:
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
+}
+.upa-list-card:hover {
+  box-shadow: 0 4px 20px rgba(26, 21, 35, 0.08);
+  border-color: rgba(108, 60, 225, 0.18);
+}
+
+/* ── Search ── */
+.upa-search-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 180px;
+  display: flex;
+  align-items: center;
+  height: 40px;
+  background: #ffffff;
+  border: 1.5px solid #e8e3dc;
+  border-radius: 12px;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+.upa-search-wrap:focus-within {
+  border-color: rgba(108, 60, 225, 0.4);
+  box-shadow: 0 0 0 3px rgba(108, 60, 225, 0.07);
+}
+.upa-search-icon {
+  position: absolute;
+  left: 12px;
+  color: #c4bdd0;
+  pointer-events: none;
+}
+.upa-search-input {
+  flex: 1;
+  height: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 0.82rem;
+  color: #1a1523;
+  padding-left: 36px;
+  padding-right: 32px;
+  font-family: 'DM Sans', sans-serif;
+}
+.upa-search-input::placeholder {
+  color: #c4bdd0;
+}
+.upa-search-clear {
+  position: absolute;
+  right: 10px;
+  color: #c4bdd0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  padding: 0;
+  transition: color 0.15s ease;
+}
+.upa-search-clear:hover {
+  color: #8a8390;
+}
+
+/* ── Sort ── */
+.upa-sort-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 40px;
+  background: #ffffff;
+  border: 1.5px solid #e8e3dc;
+  border-radius: 12px;
+  min-width: 158px;
+  transition: border-color 0.2s ease;
+}
+.upa-sort-wrap:focus-within {
+  border-color: rgba(108, 60, 225, 0.4);
+}
+.upa-sort-icon {
+  position: absolute;
+  left: 11px;
+  color: #c4bdd0;
+  pointer-events: none;
+}
+.upa-sort-select {
+  flex: 1;
+  height: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 0.8rem;
+  font-family: 'DM Sans', sans-serif;
+  color: #1a1523;
+  padding-left: 32px;
+  padding-right: 10px;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+  .upa-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .upa-inner {
+    padding: 28px 20px 60px;
+  }
+  .upa-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  .upa-stats {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .upa-inner {
+    padding: 24px 16px 56px;
+  }
+  .upa-grid {
+    grid-template-columns: 1fr;
+  }
+  .upa-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+/* ********** Styling for User-Ads here ********** */

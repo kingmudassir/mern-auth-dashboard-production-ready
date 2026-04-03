@@ -26,7 +26,8 @@ import PostAd from '../Pages/PostAd';
 import SavedAds from '../Pages/SavedAds';
 import AllUsersPanel from '../Pages/Admin/All-Users/Main-Page/AllUsersPanel';
 import DashboardLayout from '../Layout/DashboardLayout';
-import MyAds from '../Pages/User/User-Profile/MyAds';
+import MyAds from '../Pages/My-Ads/Main-Page/MyAds';
+import EditAd from '../Pages/Edit-Ad/Main-Page/EditAd';
 
 function Approutes() {
   return (
@@ -43,6 +44,8 @@ function Approutes() {
         {/* <Route path="/admin/dashboard" element={<Dashboard />} /> */}
         <Route path="cars" element={<CarMarketplace />} />
         <Route path="cars/:carId" element={<CarListing />} />
+        <Route path="/edit-ad/:adId" element={<EditAd />} />
+
         <Route path="post-ad" element={<PostAd />} />
         <Route path="saved" element={<SavedAds />} />
         <Route path="/profile" element={<DashboardLayout />}>

@@ -6,23 +6,24 @@ export const getPendingListings = catchAsyncError(async (req, res, next) => {
     const { page = 1, limit = 10, sortBy = "createdAt", order = "desc" } = req.query;
 
     const skip = (page - 1) * limit;
-    const sort = {};
-    sort[sortBy] = order === "desc" ? -1 : 1;
+    const sort = { [sortBy]: order === "desc" ? -1 : 1 };
 
-    const listings = await Car.find({ status: "pending", isDeleted: false })
-        .populate("createdBy", "name email phone")
-        .sort(sort)
-        .skip(skip)
-        .limit(Number(limit));
-
-    const total = await Car.countDocuments({ status: "pending", isDeleted: false });
+    const [listings, total] = await Promise.all([
+        Car.find({ status: "pending", isDeleted: false })
+            .populate("createdBy", "name email phone")
+            .sort(sort)
+            .skip(skip)
+            .limit(Number(limit))
+            .lean(),
+        Car.countDocuments({ status: "pending", isDeleted: false }),
+    ]);
 
     res.status(200).json({
         success: true,
         listings,
         total,
         pages: Math.ceil(total / limit),
-        currentPage: page
+        currentPage: Number(page),
     });
 });
 
@@ -30,23 +31,24 @@ export const getFlaggedListings = catchAsyncError(async (req, res, next) => {
     const { page = 1, limit = 10, sortBy = "reportCount", order = "desc" } = req.query;
 
     const skip = (page - 1) * limit;
-    const sort = {};
-    sort[sortBy] = order === "desc" ? -1 : 1;
+    const sort = { [sortBy]: order === "desc" ? -1 : 1 };
 
-    const listings = await Car.find({ reportCount: { $gt: 0 }, isDeleted: false })
-        .populate("createdBy", "name email phone")
-        .sort(sort)
-        .skip(skip)
-        .limit(Number(limit));
-
-    const total = await Car.countDocuments({ reportCount: { $gt: 0 }, isDeleted: false });
+    const [listings, total] = await Promise.all([
+        Car.find({ reportCount: { $gt: 0 }, isDeleted: false })
+            .populate("createdBy", "name email phone")
+            .sort(sort)
+            .skip(skip)
+            .limit(Number(limit))
+            .lean(),
+        Car.countDocuments({ reportCount: { $gt: 0 }, isDeleted: false }),
+    ]);
 
     res.status(200).json({
         success: true,
         listings,
         total,
         pages: Math.ceil(total / limit),
-        currentPage: page
+        currentPage: Number(page),
     });
 });
 
@@ -56,12 +58,15 @@ export const approveListing = catchAsyncError(async (req, res, next) => {
     const listing = await Car.findByIdAndUpdate(
         listingId,
         {
-            status: "approved",
+            status: "active",           // was "approved" — fixed to match frontend STATUS_CONFIG
             approvedBy: req.user._id,
-            approvedAt: new Date()
+            approvedAt: new Date(),
+            rejectionReason: undefined, // clear any previous rejection reason
         },
         { new: true, runValidators: true }
-    ).populate("createdBy", "name email");
+    )
+        .populate("createdBy", "name email")
+        .lean();
 
     if (!listing) {
         return next(new ErrorHandler("Listing not found", 404));
@@ -69,8 +74,8 @@ export const approveListing = catchAsyncError(async (req, res, next) => {
 
     res.status(200).json({
         success: true,
-        message: "Listing approved successfully",
-        listing
+        message: "Listing approved and is now live",
+        listing,
     });
 });
 
@@ -78,7 +83,7 @@ export const rejectListing = catchAsyncError(async (req, res, next) => {
     const { listingId } = req.params;
     const { rejectionReason } = req.body;
 
-    if (!rejectionReason || rejectionReason.trim().length === 0) {
+    if (!rejectionReason || !rejectionReason.trim()) {
         return next(new ErrorHandler("Rejection reason is required", 400));
     }
 
@@ -86,12 +91,14 @@ export const rejectListing = catchAsyncError(async (req, res, next) => {
         listingId,
         {
             status: "rejected",
-            rejectionReason,
+            rejectionReason: rejectionReason.trim(),
             rejectedBy: req.user._id,
-            rejectedAt: new Date()
+            rejectedAt: new Date(),
         },
         { new: true, runValidators: true }
-    ).populate("createdBy", "name email");
+    )
+        .populate("createdBy", "name email")
+        .lean();
 
     if (!listing) {
         return next(new ErrorHandler("Listing not found", 404));
@@ -100,7 +107,7 @@ export const rejectListing = catchAsyncError(async (req, res, next) => {
     res.status(200).json({
         success: true,
         message: "Listing rejected",
-        listing
+        listing,
     });
 });
 
@@ -112,10 +119,12 @@ export const removeFlaggedListing = catchAsyncError(async (req, res, next) => {
         {
             isDeleted: true,
             deletedAt: new Date(),
-            deletedBy: req.user._id
+            deletedBy: req.user._id,
         },
         { new: true }
-    ).populate("createdBy", "name email");
+    )
+        .populate("createdBy", "name email")
+        .lean();
 
     if (!listing) {
         return next(new ErrorHandler("Listing not found", 404));
@@ -124,6 +133,6 @@ export const removeFlaggedListing = catchAsyncError(async (req, res, next) => {
     res.status(200).json({
         success: true,
         message: "Listing removed from platform",
-        listing
+        listing,
     });
 });
