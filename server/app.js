@@ -7,6 +7,7 @@ import cors from "cors"
 import adminDashboardRouter from "./routes/admin/Admin-Dashboard/admin.dashboard.routes.js"
 import adminAllUsersRouter from "./routes/admin/Admin-All-Users/admin.allUsers.routes.js"
 import carRoutes from "./routes/carRoutes.js";
+import masterRoutes from "./routes/Masterroutes.js";
 
 const app = express();
 
@@ -34,6 +35,7 @@ app.use(cookieParser())
 app.use("/api/v2", authRoutes);
 app.use("/api/v2", adminDashboardRouter);
 app.use("/api/v2", adminAllUsersRouter);
+app.use('/api/v2/master', masterRoutes);
 app.use("/api/v2/cars", carRoutes);
 
 app.use(errorMiddleware);

@@ -117,6 +117,12 @@ const adminService = {
         return await api.get(`/admin/listings/flagged?${params.toString()}`);
     },
 
+    // This is the one you were likely calling in ListingReviewPage
+    getListingById: async (listingId) => {
+        // MATCHES BACKEND: router.get('/admin/listings/:listingId/detail')
+        return await api.get(`/admin/listings/${listingId}/detail`);
+    },
+
     approveListing: async (listingId) => {
         return await api.patch(`/admin/listings/${listingId}/approve`);
     },
@@ -174,6 +180,8 @@ const adminService = {
     deleteCity: async (cityId) => {
         return await api.delete(`/admin/catalogue/cities/${cityId}`);
     },
+
+
 };
 
 export default adminService;

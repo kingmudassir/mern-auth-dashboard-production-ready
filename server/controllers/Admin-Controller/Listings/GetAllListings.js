@@ -2,34 +2,33 @@ import { catchAsyncError } from "../../../middlewares/catchAsyncError.js";
 import { Car } from "../../../models/carSchema.js";
 
 export const getAllListings = catchAsyncError(async (req, res, next) => {
-    // 1. Extract filters from query
-    const { 
-        page = 1, 
-        limit = 100, 
-        sortBy = "createdAt", 
+    const {
+        page = 1,
+        limit = 100,
+        sortBy = "createdAt",
         order = "desc",
         status,
-        search 
+        search,
     } = req.query;
 
     const skip = (Number(page) - 1) * Number(limit);
     const sort = { [sortBy]: order === "desc" ? -1 : 1 };
 
-    // 2. Build Query Object
-    let query = { isDeleted: false };
+    // Base query — never show hard-deleted records
+    const query = { isDeleted: false };
 
-    // Support status tabs (active, pending, flagged, etc.)
-    if (status && status !== 'all') {
+    // Status tab filtering — uses the status field directly
+    if (status && status !== "all") {
         query.status = status;
     }
 
-    // Support the search bar functionality server-side
+    // Search bar
     if (search) {
         query.$or = [
-            { title: { $regex: search, $options: "i" } },
             { make: { $regex: search, $options: "i" } },
             { model: { $regex: search, $options: "i" } },
-            { city: { $regex: search, $options: "i" } }
+            { city: { $regex: search, $options: "i" } },
+            { variant: { $regex: search, $options: "i" } },
         ];
     }
 
@@ -43,15 +42,13 @@ export const getAllListings = catchAsyncError(async (req, res, next) => {
         Car.countDocuments(query),
     ]);
 
-    // 3. Normalize for AllCarListings.jsx
+    // Normalize: AllCarListings.jsx reads `seller`, backend stores `postedBy`
     const normalized = listings.map((doc) => ({
         ...doc,
-        // Frontend expects 'seller', backend uses 'createdBy'
         seller: doc.postedBy || { name: "Unknown", email: "—" },
-        // Frontend uses 'fuelType', ensure it is mapped if backend uses 'fuel'
+        // fuelType alias for components that use either key
         fuelType: doc.fuelType || doc.fuel || "—",
-        // Ensure reportCount exists for the "Flagged" logic
-        reportCount: doc.reportCount || 0 
+        reportCount: doc.reportCount || 0,
     }));
 
     res.status(200).json({

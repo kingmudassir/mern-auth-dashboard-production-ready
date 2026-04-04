@@ -488,39 +488,44 @@ export default function Dashboard() {
 
           <div className="flex flex-col gap-3">
             {recentUsers.length > 0 ? (
-              recentUsers.map((u, i) => (
-                <div key={i} className="user-row">
-                  <AvatarBubble initials={initials(u.name)} size={34} />
-                  <div className="flex-1 min-w-0">
-                    <p
-                      className="text-[0.8rem] font-semibold text-[#1A1523] truncate"
-                      style={{ fontFamily: "'DM Sans', sans-serif" }}
-                    >
-                      {u.name}
-                    </p>
-                    <p
-                      className="text-[0.67rem] text-[#8A8390] truncate"
-                      style={{ fontFamily: "'DM Sans', sans-serif" }}
-                    >
-                      {u.email}
-                    </p>
+              recentUsers.map((u) => {
+                // 1. Extract a string for the status key safely
+                const statusValue = typeof u.status === 'object' ? u.status.name : u.status;
+
+                return (
+                  <div key={u._id || u.email} className="user-row">
+                    {' '}
+                    {/* 2. Use _id as Key */}
+                    <AvatarBubble initials={initials(u.name)} size={34} />
+                    <div className="flex-1 min-w-0">
+                      <p
+                        className="text-[0.8rem] font-semibold text-[#1A1523] truncate"
+                        style={{ fontFamily: "'DM Sans', sans-serif" }}
+                      >
+                        {u.name}
+                      </p>
+                      <p
+                        className="text-[0.67rem] text-[#8A8390] truncate"
+                        style={{ fontFamily: "'DM Sans', sans-serif" }}
+                      >
+                        {u.email}
+                      </p>
+                    </div>
+                    <div className="flex flex-col items-end gap-1 shrink-0">
+                      {/* 3. Pass the string value, not the object */}
+                      <StatusBadge status={statusValue || 'active'} />
+                      <span className="text-[0.62rem] text-[#C4BDD0]">
+                        {u.joined || new Date(u.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex flex-col items-end gap-1 shrink-0">
-                    <StatusBadge status={u.status} />
-                    <span className="text-[0.62rem] text-[#C4BDD0]">{u.joined}</span>
-                  </div>
-                </div>
-              ))
+                );
+              })
             ) : (
-              /* Empty State Component */
+              /* ... rest of your empty state code ... */
               <div className="flex flex-col items-center justify-center py-8 px-4 border border-dashed border-[#E5E7EB] rounded-xl bg-[#F9FAFB]">
                 <Users size={24} className="text-[#C4BDD0] mb-2" />
-                <p
-                  className="text-[0.75rem] font-medium text-[#8A8390]"
-                  style={{ fontFamily: "'DM Sans', sans-serif" }}
-                >
-                  No recent sign-ups
-                </p>
+                <p className="text-[0.75rem] font-medium text-[#8A8390]">No recent sign-ups</p>
               </div>
             )}
           </div>
@@ -538,13 +543,15 @@ export default function Dashboard() {
             </a>
           </div>
           <div className="flex flex-col gap-3">
-            {recentListings.map((l) => (
-              <div key={l.id} className="user-row">
+            {recentListings.map((l, index) => (
+              <div key={l._id || l.id || index} className="user-row">
                 <div
                   className="w-9 h-9 rounded-xl flex items-center justify-center text-lg shrink-0"
                   style={{ background: '#F2EEE9' }}
                 >
-                  {l.img}
+                  {/* If API data provides a real image URL, you might want to handle it here, 
+          otherwise it falls back to the emoji string from mock data */}
+                  {typeof l.img === 'string' ? l.img : '🚗'}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p
@@ -558,11 +565,11 @@ export default function Dashboard() {
                     style={{ fontFamily: "'DM Sans', sans-serif" }}
                   >
                     <span style={{ color: '#6C3CE1', fontWeight: 600 }}>{l.price}</span> ·{' '}
-                    {l.seller} · {l.city}
+                    {l.seller?.name || l.seller} · {l.city}
                   </p>
                 </div>
                 <div className="flex flex-col items-end gap-1 shrink-0">
-                  <StatusBadge status={l.status} />
+                  <StatusBadge status={l.status?.name || l.status} />
                   <span className="text-[0.62rem] text-[#C4BDD0]">{l.posted}</span>
                 </div>
               </div>

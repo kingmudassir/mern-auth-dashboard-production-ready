@@ -10,9 +10,11 @@ const useDeleteAd = () => {
         onMutate: async (adId) => {
             await queryClient.cancelQueries({ queryKey: ['myAds'] });
             const previous = queryClient.getQueryData(['myAds']);
-            queryClient.setQueryData(['myAds'], (old = []) =>
-                old.filter((ad) => ad.id !== adId)
-            );
+            queryClient.setQueryData(['myAds'], (old) => {
+                // 'old' is now the array returned by getMyAds
+                if (!old) return []; 
+                return old.filter((ad) => ad._id !== adId); 
+            });
             return { previous };
         },
 

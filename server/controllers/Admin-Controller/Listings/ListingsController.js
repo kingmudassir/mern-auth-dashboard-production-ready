@@ -5,12 +5,12 @@ import { Car } from "../../../models/carSchema.js";
 export const getPendingListings = catchAsyncError(async (req, res, next) => {
     const { page = 1, limit = 10, sortBy = "createdAt", order = "desc" } = req.query;
 
-    const skip = (page - 1) * limit;
+    const skip = (Number(page) - 1) * Number(limit);
     const sort = { [sortBy]: order === "desc" ? -1 : 1 };
 
     const [listings, total] = await Promise.all([
         Car.find({ status: "pending", isDeleted: false })
-            .populate("createdBy", "name email phone")
+            .populate("postedBy", "name email phone")
             .sort(sort)
             .skip(skip)
             .limit(Number(limit))
@@ -22,7 +22,7 @@ export const getPendingListings = catchAsyncError(async (req, res, next) => {
         success: true,
         listings,
         total,
-        pages: Math.ceil(total / limit),
+        pages: Math.ceil(total / Number(limit)),
         currentPage: Number(page),
     });
 });
@@ -30,12 +30,12 @@ export const getPendingListings = catchAsyncError(async (req, res, next) => {
 export const getFlaggedListings = catchAsyncError(async (req, res, next) => {
     const { page = 1, limit = 10, sortBy = "reportCount", order = "desc" } = req.query;
 
-    const skip = (page - 1) * limit;
+    const skip = (Number(page) - 1) * Number(limit);
     const sort = { [sortBy]: order === "desc" ? -1 : 1 };
 
     const [listings, total] = await Promise.all([
         Car.find({ reportCount: { $gt: 0 }, isDeleted: false })
-            .populate("createdBy", "name email phone")
+            .populate("postedBy", "name email phone")
             .sort(sort)
             .skip(skip)
             .limit(Number(limit))
@@ -47,7 +47,7 @@ export const getFlaggedListings = catchAsyncError(async (req, res, next) => {
         success: true,
         listings,
         total,
-        pages: Math.ceil(total / limit),
+        pages: Math.ceil(total / Number(limit)),
         currentPage: Number(page),
     });
 });
@@ -58,14 +58,18 @@ export const approveListing = catchAsyncError(async (req, res, next) => {
     const listing = await Car.findByIdAndUpdate(
         listingId,
         {
-            status: "active",           // was "approved" — fixed to match frontend STATUS_CONFIG
+            status: "active",
+            isActive: true,
             approvedBy: req.user._id,
             approvedAt: new Date(),
-            rejectionReason: undefined, // clear any previous rejection reason
+            // Clear any previous rejection data
+            rejectionReason: undefined,
+            rejectedBy: undefined,
+            rejectedAt: undefined,
         },
         { new: true, runValidators: true }
     )
-        .populate("createdBy", "name email")
+        .populate("postedBy", "name email")
         .lean();
 
     if (!listing) {
@@ -74,7 +78,7 @@ export const approveListing = catchAsyncError(async (req, res, next) => {
 
     res.status(200).json({
         success: true,
-        message: "Listing approved and is now live",
+        message: "Listing approved and is now live on the marketplace",
         listing,
     });
 });
@@ -83,21 +87,20 @@ export const rejectListing = catchAsyncError(async (req, res, next) => {
     const { listingId } = req.params;
     const { rejectionReason } = req.body;
 
-    if (!rejectionReason || !rejectionReason.trim()) {
-        return next(new ErrorHandler("Rejection reason is required", 400));
-    }
-
+    // Rejection reason is optional — admin may reject without explanation,
+    // but it's strongly encouraged. Remove the guard if you want to enforce it.
     const listing = await Car.findByIdAndUpdate(
         listingId,
         {
             status: "rejected",
-            rejectionReason: rejectionReason.trim(),
+            isActive: false,
+            rejectionReason: rejectionReason?.trim() || undefined,
             rejectedBy: req.user._id,
             rejectedAt: new Date(),
         },
         { new: true, runValidators: true }
     )
-        .populate("createdBy", "name email")
+        .populate("postedBy", "name email")
         .lean();
 
     if (!listing) {
@@ -119,11 +122,12 @@ export const removeFlaggedListing = catchAsyncError(async (req, res, next) => {
         {
             isDeleted: true,
             deletedAt: new Date(),
-            deletedBy: req.user._id,
+            isActive: false,
+            status: "rejected", // treat hard removals as rejected in history
         },
         { new: true }
     )
-        .populate("createdBy", "name email")
+        .populate("postedBy", "name email")
         .lean();
 
     if (!listing) {

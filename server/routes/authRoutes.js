@@ -50,6 +50,7 @@ import {
 // ── Admin: Dashboard ──────────────────────────────────────────────
 import { getAdminStats } from "../controllers/Admin-Controller/Admin-Dashboard/AdminDashboardController.js";
 import { getAllUsers } from "../controllers/Admin-Controller/All-Users/GetAllUsers.controller.js";
+import { getAdminListingById } from "../controllers/Admin-Controller/Listings/getAdminListingById.js";
 
 const router = express.Router();
 const admin  = [isAuthenticated, authorizeRoles("admin")]; // shorthand
@@ -121,6 +122,7 @@ router.patch('/admin/reports/:reportId/priority', ...admin, updateReportPriority
 router.get  ('/admin/listings',                        ...admin, getAllListings);
 router.get  ('/admin/listings/pending',                ...admin, getPendingListings);
 router.get  ('/admin/listings/flagged',                ...admin, getFlaggedListings);
+router.get  ('/admin/listings/:listingId/detail',      ...admin, getAdminListingById);
 router.patch('/admin/listings/:listingId/approve',     ...admin, approveListing);
 router.patch('/admin/listings/:listingId/reject',      ...admin, rejectListing);
 router.patch('/admin/listings/:listingId/remove',      ...admin, removeFlaggedListing);
@@ -143,5 +145,7 @@ router.get   ('/admin/catalogue/cities/:cityId',     ...admin, getCityById);
 router.post  ('/admin/catalogue/cities',             ...admin, addCity);
 router.patch ('/admin/catalogue/cities/:cityId',     ...admin, updateCity);
 router.delete('/admin/catalogue/cities/:cityId',     ...admin, deleteCity);
+
+
 
 export default router;

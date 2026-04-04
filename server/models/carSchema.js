@@ -24,7 +24,7 @@ const carSchema = new mongoose.Schema(
         year: {
             type: Number,
             required: [true, "Year is required."],
-            min: [1970, "Year must be 1970 or later."],
+            min: [1940, "Year must be 1940 or later."],
             max: [new Date().getFullYear() + 1, "Year cannot be in the future."],
         },
 
@@ -135,8 +135,6 @@ const carSchema = new mongoose.Schema(
         },
 
         // ── Images ────────────────────────────────────────────────
-        // Each entry: { url: String, publicId: String }
-        // publicId is the Cloudinary public_id for deletion later
         images: {
             type: [
                 {
@@ -150,16 +148,56 @@ const carSchema = new mongoose.Schema(
             },
         },
 
-        // ── Ownership & status ────────────────────────────────────
-        postedBy: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "User",
-            required: true,
+        // ── Moderation status ─────────────────────────────────────
+        //
+        // This is the SINGLE source of truth for a listing's lifecycle.
+        //
+        //   pending  → freshly submitted, awaiting admin review.
+        //              Not visible on the public marketplace.
+        //   active   → approved by admin, live on the marketplace.
+        //   rejected → admin rejected it. Seller can see the reason.
+        //              Not visible on the public marketplace.
+        //   sold     → seller marked it as sold. Removed from marketplace.
+        //
+        status: {
+            type: String,
+            enum: ["pending", "active", "rejected", "sold"],
+            default: "pending",
+            index: true,
         },
 
+        // Populated by the admin when status is set to "rejected"
+        rejectionReason: {
+            type: String,
+            trim: true,
+            default: undefined,
+        },
+
+        // Who approved / rejected and when (audit trail)
+        approvedBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+            default: undefined,
+        },
+        approvedAt: {
+            type: Date,
+            default: undefined,
+        },
+        rejectedBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+            default: undefined,
+        },
+        rejectedAt: {
+            type: Date,
+            default: undefined,
+        },
+
+        // ── Legacy flags (kept for backward compat, derived from status) ─
+        // isActive: true only when status === "active"
         isActive: {
             type: Boolean,
-            default: true,
+            default: false, // starts false until admin approves
         },
 
         isSold: {
@@ -183,7 +221,19 @@ const carSchema = new mongoose.Schema(
             default: undefined,
         },
 
+        // ── Ownership ─────────────────────────────────────────────
+        postedBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+            required: true,
+        },
+
         views: {
+            type: Number,
+            default: 0,
+        },
+
+        reportCount: {
             type: Number,
             default: 0,
         },
@@ -193,8 +243,9 @@ const carSchema = new mongoose.Schema(
     }
 );
 
-// Indexes for common query patterns on the marketplace
-carSchema.index({ city: 1, isActive: 1, isDeleted: 1 });
+// Indexes for common query patterns
+carSchema.index({ status: 1, isDeleted: 1 });
+carSchema.index({ city: 1, status: 1, isDeleted: 1 });
 carSchema.index({ make: 1, model: 1 });
 carSchema.index({ price: 1 });
 carSchema.index({ postedBy: 1 });

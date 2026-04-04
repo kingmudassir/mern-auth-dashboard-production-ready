@@ -28,8 +28,14 @@ const carService = {
         });
     },
 
+    // carService.js
     getMyAds: async () => {
         const data = await api.get('/cars/my-ads');
+        
+        // DEBUG: This should show the object with 'ads' directly
+        console.log("Service Data:", data); 
+
+        // FIX: Access 'ads' directly from the returned object
         return data.ads || []; 
     },
 
@@ -57,7 +63,61 @@ const carService = {
 
     updateAdStatus: async (adId, status) => {
         return await api.patch(`/cars/${adId}/status`, { status });
+    },
+
+    getAdById: async (id) => {
+        const response = await api.get(`/cars/${id}`); 
+        // IMPORTANT: Check if your backend returns { data: { ...ad } } 
+        // or just { ...ad }. If it's the latter, use 'return response'
+        return response.data || response; 
+    },
+
+    // Update ad (Handles JSON or FormData if you're uploading new images)
+    updateAd: async (id, payload) => {
+    const formData = new FormData();
+
+    // 1. Append basic fields
+    Object.entries(payload).forEach(([key, value]) => {
+        // Skip specialized fields
+        if (!["features", "images", "existingImages"].includes(key)) {
+            if (value !== undefined && value !== null) {
+                formData.append(key, value);
+            }
+        }
+    });
+
+    // 2. Handle Features
+    if (payload.features) {
+        formData.append("features", JSON.stringify(payload.features));
     }
+
+    // 3. Handle Existing Images (The list of URLs to keep)
+    if (payload.existingImages) {
+        formData.append("existingImages", JSON.stringify(payload.existingImages));
+    }
+
+    // 4. FIX: Flatten and Append New Files
+    if (payload.images) {
+        // .flat(Infinity) solves the [[[[File]]]] nesting issue
+        const flatImages = Array.isArray(payload.images) ? payload.images.flat(Infinity) : [];
+        
+        flatImages.forEach((img) => {
+            // Extract the raw File object
+            const fileToUpload = img instanceof File ? img : img.file;
+            
+            if (fileToUpload instanceof File) {
+                formData.append("images", fileToUpload);
+            }
+        });
+    }
+
+    // 5. Submit as Multipart
+    const response = await api.patch(`/cars/update/${id}`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+    });
+    
+    return response.data;
+},
 };
 
 export default carService;

@@ -46,6 +46,9 @@ export default function MyAds() {
   const [deleteTarget, setDeleteTarget] = useState(null);
 
   const { ads, isLoading, isError, error } = useMyAds();
+
+  // ADD THIS DEBUG LINE right before your 'return' statement:
+  console.log('Component Ads State:', ads);
   const { mutate: removeAd, isPending: isDeleting } = useDeleteAd();
   const { mutate: patchAd } = usePatchAd();
 

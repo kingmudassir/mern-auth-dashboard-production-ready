@@ -18,7 +18,12 @@ const FeaturesSection = ({ features, toggleFeature, FeatureToggle }) => {
       <div className="flex flex-col gap-3">
         {FEATURE_GROUPS.map((group) => {
           const isExpanded = expandedGroup === group.group;
-          const selectedCount = group.items.filter((i) => features.includes(i)).length;
+          const selectedCount = group.items.filter((item) =>
+            features.some(
+              (f) =>
+                f.toLowerCase().replace(/[\s_]/g, '') === item.toLowerCase().replace(/[\s_]/g, '')
+            )
+          ).length;
 
           return (
             <div key={group.group} className="border border-[#E8E3DC] rounded-xl overflow-hidden">
@@ -46,14 +51,23 @@ const FeaturesSection = ({ features, toggleFeature, FeatureToggle }) => {
               {/* Accordion Content */}
               {isExpanded && (
                 <div className="p-4 grid grid-cols-2 md:grid-cols-3 gap-3 border-t border-[#E8E3DC] animate-fadeIn">
-                  {group.items.map((item) => (
-                    <FeatureToggle
-                      key={item}
-                      label={item}
-                      checked={features.includes(item)}
-                      onChange={() => toggleFeature(item)}
-                    />
-                  ))}
+                  {group.items.map((item) => {
+                    // Normalize both the DB feature and the UI label to a common format
+                    const isSelected = features.some(
+                      (f) =>
+                        f.toLowerCase().replace(/[\s_]/g, '') ===
+                        item.toLowerCase().replace(/[\s_]/g, '')
+                    );
+
+                    return (
+                      <FeatureToggle
+                        key={item}
+                        label={item}
+                        checked={isSelected}
+                        onChange={() => toggleFeature(item)}
+                      />
+                    );
+                  })}
                 </div>
               )}
             </div>

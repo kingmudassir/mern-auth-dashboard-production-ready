@@ -27,10 +27,6 @@ export default function Navbar() {
   const isAuthPage = AUTH_PAGES.includes(location.pathname);
   const isDashboard = location.pathname.startsWith('/profile');
 
-  if (isDashboard || isAuthPage) {
-    return null;
-  }
-
   // Scroll listener
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 10);
@@ -65,6 +61,10 @@ export default function Navbar() {
     }
     navigate('/');
   };
+
+  if (isDashboard || isAuthPage) {
+    return null;
+  }
 
   return (
     <>

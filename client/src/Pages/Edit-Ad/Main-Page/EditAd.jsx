@@ -28,28 +28,8 @@ import DescriptionSection from '../../Post-Ad/Functions/DescriptionSection';
 import PriceSection from '../../Post-Ad/Functions/PriceSection';
 import LocationContactSection from '../../Post-Ad/Functions/LocationContactSection';
 import ProgressBar from '../../Post-Ad/Functions/ProgressBar';
-
-// ─────────────────────────────────────────────────────────────────
-// 💡 TANSTACK INTEGRATION
-//
-//  // Fetch the existing ad:
-//  const { adId } = useParams();
-//  const { data: existingAd, isLoading } = useQuery({
-//    queryKey: ['ad', adId],
-//    queryFn: () => axios.get(`/api/ads/${adId}`).then(r => r.data),
-//  });
-//
-//  // Submit the update:
-//  const updateMutation = useMutation({
-//    mutationFn: (payload) => axios.patch(`/api/ads/${adId}`, payload),
-//    onSuccess: () => setSaved(true),
-//    onError:   (err) => setGlobalErr(err.response?.data?.message ?? 'Something went wrong.'),
-//  });
-//
-//  // Replace `MOCK_AD` with `existingAd` and
-//  // replace `simulateUpdate()` in handleSubmit with:
-//  //   updateMutation.mutate({ fields, images, features });
-// ─────────────────────────────────────────────────────────────────
+import { useAdDetail } from '../../../Hooks/Edit-Ad/useAdDetail';
+import { useUpdateAd } from '../../../Hooks/Edit-Ad/useUpdateAd';
 
 // ── Mock existing ad (replace with real fetch) ────────────────────
 const MOCK_AD = {
@@ -440,35 +420,84 @@ export default function EditAd() {
   const navigate = useNavigate();
 
   // In production, replace MOCK_AD with the useQuery result for this adId.
-  const existingAd = MOCK_AD;
+  const { data: existingAd, isLoading, isError } = useAdDetail(adId);
+  const updateMutation = useUpdateAd(adId);
 
   // ── Form state — pre-populated from existingAd ────────────────
   const [fields, setFields] = useState({
-    make: existingAd.make ?? '',
-    model: existingAd.model ?? '',
-    variant: existingAd.variant ?? '',
-    year: existingAd.year ?? '',
-    condition: existingAd.condition ?? 'Used',
-    bodyType: existingAd.bodyType ?? '',
-    color: existingAd.color ?? '',
-    engineCC: existingAd.engineCC ?? '',
-    assembly: existingAd.assembly ?? 'Local',
-    transmission: existingAd.transmission ?? '',
-    fuel: existingAd.fuel ?? '',
-    mileage: existingAd.mileage ?? '',
-    registeredIn: existingAd.registeredIn ?? '',
-    price: existingAd.price ?? '',
-    negotiable: existingAd.negotiable ?? false,
-    city: existingAd.city ?? '',
-    area: existingAd.area ?? '',
-    phone: existingAd.phone ?? '',
-    whatsapp: existingAd.whatsapp ?? false,
-    description: existingAd.description ?? '',
+    make: '',
+    model: '',
+    variant: '',
+    year: '',
+    condition: 'Used',
+    bodyType: '',
+    color: '',
+    engineCC: '',
+    assembly: 'Local',
+    transmission: '',
+    fuel: '',
+    mileage: '',
+    registeredIn: '',
+    price: '',
+    negotiable: false,
+    city: '',
+    area: '',
+    phone: '',
+    whatsapp: false,
+    description: '',
   });
 
   // Pre-populate existing images so the user sees what's already uploaded.
-  const [images, setImages] = useState(existingAd.existingImages ?? []);
-  const [features, setFeatures] = useState(existingAd.features ?? []);
+  const [images, setImages] = useState([]);
+  const [features, setFeatures] = useState([]);
+
+  useEffect(() => {
+    // Use 'car' if it exists, otherwise fallback to 'ad'
+    const source = existingAd?.car || existingAd?.ad;
+
+    if (source) {
+      console.log('Mapping from source:', source); // Debugging line
+
+      setFields({
+        make: source.make || '',
+        model: source.model || '',
+        variant: source.variant || '',
+        year: source.year?.toString() || '',
+        condition: source.condition || 'Used',
+        bodyType: source.bodyType || '',
+        color: source.color || '',
+        engineCC: source.engineCC || '',
+        assembly: source.assembly || 'Local',
+        transmission: source.transmission || '',
+        fuel: source.fuel || '',
+        mileage: source.mileage?.toString() || '',
+        registeredIn: source.registeredIn || '',
+        price: source.price?.toString() || '',
+        negotiable: source.negotiable || false,
+        city: source.city || '',
+        area: source.area || '',
+        phone: source.phone || '',
+        whatsapp: source.whatsapp || false,
+        description: source.description || '',
+      });
+
+      // Images Mapping
+      if (source.images && Array.isArray(source.images)) {
+        const formattedImages = source.images.map((img, index) => ({
+          // Use publicId from your payload, or fallback to index
+          id: img.publicId || img._id || `existing-${index}`,
+          preview: img.url,
+          isExisting: true,
+          file: null,
+        }));
+
+        setImages(formattedImages);
+      }
+
+      setFeatures(source.features || []);
+    }
+  }, [existingAd]);
+
   const [errors, setErrors] = useState({});
   const [globalErr, setGlobalErr] = useState('');
   const [saving, setSaving] = useState(false);
@@ -539,35 +568,61 @@ export default function EditAd() {
   const toggleFeature = (feat) =>
     setFeatures((p) => (p.includes(feat) ? p.filter((f) => f !== feat) : [...p, feat]));
 
-  // ── Submit ────────────────────────────────────────────────────
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     const errs = validateAll(fields);
-    if (Object.keys(errs).length) {
+
+    // 1. Validation: Check both current state and image length
+    if (Object.keys(errs).length > 0 || images.length === 0) {
       setErrors(errs);
-      const firstErr = document.querySelector('[aria-invalid="true"]');
-      firstErr?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      return;
-    }
-    if (images.length === 0) {
-      setGlobalErr('Please keep at least one photo of your vehicle.');
-      document
-        .getElementById('step-photos')
-        ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if (images.length === 0) {
+        setGlobalErr('At least one photo is required.');
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
 
-    setGlobalErr('');
     setSaving(true);
+    setGlobalErr('');
 
-    // ── Replace this block with updateMutation.mutate({ fields, images, features }) ──
-    await new Promise((r) => setTimeout(r, 1400));
-    setSaving(false);
-    setSaved(true);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    // ─────────────────────────────────────────────────────────────
+    // 2. Prepare the payload in the format the backend expects
+    // We filter based on the 'isExisting' flag you set in useEffect
+    const payload = {
+      ...fields,
+      features,
+      // Map existing images back to their original URLs/Identifiers
+      existingImages: images.filter((img) => img.isExisting).map((img) => img.preview),
+
+      // Map new files to their actual File objects
+      images: images.filter((img) => !img.isExisting).map((img) => img.file),
+    };
+
+    // 3. Execute Mutation
+    updateMutation.mutate(payload, {
+      onSuccess: () => {
+        setSaved(true);
+        setSaving(false);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      },
+      onError: (err) => {
+        setSaving(false);
+        // Catch the "At least one photo is required" from backend here
+        setGlobalErr(err.response?.data?.message || 'Update failed. Please try again.');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      },
+    });
   };
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="ea-spin text-purple-600" size={40} />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return <div className="p-20 text-center">Failed to load ad. It may have been deleted.</div>;
+  }
 
   return (
     <>
@@ -603,7 +658,7 @@ export default function EditAd() {
               className="text-[2rem] font-extrabold tracking-[-0.04em] leading-tight"
               style={{ color: '#1A1523', fontFamily: "'Syne', sans-serif" }}
             >
-              {existingAd.year} {existingAd.make} {existingAd.model}
+              {existingAd?.car?.year} {existingAd?.car?.make} {existingAd?.car?.model}{' '}
             </h1>
             <p
               className="text-[0.875rem] mt-1"

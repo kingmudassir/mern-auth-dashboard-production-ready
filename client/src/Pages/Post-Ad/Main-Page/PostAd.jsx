@@ -1,14 +1,11 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import CAR_DATA from '../JSON-DATA/make_model.json';
 
 import {
   Upload,
   X,
   Plus,
-  ChevronDown,
   AlertCircle,
-  CheckCircle2,
   ArrowRight,
   Car,
   MapPin,
@@ -19,16 +16,16 @@ import {
   Check,
   Info,
 } from 'lucide-react';
-import VehicleInfoSection from './Post-Ad/Functions/VehicleInfoSection';
-import PhotosSection from './Post-Ad/Functions/PhotosSection';
-import FeaturesSection from './Post-Ad/Functions/FeaturesSection';
-import DescriptionSection from './Post-Ad/Functions/DescriptionSection';
-import PriceSection from './Post-Ad/Functions/PriceSection';
-import LocationContactSection from './Post-Ad/Functions/LocationContactSection';
-import SubmitSection from './Post-Ad/Functions/SubmitSection';
-import SuccessSection from './Post-Ad/Functions/SuccessSection';
-import ProgressBar from './Post-Ad/Functions/ProgressBar';
-import { usePostAd } from '../Hooks/Post-Ad/usePostAd';
+
+import VehicleInfoSection from '../../Post-Ad/Functions/VehicleInfoSection';
+import PhotosSection from '../../Post-Ad/Functions/PhotosSection';
+import FeaturesSection from '../../Post-Ad/Functions/FeaturesSection';
+import DescriptionSection from '../../Post-Ad/Functions/DescriptionSection';
+import PriceSection from '../../Post-Ad/Functions/PriceSection';
+import LocationContactSection from '../../Post-Ad/Functions/LocationContactSection';
+import SubmitSection from '../../Post-Ad/Functions/SubmitSection';
+import ProgressBar from '../../Post-Ad/Functions/ProgressBar';
+import { usePostAd } from '../../../Hooks/Post-Ad/usePostAd';
 
 const MAX_IMAGES = 10;
 
@@ -53,8 +50,6 @@ function validateAll(fields) {
     e.description = 'Description must be at least 30 characters';
   return e;
 }
-
-// ── Shared primitives ─────────────────────────────────────────────
 
 // ── Image uploader ────────────────────────────────────────────────
 function ImageUploader({ images, onAdd, onRemove, onSetPrimary }) {
@@ -82,7 +77,6 @@ function ImageUploader({ images, onAdd, onRemove, onSetPrimary }) {
 
   return (
     <div>
-      {/* Upload zone */}
       {images.length < MAX_IMAGES && (
         <div
           className="pa-dropzone rounded-2xl flex flex-col items-center justify-center gap-3 cursor-pointer"
@@ -98,7 +92,6 @@ function ImageUploader({ images, onAdd, onRemove, onSetPrimary }) {
           <div
             className="w-12 h-12 rounded-xl flex items-center justify-center"
             style={{ background: 'rgba(108,60,225,0.08)' }}
-            aria-hidden="true"
           >
             <Upload size={20} strokeWidth={1.8} style={{ color: '#6C3CE1' }} />
           </div>
@@ -128,7 +121,6 @@ function ImageUploader({ images, onAdd, onRemove, onSetPrimary }) {
         </div>
       )}
 
-      {/* Preview grid */}
       {images.length > 0 && (
         <div className="grid grid-cols-3 sm:grid-cols-5 gap-3 mt-4">
           {images.map((img, i) => (
@@ -152,14 +144,11 @@ function ImageUploader({ images, onAdd, onRemove, onSetPrimary }) {
                       background: 'rgba(232,98,42,0.85)',
                       fontFamily: "'DM Sans', sans-serif",
                     }}
-                    aria-label="Primary photo"
                   >
                     Cover
                   </span>
                 )}
               </div>
-
-              {/* Hover controls */}
               <div
                 className="absolute inset-0 rounded-xl flex items-center justify-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150"
                 style={{ background: 'rgba(26,21,35,0.45)' }}
@@ -174,7 +163,6 @@ function ImageUploader({ images, onAdd, onRemove, onSetPrimary }) {
                       border: 'none',
                       cursor: 'pointer',
                     }}
-                    aria-label="Set as cover photo"
                     title="Set as cover"
                   >
                     <Star size={12} strokeWidth={2} style={{ color: '#E8622A' }} />
@@ -185,7 +173,6 @@ function ImageUploader({ images, onAdd, onRemove, onSetPrimary }) {
                   onClick={() => onRemove(img.id)}
                   className="w-7 h-7 rounded-lg flex items-center justify-center"
                   style={{ background: 'rgba(255,255,255,0.9)', border: 'none', cursor: 'pointer' }}
-                  aria-label="Remove photo"
                   title="Remove"
                 >
                   <X size={12} strokeWidth={2.5} style={{ color: '#E8622A' }} />
@@ -194,7 +181,6 @@ function ImageUploader({ images, onAdd, onRemove, onSetPrimary }) {
             </div>
           ))}
 
-          {/* Add more tile */}
           {images.length < MAX_IMAGES && (
             <button
               type="button"
@@ -209,9 +195,8 @@ function ImageUploader({ images, onAdd, onRemove, onSetPrimary }) {
                 e.currentTarget.style.borderColor = '#E8E3DC';
                 e.currentTarget.style.background = '#FAFAF9';
               }}
-              aria-label="Add more photos"
             >
-              <Plus size={16} strokeWidth={2} style={{ color: '#C4BDD0' }} aria-hidden="true" />
+              <Plus size={16} strokeWidth={2} style={{ color: '#C4BDD0' }} />
               <span
                 className="text-[0.65rem]"
                 style={{ color: '#C4BDD0', fontFamily: "'DM Sans', sans-serif" }}
@@ -227,7 +212,7 @@ function ImageUploader({ images, onAdd, onRemove, onSetPrimary }) {
         className="text-[0.72rem] mt-3 flex items-center gap-1.5"
         style={{ color: '#8A8390', fontFamily: "'DM Sans', sans-serif" }}
       >
-        <Info size={11} strokeWidth={2} aria-hidden="true" />
+        <Info size={11} strokeWidth={2} />
         First photo will be the cover. Hover a photo to set a different one as cover or remove it.
       </p>
     </div>
@@ -254,7 +239,6 @@ function FeatureToggle({ label, checked, onChange }) {
           border: checked ? 'none' : '1.5px solid #C4BDD0',
           background: checked ? '#6C3CE1' : 'transparent',
         }}
-        aria-hidden="true"
       >
         {checked && <Check size={10} strokeWidth={3} style={{ color: '#fff' }} />}
       </span>
@@ -272,6 +256,115 @@ function FeatureToggle({ label, checked, onChange }) {
   );
 }
 
+// ── Success screen ────────────────────────────────────────────────
+function PendingSuccessScreen({ fields, onReset, onGoToAds }) {
+  return (
+    <div
+      className="min-h-screen flex items-center justify-center px-4"
+      style={{ background: '#F7F4F0', paddingTop: '66px' }}
+    >
+      <div
+        className="w-full max-w-md rounded-3xl p-10 text-center"
+        style={{
+          background: '#FFFFFF',
+          border: '1.5px solid #E8E3DC',
+          boxShadow: '0 12px 40px rgba(26,21,35,0.08)',
+        }}
+      >
+        {/* Icon */}
+        <div
+          className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6"
+          style={{ background: 'rgba(217,119,6,0.1)' }}
+        >
+          <svg
+            width="28"
+            height="28"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#D97706"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+        </div>
+
+        {/* Heading */}
+        <h2
+          className="text-[1.5rem] font-extrabold tracking-[-0.04em] mb-2"
+          style={{ color: '#1A1523', fontFamily: "'Syne', sans-serif" }}
+        >
+          Ad Submitted for Review
+        </h2>
+
+        {/* Car name */}
+        <p
+          className="text-[0.88rem] font-semibold mb-3"
+          style={{ color: '#6C3CE1', fontFamily: "'DM Sans', sans-serif" }}
+        >
+          {[fields.year, fields.make, fields.model].filter(Boolean).join(' ')}
+        </p>
+
+        {/* Explanation */}
+        <p
+          className="text-[0.82rem] leading-relaxed mb-6"
+          style={{ color: '#8A8390', fontFamily: "'DM Sans', sans-serif" }}
+        >
+          Your listing is now <strong style={{ color: '#D97706' }}>under review</strong>. Our team
+          will check it against our listing guidelines and approve it — usually within a few hours.
+          You'll be able to track its status in <strong style={{ color: '#1A1523' }}>My Ads</strong>
+          .
+        </p>
+
+        {/* Status indicator */}
+        <div
+          className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl mb-6"
+          style={{ background: 'rgba(217,119,6,0.07)', border: '1px solid rgba(217,119,6,0.2)' }}
+        >
+          <span className="w-2 h-2 rounded-full" style={{ background: '#D97706' }} />
+          <span
+            className="text-[0.78rem] font-semibold"
+            style={{ color: '#D97706', fontFamily: "'DM Sans', sans-serif" }}
+          >
+            Pending approval
+          </span>
+        </div>
+
+        {/* Actions */}
+        <div className="flex flex-col gap-3">
+          <button
+            type="button"
+            onClick={onGoToAds}
+            className="w-full py-3 rounded-xl text-[0.88rem] font-bold text-white transition-opacity hover:opacity-90"
+            style={{
+              background: 'linear-gradient(135deg, #6C3CE1, #8B5CF6)',
+              fontFamily: "'DM Sans', sans-serif",
+            }}
+          >
+            View in My Ads
+          </button>
+          <button
+            type="button"
+            onClick={onReset}
+            className="w-full py-3 rounded-xl text-[0.88rem] font-medium border transition-colors"
+            style={{
+              color: '#8A8390',
+              borderColor: '#E8E3DC',
+              background: 'transparent',
+              fontFamily: "'DM Sans', sans-serif",
+            }}
+          >
+            Post Another Ad
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Progress steps ────────────────────────────────────────────────
 const STEPS = [
   { label: 'Vehicle', icon: Car },
@@ -281,34 +374,35 @@ const STEPS = [
 ];
 
 // ── Main component ────────────────────────────────────────────────
+const EMPTY_FIELDS = {
+  make: '',
+  model: '',
+  variant: '',
+  customVariant: '',
+  year: '',
+  condition: 'Used',
+  bodyType: '',
+  color: '',
+  engineCC: '',
+  assembly: 'Local',
+  transmission: '',
+  fuel: '',
+  mileage: '',
+  registeredIn: '',
+  price: '',
+  negotiable: false,
+  city: '',
+  area: '',
+  phone: '',
+  whatsapp: false,
+  description: '',
+};
+
 export default function PostAd() {
   const navigate = useNavigate();
   const [submitted, setSubmitted] = useState(false);
-
   const [activeStep, setActiveStep] = React.useState(0);
-  const [fields, setFields] = useState({
-    make: '',
-    model: '',
-    variant: '',
-    year: '',
-    condition: 'Used',
-    bodyType: '',
-    color: '',
-    engineCC: '',
-    assembly: 'Local',
-    transmission: '',
-    fuel: '',
-    mileage: '',
-    registeredIn: '',
-    price: '',
-    negotiable: false,
-    city: '',
-    area: '',
-    phone: '',
-    whatsapp: false,
-    description: '',
-  });
-
+  const [fields, setFields] = useState({ ...EMPTY_FIELDS });
   const [images, setImages] = useState([]);
   const [features, setFeatures] = useState([]);
   const [errors, setErrors] = useState({});
@@ -316,7 +410,6 @@ export default function PostAd() {
 
   const set = (key) => (e) => {
     const val = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
-
     setFields((p) => {
       const next = { ...p, [key]: val };
       if (key === 'make') {
@@ -328,11 +421,10 @@ export default function PostAd() {
       }
       return next;
     });
-
     if (errors[key]) setErrors((p) => ({ ...p, [key]: '' }));
   };
 
-  // Calculate which step is "active" based on actual data entered
+  // Progress tracking
   const vehicleDone = !!(
     fields.make &&
     fields.model &&
@@ -351,6 +443,7 @@ export default function PostAd() {
   );
   const contactDone = !!(fields.city && fields.phone && isPhone(fields.phone));
   const completedSteps = [vehicleDone, photosDone, detailsDone, contactDone];
+
   const derivedActiveStep = submitted
     ? 4
     : contactDone
@@ -364,13 +457,9 @@ export default function PostAd() {
             : 0;
 
   const scrollToSection = (index) => {
-    const sectionIds = ['step-vehicle', 'step-photos', 'step-details', 'step-contact'];
-    const element = document.getElementById(sectionIds[index]);
-
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      setActiveStep(index);
-    }
+    const ids = ['step-vehicle', 'step-photos', 'step-details', 'step-contact'];
+    document.getElementById(ids[index])?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setActiveStep(index);
   };
 
   const toggleFeature = (feat) => {
@@ -398,8 +487,9 @@ export default function PostAd() {
     const errs = validateAll(fields);
     if (Object.keys(errs).length) {
       setErrors(errs);
-      const firstErr = document.querySelector('[aria-invalid="true"]');
-      firstErr?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      document
+        .querySelector('[aria-invalid="true"]')
+        ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
     if (images.length === 0) {
@@ -415,42 +505,25 @@ export default function PostAd() {
 
   const handleReset = () => {
     setSubmitted(false);
-    setFields({
-      make: '',
-      model: '',
-      variant: '',
-      year: '',
-      condition: 'Used',
-      bodyType: '',
-      color: '',
-      engineCC: '',
-      assembly: 'Local',
-      transmission: '',
-      fuel: '',
-      mileage: '',
-      registeredIn: '',
-      price: '',
-      negotiable: false,
-      city: '',
-      area: '',
-      phone: '',
-      whatsapp: false,
-      description: '',
-    });
+    setFields({ ...EMPTY_FIELDS });
     setImages([]);
     setFeatures([]);
   };
 
   if (submitted) {
     return (
-      <SuccessSection fields={fields} onReset={handleReset} onBrowse={() => navigate('/cars')} />
+      <PendingSuccessScreen
+        fields={fields}
+        onReset={handleReset}
+        onGoToAds={() => navigate('/profile/my-ads')}
+      />
     );
   }
 
   return (
     <div className="pa-bg" style={{ paddingTop: '66px' }}>
       <div className="pa-inner">
-        {/* Page heading */}
+        {/* Heading */}
         <div className="mb-8">
           <p
             className="text-[0.72rem] font-bold uppercase tracking-widest mb-1"
@@ -468,31 +541,25 @@ export default function PostAd() {
             className="text-[0.875rem] mt-1"
             style={{ color: '#8A8390', fontFamily: "'DM Sans', sans-serif" }}
           >
-            Fill in the details below and your listing will be live in minutes.
+            Fill in the details below. Your ad will go live after a quick review by our team.
           </p>
         </div>
+
         <ProgressBar
           activeStep={derivedActiveStep}
           steps={STEPS}
           onStepClick={scrollToSection}
-          completedSteps={completedSteps} // ← add this
-        />{' '}
+          completedSteps={completedSteps}
+        />
+
         {/* Global error */}
         {globalErr && (
           <div
             className="flex items-start gap-2.5 rounded-xl px-4 py-3 mb-5"
-            style={{
-              background: 'rgba(232,98,42,0.07)',
-              border: '1px solid rgba(232,98,42,0.25)',
-            }}
+            style={{ background: 'rgba(232,98,42,0.07)', border: '1px solid rgba(232,98,42,0.25)' }}
             role="alert"
           >
-            <AlertCircle
-              size={15}
-              strokeWidth={2}
-              style={{ color: '#E8622A', flexShrink: 0 }}
-              aria-hidden="true"
-            />
+            <AlertCircle size={15} strokeWidth={2} style={{ color: '#E8622A', flexShrink: 0 }} />
             <p
               className="text-[0.8rem] font-medium"
               style={{ color: '#C4531F', fontFamily: "'DM Sans', sans-serif" }}
@@ -501,13 +568,21 @@ export default function PostAd() {
             </p>
           </div>
         )}
+
         <form onSubmit={handleSubmit} noValidate aria-label="Post vehicle ad">
           <div className="flex flex-col gap-5">
-            {/* ══ STEP 1 — Vehicle Info ══════════════════════ */}
+            {/* STEP 1 — Vehicle Info */}
             <div id="step-vehicle">
-              <VehicleInfoSection fields={fields} errors={errors} set={set} setFields={setFields} />
+              <VehicleInfoSection
+                fields={fields}
+                errors={errors}
+                set={set}
+                setFields={setFields}
+                setFeatures={setFeatures}
+              />
             </div>
-            {/* ══ STEP 2 — Photos ═══════════════════════════ */}
+
+            {/* STEP 2 — Photos */}
             <div id="step-photos">
               <PhotosSection
                 images={images}
@@ -518,7 +593,7 @@ export default function PostAd() {
               />
             </div>
 
-            {/* ══ STEP 3 — Features ══════════════════════════ */}
+            {/* STEP 3 — Details */}
             <div id="step-details" className="flex flex-col gap-5">
               <FeaturesSection
                 features={features}
@@ -529,11 +604,11 @@ export default function PostAd() {
               <PriceSection fields={fields} errors={errors} set={set} />
             </div>
 
-            {/* ══ STEP 6 — Location & Contact ═══════════════ */}
+            {/* STEP 4 — Contact */}
             <div id="step-contact">
               <LocationContactSection fields={fields} errors={errors} set={set} />
             </div>
-            {/* ══ Submit ════════════════════════════════════ */}
+
             <SubmitSection loading={postAdMutation.isPending} />
           </div>
         </form>
