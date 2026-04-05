@@ -11,33 +11,37 @@ export const useToggleSave = () => {
             const data = response?.data ?? response;
             const isSaved = data?.saved;
 
-            // 1. UPDATE THE INDIVIDUAL CAR CACHE
-            // This is what the Listing page uses. We update it manually so it stays 
-            // set to the new value without waiting for a refetch.
+            // 1. UPDATE THE INDIVIDUAL CAR DETAIL CACHE (used by CarListing page)
             queryClient.setQueryData(['car', carId], (old) => {
                 if (!old) return old;
+                return { ...old, car: { ...old.car, isSaved } };
+            });
+
+            // 2. UPDATE ALL MARKETPLACE LIST CACHE ENTRIES
+            // The marketplace uses ['cars', params] where params is the query object.
+            // We don't know which params keys are active, so we walk every cache entry
+            // whose key starts with 'cars' and patch the matching car in-place.
+            queryClient.setQueriesData({ queryKey: ['cars'] }, (old) => {
+                if (!old?.cars) return old;
                 return {
                     ...old,
-                    car: {
-                        ...old.car,
-                        isSaved: isSaved,
-                    },
+                    cars: old.cars.map((car) =>
+                        (car._id ?? car.id) === carId ? { ...car, isSaved } : car
+                    ),
                 };
             });
 
-            // 2. UPDATE THE SAVED ADS LIST CACHE
+            // 3. UPDATE THE SAVED ADS LIST CACHE (optimistic remove on unsave)
             queryClient.setQueryData(['saved-ads'], (old = []) => {
                 if (!isSaved) {
-                    // Remove it immediately for an instant "unsave" response
                     return old.filter((car) => (car._id ?? car.id) !== carId);
                 }
                 return old;
             });
 
-            // 3. SYNC STRATEGY
-            // ONLY invalidate the list. Do NOT invalidate ['car', carId] immediately, 
-            // as the server might not have finished the write-operation, 
-            // causing a "rollback" to the old data.
+            // 4. SYNC: only invalidate the list, not the individual car cache
+            // (server write might not be complete yet — invalidating ['car', carId]
+            //  immediately can cause a rollback to the old isSaved value)
             queryClient.invalidateQueries({ queryKey: ['saved-ads'] });
         },
     });

@@ -1,93 +1,101 @@
+// ─────────────────────────────────────────────────────────────────
+// FILE: models/reportSchema.js
+// ─────────────────────────────────────────────────────────────────
 import mongoose from "mongoose";
 
 const reportSchema = new mongoose.Schema(
     {
-        type: {
-            type: String,
-            enum: ["fraudulent_listing", "fake_seller", "wrong_price", "spam_listing", "inappropriate_content", "other"],
-            required: true
-        },
-
-        category: {
-            type: String,
-            enum: ["listing", "user"],
-            required: true
-        },
-
-        targetId: {
+        // ── What is being reported ────────────────────────────────
+        car: {
             type: mongoose.Schema.Types.ObjectId,
-            refPath: "targetModel",
-            required: true
+            ref: "Car",
+            required: [true, "Car reference is required."],
+            index: true,
         },
 
-        targetModel: {
-            type: String,
-            enum: ["CarListing", "User"],
-            required: true
-        },
-
+        // ── Who filed it ──────────────────────────────────────────
         reportedBy: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "User",
-            required: true
+            required: [true, "Reporter reference is required."],
         },
 
+        // ── What's wrong ──────────────────────────────────────────
+        reason: {
+            type: String,
+            required: [true, "A reason is required."],
+            enum: [
+                "Misleading price or description",
+                "Duplicate listing",
+                "Fraudulent or scam activity",
+                "Wrong category",
+                "Offensive content",
+                "Car already sold",
+                "Fake photos or stolen images",
+                "Other",
+            ],
+        },
+
+        // Optional free-text detail from the reporter
         description: {
             type: String,
-            maxLength: [1000, "Description cannot exceed 1000 characters"],
+            maxLength: [1000, "Description cannot exceed 1000 characters."],
+            trim: true,
+            default: undefined,
+        },
+
+        // ── Lifecycle ─────────────────────────────────────────────
+        status: {
+            type: String,
+            enum: ["pending", "resolved", "dismissed"],
+            default: "pending",
+            index: true,
         },
 
         priority: {
             type: String,
             enum: ["low", "medium", "high"],
-            default: "medium"
+            default: "low",
         },
 
-        status: {
-            type: String,
-            enum: ["open", "investigating", "resolved", "dismissed"],
-            default: "open"
-        },
-
-        resolution: {
-            type: String,
-            enum: ["content_removed", "user_warned", "user_banned", "no_action", "verified_false"],
-            default: null
-        },
-
+        // ── Resolution audit trail ────────────────────────────────
         resolvedBy: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "User",
-            default: null
-        },
-
-        resolutionNotes: {
-            type: String,
-            maxLength: [2000, "Resolution notes cannot exceed 2000 characters"],
-            default: null
+            default: undefined,
         },
 
         resolvedAt: {
             type: Date,
-            default: null
+            default: undefined,
         },
 
-        evidence: [
-            {
-                type: String, // URL to image or document
-                uploadedAt: Date
-            }
-        ]
+        resolution: {
+            type: String,
+            enum: [
+                "content_removed",
+                "user_warned",
+                "user_banned",
+                "no_action",
+                "verified_false",
+            ],
+            default: undefined,
+        },
+
+        resolutionNotes: {
+            type: String,
+            trim: true,
+            default: undefined,
+        },
     },
     {
-        timestamps: true
+        timestamps: true,
     }
 );
 
-reportSchema.index({ status: 1 });
-reportSchema.index({ priority: 1 });
-reportSchema.index({ category: 1 });
-reportSchema.index({ createdAt: -1 });
-reportSchema.index({ reportedBy: 1 });
+// ── Compound unique index: one report per user per car ────────────
+// This enforces the duplicate-report rule at the DB level as a safety net,
+// in addition to the application-level check in the controller.
+reportSchema.index({ car: 1, reportedBy: 1 }, { unique: true });
 
 export const Report = mongoose.model("Report", reportSchema);

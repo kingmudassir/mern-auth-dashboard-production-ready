@@ -1,165 +1,22 @@
+// FILE: pages/Admin/Dashboard/Dashboard.jsx
 import { useState, useEffect } from 'react';
 import {
   Users,
   Car,
   ShieldOff,
   Clock,
-  TrendingUp,
-  TrendingDown,
   Flag,
   AlertTriangle,
-  CheckCircle,
-  XCircle,
-  Eye,
-  MoreHorizontal,
   ArrowUpRight,
   Activity,
-  DollarSign,
   MapPin,
 } from 'lucide-react';
-import { useAllUsers } from '../../../Hooks/Admin-Hook/useAllUsers';
 import { useAllListings } from '../../../Hooks/Admin-Hook/All-Listings/useAllListings';
-import { useReports } from '../../../Hooks/Admin-Hook/Reports/useReports';
 import { useAdminStats } from '../../../Hooks/Admin-Hook/useAdminStats';
 import StatCards from '../Components/StatCards';
 import WeeklyActivityCard from '../Components/WeeklyActivityCard';
 
-// ── Mock Data ─────────────────────────────────────────────────────
-const STATS = [
-  {
-    id: 'total_users',
-    label: 'Total Users',
-    value: '24,891',
-    change: '+12.4%',
-    trend: 'up',
-    sub: 'vs last month',
-    icon: Users,
-    accent: '#6C3CE1',
-    bg: 'rgba(108,60,225,0.08)',
-  },
-  {
-    id: 'active_listings',
-    label: 'Active Listings',
-    value: '8,342',
-    change: '+7.1%',
-    trend: 'up',
-    sub: 'vs last month',
-    icon: Car,
-    accent: '#2563EB',
-    bg: 'rgba(37,99,235,0.08)',
-  },
-  {
-    id: 'banned_users',
-    label: 'Banned Users',
-    value: '183',
-    change: '+3.2%',
-    trend: 'up',
-    sub: 'vs last month',
-    icon: ShieldOff,
-    accent: '#E8622A',
-    bg: 'rgba(232,98,42,0.08)',
-  },
-  {
-    id: 'pending_approval',
-    label: 'Pending Approval',
-    value: '56',
-    change: '-18.7%',
-    trend: 'down',
-    sub: 'vs last month',
-    icon: Clock,
-    accent: '#059669',
-    bg: 'rgba(5,150,105,0.08)',
-  },
-];
-
-const RECENT_LISTINGS = [
-  {
-    id: 1,
-    title: 'Toyota Corolla 2021',
-    price: 'PKR 42L',
-    seller: 'Ayesha Khan',
-    city: 'Karachi',
-    status: 'pending',
-    posted: '5 min ago',
-    img: '🚗',
-  },
-  {
-    id: 2,
-    title: 'Honda Civic 2020',
-    price: 'PKR 55L',
-    seller: 'Bilal Raza',
-    city: 'Lahore',
-    status: 'flagged',
-    posted: '22 min ago',
-    img: '🚙',
-  },
-  {
-    id: 3,
-    title: 'Suzuki Alto 2022',
-    price: 'PKR 21L',
-    seller: 'Usman Tariq',
-    city: 'Rawalpindi',
-    status: 'approved',
-    posted: '1 hr ago',
-    img: '🚘',
-  },
-  {
-    id: 4,
-    title: 'Kia Sportage 2023',
-    price: 'PKR 98L',
-    seller: 'Kamran Ali',
-    city: 'Multan',
-    status: 'pending',
-    posted: '2 hr ago',
-    img: '🚕',
-  },
-  {
-    id: 5,
-    title: 'Toyota Prado 2019',
-    price: 'PKR 1.8Cr',
-    seller: 'Sana Mirza',
-    city: 'Islamabad',
-    status: 'approved',
-    posted: '4 hr ago',
-    img: '🛻',
-  },
-];
-
-const REPORTS = [
-  {
-    id: 1,
-    type: 'Fraudulent Listing',
-    target: 'Honda Civic 2020',
-    reporter: 'M. Farhan',
-    priority: 'high',
-    time: '10 min ago',
-  },
-  {
-    id: 2,
-    type: 'Fake Seller',
-    target: 'Hina Baig',
-    reporter: 'A. Siddiqui',
-    priority: 'high',
-    time: '45 min ago',
-  },
-  {
-    id: 3,
-    type: 'Wrong Price',
-    target: 'Toyota Prado 2019',
-    reporter: 'Z. Ahmed',
-    priority: 'low',
-    time: '2 hr ago',
-  },
-  {
-    id: 4,
-    type: 'Spam Listing',
-    target: 'Mehran 2015',
-    reporter: 'S. Naqvi',
-    priority: 'medium',
-    time: '3 hr ago',
-  },
-];
-
+// ── Static ────────────────────────────────────────────────────────
 const TOP_CITIES = [
   { city: 'Karachi', listings: 2841, pct: 34 },
   { city: 'Lahore', listings: 2108, pct: 25 },
@@ -169,25 +26,34 @@ const TOP_CITIES = [
   { city: 'Multan', listings: 452, pct: 5.4 },
 ];
 
-//TODO: This will stay.
 const STATUS_CONFIG = {
   active: { label: 'Active', dot: '#059669', bg: 'rgba(5,150,105,0.08)', text: '#059669' },
   pending: { label: 'Pending', dot: '#D97706', bg: 'rgba(217,119,6,0.08)', text: '#D97706' },
+  rejected: { label: 'Rejected', dot: '#DC2626', bg: 'rgba(220,38,38,0.08)', text: '#DC2626' },
+  sold: { label: 'Sold', dot: '#6B7280', bg: 'rgba(107,114,128,0.08)', text: '#6B7280' },
   banned: { label: 'Banned', dot: '#DC2626', bg: 'rgba(220,38,38,0.08)', text: '#DC2626' },
   flagged: { label: 'Flagged', dot: '#E8622A', bg: 'rgba(232,98,42,0.08)', text: '#E8622A' },
   approved: { label: 'Approved', dot: '#059669', bg: 'rgba(5,150,105,0.08)', text: '#059669' },
 };
 
-//TODO: This will stay.
 const PRIORITY_CONFIG = {
   high: { label: 'High', bg: 'rgba(220,38,38,0.08)', text: '#DC2626' },
   medium: { label: 'Med', bg: 'rgba(217,119,6,0.08)', text: '#D97706' },
   low: { label: 'Low', bg: 'rgba(5,150,105,0.08)', text: '#059669' },
 };
 
-//TODO: This will go.
+// ── Helpers ───────────────────────────────────────────────────────
+const initials = (name = '') =>
+  name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join('')
+    .toUpperCase() || '??';
+
 function StatusBadge({ status }) {
-  const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.active;
+  const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.pending;
   return (
     <span
       className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[0.7rem] font-semibold"
@@ -199,48 +65,38 @@ function StatusBadge({ status }) {
   );
 }
 
-const initials = (name = '') => {
-  if (!name) return '??'; // Fallback for missing names
-  return name
-    .split(' ')
-    .filter(Boolean) // Remove extra spaces
-    .slice(0, 2)
-    .map((w) => w[0])
-    .join('')
-    .toUpperCase();
-};
-
-//TODO: This will be replaced by a function that gets only first two initials from the name and puts them as the image.
-function AvatarBubble({ initials: text, size = 32, accent = '#6C3CE1' }) {
-  const colors = {
-    AK: '#6C3CE1',
-    BR: '#2563EB',
-    SM: '#059669',
-    UT: '#D97706',
-    HB: '#DC2626',
-    KA: '#0891B2',
-  };
-  const bg = colors[text] || accent;
+function AvatarBubble({ name = '', size = 32 }) {
+  // Deterministic color from name string so it's stable across renders
+  const COLORS = [
+    '#6C3CE1',
+    '#2563EB',
+    '#059669',
+    '#D97706',
+    '#DC2626',
+    '#0891B2',
+    '#7C3AED',
+    '#E8622A',
+  ];
+  const idx = name.charCodeAt(0) % COLORS.length || 0;
   return (
     <div
       className="rounded-xl flex items-center justify-center font-bold text-white shrink-0"
       style={{
         width: size,
         height: size,
-        background: bg,
+        background: COLORS[idx],
         fontSize: size * 0.3,
         fontFamily: "'Syne', sans-serif",
       }}
     >
-      {text}
+      {initials(name)}
     </div>
   );
 }
 
-//TODO: Fetch real data here. Fetch listings of this week. Fetch new users from this week. [New listings = Purple] [New users = Orange].
 function MiniBarChart({ data }) {
-  const maxListings = Math.max(...data.map((d) => d.listings));
-  const maxUsers = Math.max(...data.map((d) => d.users));
+  const maxListings = Math.max(...data.map((d) => d.listings), 1);
+  const maxUsers = Math.max(...data.map((d) => d.users), 1);
   return (
     <div className="flex items-end gap-1.5 h-20">
       {data.map((d, i) => (
@@ -282,20 +138,97 @@ export default function Dashboard() {
     setMounted(true);
   }, []);
 
-  // Fetch real data
   const { data: statsData } = useAdminStats();
-  const { data: usersData } = useAllUsers();
   const { data: listingsData } = useAllListings({ limit: 5 });
-  const { data: reportsData } = useReports({ status: 'open', limit: 5 });
 
-  const stats = STATS;
+  const s = statsData?.stats;
 
-  const recentUsers =
-    usersData?.users
-      ?.filter((u) => u.status === 'active' || (!u.isBanned && u.isAccountVerified))
-      ?.slice(0, 6) || [];
-  const recentListings = listingsData?.listings?.slice(0, 5) || RECENT_LISTINGS;
-  const reports = reportsData?.reports || REPORTS;
+  const formatChange = (pct, dir) => {
+    if (pct === undefined || pct === null) return '';
+    if (pct > 0) return `+${pct}%`;
+    if (pct < 0) return `${pct}%`;
+    if (dir === 'up') return '+0%';
+    if (dir === 'down') return '-0%';
+    return '';
+  };
+
+  // ── Stat cards (all real data) ────────────────────────────────
+  const statCards = [
+    {
+      id: 'total_users',
+      label: 'Total Users',
+      value: s?.totals?.users ?? '—',
+      sub: 'vs last month',
+      change: formatChange(s?.activeUsers?.trend, s?.activeUsers?.direction),
+      trend: s?.activeUsers?.direction ?? 'neutral',
+      icon: Users,
+      bg: 'rgba(108,60,225,0.08)',
+      accent: '#6C3CE1',
+    },
+    {
+      id: 'active_listings',
+      label: 'Active Listings',
+      value: s?.totals?.activeListings ?? '—',
+      sub: 'vs last month',
+      change: formatChange(s?.activeListings?.trend, s?.activeListings?.direction),
+      trend: s?.activeListings?.direction ?? 'neutral',
+      icon: Car,
+      accent: '#2563EB',
+      bg: 'rgba(37,99,235,0.08)',
+    },
+    {
+      id: 'banned_users',
+      label: 'Banned Users',
+      value: s?.totals?.bannedUsers ?? '—',
+      sub: 'vs last month',
+      change: formatChange(s?.bannedUsers?.trend, s?.bannedUsers?.direction),
+      trend: s?.bannedUsers?.direction ?? 'neutral',
+      icon: ShieldOff,
+      accent: '#E8622A',
+      bg: 'rgba(232,98,42,0.08)',
+    },
+    {
+      id: 'pending_approval',
+      label: 'Pending Approval',
+      value: s?.totals?.pendingListings ?? '—',
+      sub: 'vs last month',
+      change: formatChange(s?.pendingListings?.trend, s?.pendingListings?.direction),
+      trend: s?.pendingListings?.direction ?? 'neutral',
+      icon: Clock,
+      accent: '#059669',
+      bg: 'rgba(5,150,105,0.08)',
+    },
+  ];
+
+  // ── Chart ─────────────────────────────────────────────────────
+  const weeklyData = s?.weeklyActivity || [];
+  const legends = [
+    { label: 'Listings', color: 'rgba(108,60,225,0.7)' },
+    { label: 'Users', color: 'rgba(232,98,42,0.6)' },
+  ];
+  const weeklyStats = [
+    {
+      label: 'New listings this week',
+      value: weeklyData.reduce((a, d) => a + (d.listings || 0), 0),
+      icon: Car,
+      color: '#6C3CE1',
+    },
+    {
+      label: 'New users this week',
+      value: s?.newUsers?.thisWeek ?? 0,
+      icon: Users,
+      color: '#E8622A',
+    },
+  ];
+
+  // ── Reports queue (from backend via stats endpoint) ───────────
+  const reports = s?.recentReports || [];
+
+  // ── Recent users ──────────────────────────────────────────────
+  const recentUsers = s?.recentUsers || [];
+
+  // ── Recent listings (prefer stats endpoint, fall back to useAllListings) ──
+  const recentListings = s?.recentListings || listingsData?.listings?.slice(0, 5) || [];
 
   const now = new Date();
   const timeStr = now.toLocaleTimeString('en-PK', { hour: '2-digit', minute: '2-digit' });
@@ -305,90 +238,6 @@ export default function Dashboard() {
     day: 'numeric',
     year: 'numeric',
   });
-
-  const formatChange = (percentage, direction) => {
-    if (percentage > 0) return `+${percentage}%`;
-    if (percentage < 0) return `${percentage}%`;
-    if (direction === 'up') return '+0%';
-    if (direction === 'down') return '-0%';
-    return ''; // neutral
-  };
-
-  //TODO:WORKING HERE RIGHT NOW
-  //TOTAL USERS STATS CARD LOGIC
-  const totalUsers = statsData?.stats?.totals?.users || 0;
-  const totalUsersTrend = statsData?.stats?.activeUsers?.trend ?? 0;
-  const totalUsersDirection = statsData?.stats?.activeUsers?.direction ?? 'neutral';
-
-  //Banned USERS STATS CARD LOGIC
-  const bannedUsers = statsData?.stats?.totals?.bannedUsers || 0;
-  const bannedUsersTrend = statsData?.stats?.bannedUsers?.trend ?? 0;
-  const bannedUsersDirection = statsData?.stats?.bannedUsers?.direction ?? 'neutral';
-  const data_for_status_cards = [
-    {
-      id: 'total_users',
-      label: 'Total Users',
-      value: totalUsers || 0,
-      sub: 'vs last month',
-      change: formatChange(totalUsersTrend),
-      trend: totalUsersDirection,
-      icon: Users,
-      bg: 'rgba(108,60,225,0.08)',
-      accent: '#6C3CE1',
-    },
-
-    {
-      id: 'active_listings',
-      label: 'Active Listings',
-      value: '8,342',
-      change: '+7.1%',
-      trend: 'up',
-      sub: 'vs last month',
-      icon: Car,
-      accent: '#2563EB',
-      bg: 'rgba(37,99,235,0.08)',
-    },
-
-    {
-      id: 'banned_users',
-      label: 'Banned Users',
-      value: bannedUsers || 0,
-      change: formatChange(bannedUsersTrend, bannedUsersDirection),
-      trend: bannedUsersDirection,
-      sub: 'vs last month',
-      icon: ShieldOff,
-      accent: '#E8622A',
-      bg: 'rgba(232,98,42,0.08)',
-    },
-
-    {
-      id: 'pending_approval',
-      label: 'Pending Approval',
-      value: '56',
-      change: '-18.7%',
-      trend: 'down',
-      sub: 'vs last month',
-      icon: Clock,
-      accent: '#059669',
-      bg: 'rgba(5,150,105,0.08)',
-    },
-  ];
-
-  //TODO:WORKING HERE RIGHT NOW
-  //WEEKLY CHART CARD LOGIC
-  const newUsersThisWeek = statsData?.stats?.newUsers?.thisWeek ?? 0;
-
-  const legends = [
-    { label: 'Listings', color: 'rgba(108,60,225,0.7)' },
-    { label: 'Users', color: 'rgba(232,98,42,0.6)' },
-  ];
-
-  const weeklystats = [
-    { label: 'Listings this week', value: '928', icon: Car, color: '#6C3CE1' },
-    { label: 'New users this week', value: newUsersThisWeek, icon: Users, color: '#E8622A' },
-  ];
-
-  const weeklyData = statsData?.stats?.weeklyActivity || [];
 
   return (
     <div
@@ -410,68 +259,80 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
       {/* ── Stat Cards ── */}
-      <StatCards stats={data_for_status_cards} />
-      {/* ── Row 2: Chart + Reports ── */}
+      <StatCards stats={statCards} />
+
+      {/* ── Row 2: Chart + Reports Queue ── */}
       <div className="two-col mb-6">
-        {/* Weekly Activity Chart */}
         <WeeklyActivityCard
           data={weeklyData}
           legends={legends}
-          stats={weeklystats}
+          stats={weeklyStats}
           ChartComponent={MiniBarChart}
         />
+
         {/* Reports Queue */}
         <div className="card">
           <div className="card-header mb-4">
             <div>
               <p className="card-title">Reports Queue</p>
-              <p className="card-sub">Needs your attention</p>
+              <p className="card-sub">{s?.totals?.openReports ?? 0} open · needs attention</p>
             </div>
             <a href="/admin/reports" className="view-all">
               View all <ArrowUpRight size={11} />
             </a>
           </div>
           <div className="flex flex-col gap-2.5">
-            {reports.map((r) => {
-              const pri = PRIORITY_CONFIG[r.priority];
-              return (
-                <div key={r.id} className="report-row">
-                  <div
-                    className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-                    style={{ background: pri.bg }}
-                  >
-                    <AlertTriangle size={13} strokeWidth={2} style={{ color: pri.text }} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p
-                      className="text-[0.78rem] font-semibold text-[#1A1523] truncate"
-                      style={{ fontFamily: "'DM Sans', sans-serif" }}
+            {reports.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-6 text-center">
+                <Flag size={20} className="mb-2" style={{ color: '#C4BDD0' }} />
+                <p className="text-[0.75rem]" style={{ color: '#8A8390' }}>
+                  No open reports
+                </p>
+              </div>
+            ) : (
+              reports.map((r) => {
+                const pri = PRIORITY_CONFIG[r.priority] || PRIORITY_CONFIG.low;
+                return (
+                  <div key={r._id} className="report-row">
+                    <div
+                      className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+                      style={{ background: pri.bg }}
                     >
-                      {r.type}
-                    </p>
-                    <p
-                      className="text-[0.68rem] text-[#8A8390] truncate"
-                      style={{ fontFamily: "'DM Sans', sans-serif" }}
-                    >
-                      {r.target} · by {r.reporter}
-                    </p>
+                      <AlertTriangle size={13} strokeWidth={2} style={{ color: pri.text }} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p
+                        className="text-[0.78rem] font-semibold text-[#1A1523] truncate"
+                        style={{ fontFamily: "'DM Sans', sans-serif" }}
+                      >
+                        {r.type}
+                      </p>
+                      <p
+                        className="text-[0.68rem] text-[#8A8390] truncate"
+                        style={{ fontFamily: "'DM Sans', sans-serif" }}
+                      >
+                        {r.target} · by {r.reporter}
+                      </p>
+                    </div>
+                    <div className="flex flex-col items-end gap-1 shrink-0">
+                      <span
+                        className="text-[0.65rem] font-semibold px-1.5 py-0.5 rounded"
+                        style={{ background: pri.bg, color: pri.text }}
+                      >
+                        {pri.label}
+                      </span>
+                      <span className="text-[0.62rem] text-[#C4BDD0]">{r.time}</span>
+                    </div>
                   </div>
-                  <div className="flex flex-col items-end gap-1 shrink-0">
-                    <span
-                      className="text-[0.65rem] font-semibold px-1.5 py-0.5 rounded"
-                      style={{ background: pri.bg, color: pri.text }}
-                    >
-                      {pri.label}
-                    </span>
-                    <span className="text-[0.62rem] text-[#C4BDD0]">{r.time}</span>
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
         </div>
       </div>
+
       {/* ── Row 3: Recent Users + Recent Listings ── */}
       <div className="two-col mb-6">
         {/* Recent Users */}
@@ -485,44 +346,34 @@ export default function Dashboard() {
               View all <ArrowUpRight size={11} />
             </a>
           </div>
-
           <div className="flex flex-col gap-3">
             {recentUsers.length > 0 ? (
-              recentUsers.map((u) => {
-                // 1. Extract a string for the status key safely
-                const statusValue = typeof u.status === 'object' ? u.status.name : u.status;
-
-                return (
-                  <div key={u._id || u.email} className="user-row">
-                    {' '}
-                    {/* 2. Use _id as Key */}
-                    <AvatarBubble initials={initials(u.name)} size={34} />
-                    <div className="flex-1 min-w-0">
-                      <p
-                        className="text-[0.8rem] font-semibold text-[#1A1523] truncate"
-                        style={{ fontFamily: "'DM Sans', sans-serif" }}
-                      >
-                        {u.name}
-                      </p>
-                      <p
-                        className="text-[0.67rem] text-[#8A8390] truncate"
-                        style={{ fontFamily: "'DM Sans', sans-serif" }}
-                      >
-                        {u.email}
-                      </p>
-                    </div>
-                    <div className="flex flex-col items-end gap-1 shrink-0">
-                      {/* 3. Pass the string value, not the object */}
-                      <StatusBadge status={statusValue || 'active'} />
-                      <span className="text-[0.62rem] text-[#C4BDD0]">
-                        {u.joined || new Date(u.createdAt).toLocaleDateString()}
-                      </span>
-                    </div>
+              recentUsers.map((u) => (
+                <div key={u._id} className="user-row">
+                  <AvatarBubble name={u.name} size={34} />
+                  <div className="flex-1 min-w-0">
+                    <p
+                      className="text-[0.8rem] font-semibold text-[#1A1523] truncate"
+                      style={{ fontFamily: "'DM Sans', sans-serif" }}
+                    >
+                      {u.name}
+                    </p>
+                    <p
+                      className="text-[0.67rem] text-[#8A8390] truncate"
+                      style={{ fontFamily: "'DM Sans', sans-serif" }}
+                    >
+                      {u.email}
+                    </p>
                   </div>
-                );
-              })
+                  <div className="flex flex-col items-end gap-1 shrink-0">
+                    <StatusBadge status="active" />
+                    <span className="text-[0.62rem] text-[#C4BDD0]">
+                      {new Date(u.createdAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                </div>
+              ))
             ) : (
-              /* ... rest of your empty state code ... */
               <div className="flex flex-col items-center justify-center py-8 px-4 border border-dashed border-[#E5E7EB] rounded-xl bg-[#F9FAFB]">
                 <Users size={24} className="text-[#C4BDD0] mb-2" />
                 <p className="text-[0.75rem] font-medium text-[#8A8390]">No recent sign-ups</p>
@@ -543,15 +394,17 @@ export default function Dashboard() {
             </a>
           </div>
           <div className="flex flex-col gap-3">
-            {recentListings.map((l, index) => (
-              <div key={l._id || l.id || index} className="user-row">
+            {recentListings.map((l, i) => (
+              <div key={l._id || i} className="user-row">
                 <div
-                  className="w-9 h-9 rounded-xl flex items-center justify-center text-lg shrink-0"
+                  className="w-9 h-9 rounded-xl overflow-hidden shrink-0"
                   style={{ background: '#F2EEE9' }}
                 >
-                  {/* If API data provides a real image URL, you might want to handle it here, 
-          otherwise it falls back to the emoji string from mock data */}
-                  {typeof l.img === 'string' ? l.img : '🚗'}
+                  {l.img ? (
+                    <img src={l.img} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-lg">🚗</div>
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p
@@ -569,7 +422,7 @@ export default function Dashboard() {
                   </p>
                 </div>
                 <div className="flex flex-col items-end gap-1 shrink-0">
-                  <StatusBadge status={l.status?.name || l.status} />
+                  <StatusBadge status={l.status} />
                   <span className="text-[0.62rem] text-[#C4BDD0]">{l.posted}</span>
                 </div>
               </div>
@@ -577,6 +430,7 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
       {/* ── Row 4: Top Cities + Quick Actions ── */}
       <div className="two-col">
         {/* Top Cities */}
@@ -658,7 +512,7 @@ export default function Dashboard() {
             {[
               {
                 label: 'Review Pending',
-                desc: '56 listings waiting',
+                desc: `${s?.totals?.pendingListings ?? 0} listings waiting`,
                 href: '/admin/listings/pending',
                 icon: Clock,
                 accent: '#D97706',
@@ -666,7 +520,7 @@ export default function Dashboard() {
               },
               {
                 label: 'Flagged Content',
-                desc: '12 items flagged',
+                desc: 'View flagged ads',
                 href: '/admin/listings/flagged',
                 icon: Flag,
                 accent: '#E8622A',
@@ -674,7 +528,7 @@ export default function Dashboard() {
               },
               {
                 label: 'Banned Users',
-                desc: '183 accounts',
+                desc: `${s?.totals?.bannedUsers ?? 0} accounts`,
                 href: '/admin/users/banned',
                 icon: ShieldOff,
                 accent: '#DC2626',
@@ -690,7 +544,7 @@ export default function Dashboard() {
               },
               {
                 label: 'All Reports',
-                desc: '28 open reports',
+                desc: `${s?.totals?.openReports ?? 0} open reports`,
                 href: '/admin/reports',
                 icon: AlertTriangle,
                 accent: '#7C3AED',

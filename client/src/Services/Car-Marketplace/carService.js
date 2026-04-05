@@ -125,6 +125,10 @@ const carService = {
         const data = await api.get('/cars/saved');
         return data.ads || [];
     },
+
+    reportAd: async ({ carId, reason, description }) => {
+        return await api.post(`/cars/${carId}/report`, { reason, description });
+    },
 };
 
 export default carService;
