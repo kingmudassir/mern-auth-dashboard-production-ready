@@ -3,6 +3,7 @@ import { Menu, X, ChevronRight, UserCircle, LogOut, User, Heart } from 'lucide-r
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useLogout } from '../../Hooks/useLogout.js';
 import { useUser } from '../../Hooks/useUser.js';
+import { useGetSavedAds } from '../../Hooks/Saved-Ads/useGetSavedAds.js';
 
 const AUTH_PAGES = [
   '/login',
@@ -17,6 +18,7 @@ export default function Navbar() {
   const { mutateAsync: logout } = useLogout();
 
   const { data: user, isLoading: checking } = useUser();
+  const { data: savedAds = [] } = useGetSavedAds();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -168,13 +170,27 @@ export default function Navbar() {
                       )}
                     </div>{' '}
                     <a
-                      href="/saved"
+                      href="/saved-ads"
                       className="relative w-9 h-9 flex items-center justify-center rounded-xl border border-transparent hover:border-[rgba(232,98,42,0.22)] hover:bg-[rgba(232,98,42,0.05)] transition-all duration-200"
                       aria-label="Saved ads"
                     >
                       <Heart size={17} strokeWidth={1.9} className="text-[#8A8390]" />
-                      {/* Unread dot — show when user has saved ads */}
-                      <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#E8622A]" />
+
+                      {/* Badge showing the count of saved ads */}
+                      {savedAds.length > 0 && (
+                        <span
+                          className="
+                                      absolute -top-1 -right-1 
+                                      min-w-[18px] h-[18px] px-1
+                                      flex items-center justify-center 
+                                      rounded-full bg-[#E8622A] 
+                                      text-[10px] font-bold text-white
+                                      border-2 border-white
+                                    "
+                        >
+                          {savedAds.length}
+                        </span>
+                      )}
                     </a>
                     <a
                       href="/post-ad"

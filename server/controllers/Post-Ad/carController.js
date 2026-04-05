@@ -238,35 +238,56 @@ export const getCars = catchAsyncError(async (req, res, next) => {
             .sort(sortQuery)
             .skip(skip)
             .limit(Number(limit))
-            .select("make model variant year condition price city images negotiable transmission fuel createdAt")
+            .select("make model variant year condition price city images negotiable transmission fuel mileage createdAt")
             .lean(),
         Car.countDocuments(filter),
     ]);
+
+    const carsWithSavedStatus = cars.map(car => ({
+        ...car,
+        isSaved: req.user 
+            ? req.user.savedAds.some(id => id.toString() === car._id.toString()) 
+            : false
+    }));
 
     res.status(200).json({
         success: true,
         total,
         page: Number(page),
         pages: Math.ceil(total / Number(limit)),
-        cars,
+        cars: carsWithSavedStatus,
     });
 });
 
-// ── GET /api/v2/cars/:id ──────────────────────────────────────────
-// Only serves active listings to the public
+
 export const getCarById = catchAsyncError(async (req, res, next) => {
-    const car = await Car.findOne({
-        _id: req.params.id,
-        status: "active",
-        isDeleted: false,
+    const car = await Car.findOne({ 
+        _id: req.params.id, 
+        isDeleted: false 
     }).populate("postedBy", "name createdAt");
 
     if (!car) return next(new ErrorHandler("Listing not found.", 404));
 
-    // Fire-and-forget view increment
-    Car.findByIdAndUpdate(car._id, { $inc: { views: 1 } }).exec();
+    const isOwner = req.user && car.postedBy._id.toString() === req.user._id.toString();
+    const isActive = car.status === "active";
 
-    res.status(200).json({ success: true, car });
+    if (!isActive && !isOwner) {
+        return next(new ErrorHandler("Listing not found or pending review.", 404));
+    }
+
+    if (isActive && !isOwner) {
+        Car.findByIdAndUpdate(car._id, { $inc: { views: 1 } }).exec();
+    }
+
+    // --- LOGIC TO PERSIST SAVE STATUS ON REFRESH ---
+    const carObj = car.toObject(); // Convert Mongoose doc to plain JS object
+    
+    // Check if req.user exists (is logged in) and has the ID in their savedAds
+    carObj.isSaved = req.user 
+        ? req.user.savedAds.some(id => id.toString() === car._id.toString()) 
+        : false;
+
+    res.status(200).json({ success: true, car: carObj });
 });
 
 // ── GET /api/v2/cars/my-ads ───────────────────────────────────────
@@ -337,13 +358,16 @@ export const patchMyAdStatus = catchAsyncError(async (req, res, next) => {
 
 // ── PATCH /api/v2/cars/update/:id ────────────────────────────────
 export const updateAd = catchAsyncError(async (req, res, next) => {
+    // 1. Fetch the existing ad to check ownership and current status
     const ad = await Car.findOne({
         _id: req.params.id,
         postedBy: req.user._id,
         isDeleted: false,
     });
 
-    if (!ad) return next(new ErrorHandler("Ad not found or access denied", 404));
+    if (!ad) {
+        return next(new ErrorHandler("Ad not found or access denied", 404));
+    }
 
     const {
         features,
@@ -352,6 +376,7 @@ export const updateAd = catchAsyncError(async (req, res, next) => {
         ...otherFields
     } = req.body;
 
+    // ── Handle Images ─────────────────────────────────────────────
     let finalImages = [];
 
     // Preserve existing images the frontend wants to keep
@@ -365,7 +390,7 @@ export const updateAd = catchAsyncError(async (req, res, next) => {
         finalImages = [...ad.images];
     }
 
-    // Upload new files
+    // Upload new files if provided
     if (req.files?.length > 0) {
         try {
             const newUploaded = await Promise.all(
@@ -381,6 +406,7 @@ export const updateAd = catchAsyncError(async (req, res, next) => {
         return next(new ErrorHandler("At least one photo is required.", 400));
     }
 
+    // ── Parse Features ────────────────────────────────────────────
     let parsedFeatures;
     try {
         parsedFeatures = typeof features === "string" ? JSON.parse(features) : features;
@@ -388,8 +414,10 @@ export const updateAd = catchAsyncError(async (req, res, next) => {
         parsedFeatures = ad.features;
     }
 
-    // When a user edits an approved ad, put it back to pending for re-review
-    const wasActive = ad.status === "active";
+    // ── Reset Logic ───────────────────────────────────────────────
+    // If the ad was already "active", "rejected", or even "sold", 
+    // any edit should trigger a re-review.
+    const needsReview = ["active", "rejected", "sold"].includes(ad.status);
 
     const updatedAd = await Car.findByIdAndUpdate(
         req.params.id,
@@ -397,18 +425,27 @@ export const updateAd = catchAsyncError(async (req, res, next) => {
             ...otherFields,
             features: parsedFeatures,
             images: finalImages,
+            // Ensure numeric types are correctly cast
             price: otherFields.price ? Number(otherFields.price) : ad.price,
             year: otherFields.year ? Number(otherFields.year) : ad.year,
             mileage: otherFields.mileage ? Number(otherFields.mileage) : ad.mileage,
             engineCC: otherFields.engineCC ? Number(otherFields.engineCC) : ad.engineCC,
+            // Ensure booleans are correctly cast
             negotiable: otherFields.negotiable === "true" || otherFields.negotiable === true,
             whatsapp: otherFields.whatsapp === "true" || otherFields.whatsapp === true,
-            // If the ad was live and the seller edits it, it needs re-review
-            ...(wasActive && {
+
+            // Mandatory Status Reset for Edits
+            ...(needsReview && {
                 status: "pending",
                 isActive: false,
+                isSold: false,
+                // Clear the Audit Trail
+                rejectionReason: undefined,
+                rejectedBy: undefined,
+                rejectedAt: undefined,
                 approvedBy: undefined,
                 approvedAt: undefined,
+                soldAt: undefined,
             }),
         },
         { new: true, runValidators: true }
@@ -416,8 +453,8 @@ export const updateAd = catchAsyncError(async (req, res, next) => {
 
     res.status(200).json({
         success: true,
-        message: wasActive
-            ? "Ad updated. It has been re-submitted for review before going live again."
+        message: needsReview
+            ? "Ad updated. It has been re-submitted for review before going live."
             : "Ad updated successfully.",
         ad: normalizeAd(updatedAd),
     });

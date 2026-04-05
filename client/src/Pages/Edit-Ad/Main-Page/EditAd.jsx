@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import CAR_DATA from '../../../JSON-DATA/make_model.json';
 
 import {
   Upload,
@@ -30,55 +29,7 @@ import LocationContactSection from '../../Post-Ad/Functions/LocationContactSecti
 import ProgressBar from '../../Post-Ad/Functions/ProgressBar';
 import { useAdDetail } from '../../../Hooks/Edit-Ad/useAdDetail';
 import { useUpdateAd } from '../../../Hooks/Edit-Ad/useUpdateAd';
-
-// ── Mock existing ad (replace with real fetch) ────────────────────
-const MOCK_AD = {
-  id: 101,
-  make: 'Toyota',
-  model: 'Corolla',
-  variant: 'Altis X 1.6',
-  year: '2021',
-  condition: 'Used',
-  bodyType: 'Sedan',
-  color: 'Pearl White',
-  engineCC: '1600',
-  assembly: 'Local',
-  transmission: 'Automatic',
-  fuel: 'Petrol',
-  mileage: '42000',
-  registeredIn: 'Lahore',
-  price: '2800000',
-  negotiable: true,
-  city: 'Lahore',
-  area: 'DHA Phase 5',
-  phone: '03001234567',
-  whatsapp: true,
-  description:
-    'This well-maintained Toyota Corolla Altis X 1.6 is in excellent condition. Single owner, all original paintwork, fully documented. Regular servicing done from authorized Toyota service centre.\n\nNew tyres installed 3 months ago. Recently serviced — engine oil, air filter, spark plugs. Sound system upgraded. Push start and keyless entry. Genuine leather seats.',
-  features: [
-    'Push Start / Keyless Entry',
-    'Cruise Control',
-    'Rear Parking Camera',
-    'Climate Control (Dual Zone)',
-    'Alloy Wheels',
-    'Leather Seats',
-    'Sunroof',
-    'Fog Lights',
-    'ABS + EBD',
-    'Airbags (Driver + Passenger)',
-    'Power Windows (All 4)',
-    'Navigation System',
-  ],
-  // existing images — in real usage these would be URLs from your backend.
-  // We represent them here as preview-ready objects so the ImageUploader
-  // can render them just like newly-uploaded files.
-  existingImages: [
-    { id: 'existing-1', preview: null, isExisting: true, label: 'Photo 1' },
-    { id: 'existing-2', preview: null, isExisting: true, label: 'Photo 2' },
-    { id: 'existing-3', preview: null, isExisting: true, label: 'Photo 3' },
-  ],
-};
-
+import SuccessSection from '../Components/SuccessSection';
 const MAX_IMAGES = 10;
 
 // ── Validation (same rules as PostAd) ────────────────────────────
@@ -181,7 +132,6 @@ function ImageUploader({ images, onAdd, onRemove, onSetPrimary }) {
           />
         </div>
       )}
-
       {images.length > 0 && (
         <div className="grid grid-cols-3 sm:grid-cols-5 gap-3 mt-4">
           {images.map((img, i) => (
@@ -304,7 +254,6 @@ function ImageUploader({ images, onAdd, onRemove, onSetPrimary }) {
           )}
         </div>
       )}
-
       <p
         className="text-[0.72rem] mt-3 flex items-center gap-1.5"
         style={{ color: '#8A8390', fontFamily: "'DM Sans', sans-serif" }}
@@ -351,66 +300,6 @@ function FeatureToggle({ label, checked, onChange }) {
         {label}
       </span>
     </button>
-  );
-}
-
-// ── Saved success banner ──────────────────────────────────────────
-function SavedBanner({ adId, onDismiss }) {
-  return (
-    <div
-      className="rounded-2xl p-6 flex flex-col sm:flex-row items-center gap-5"
-      style={{ background: 'rgba(34,197,94,0.06)', border: '1.5px solid rgba(34,197,94,0.25)' }}
-      role="alert"
-    >
-      <div
-        className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
-        style={{ background: 'rgba(34,197,94,0.12)' }}
-        aria-hidden="true"
-      >
-        <CheckCircle2 size={24} strokeWidth={1.8} style={{ color: '#16a34a' }} />
-      </div>
-      <div className="flex-1 text-center sm:text-left">
-        <p
-          className="text-[0.95rem] font-extrabold tracking-[-0.02em]"
-          style={{ color: '#15803d', fontFamily: "'Syne',sans-serif" }}
-        >
-          Ad updated successfully!
-        </p>
-        <p
-          className="text-[0.78rem] mt-0.5"
-          style={{ color: '#16a34a', fontFamily: "'DM Sans',sans-serif" }}
-        >
-          Your changes are live. Buyers can see the updated listing now.
-        </p>
-      </div>
-      <div className="flex items-center gap-2 flex-shrink-0">
-        <a
-          href={`/cars/${adId}`}
-          className="inline-flex items-center gap-1.5 text-[0.8rem] font-semibold text-white px-4 py-2 rounded-xl no-underline transition-transform duration-150 hover:-translate-y-px"
-          style={{
-            background: 'linear-gradient(135deg,#16a34a,#15803d)',
-            boxShadow: '0 2px 8px rgba(22,163,74,0.28)',
-            fontFamily: "'DM Sans',sans-serif",
-          }}
-        >
-          View listing
-        </a>
-        <button
-          type="button"
-          onClick={onDismiss}
-          className="w-8 h-8 rounded-xl flex items-center justify-center transition-colors duration-150"
-          style={{
-            background: 'rgba(22,163,74,0.1)',
-            border: 'none',
-            cursor: 'pointer',
-            color: '#16a34a',
-          }}
-          aria-label="Dismiss"
-        >
-          <X size={14} strokeWidth={2} />
-        </button>
-      </div>
-    </div>
   );
 }
 
@@ -501,7 +390,9 @@ export default function EditAd() {
   const [errors, setErrors] = useState({});
   const [globalErr, setGlobalErr] = useState('');
   const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
+  // Replace 'saved' with 'showSuccess'
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [wasActiveBeforeEdit, setWasActiveBeforeEdit] = useState(false);
 
   // ── Field setter (same pattern as PostAd) ─────────────────────
   const set = (key) => (e) => {
@@ -515,8 +406,12 @@ export default function EditAd() {
       if (key === 'model' && val !== 'Other' && p.make !== 'Other') next.variant = '';
       return next;
     });
+
     if (errors[key]) setErrors((p) => ({ ...p, [key]: '' }));
-    setSaved(false); // reset saved banner on any change
+
+    // REMOVE setSaved(false);
+    // If you want to hide the success screen when they edit again, use:
+    if (showSuccess) setShowSuccess(false);
   };
 
   // ── Derived progress (mirrors PostAd logic) ───────────────────
@@ -600,18 +495,32 @@ export default function EditAd() {
     // 3. Execute Mutation
     updateMutation.mutate(payload, {
       onSuccess: () => {
-        setSaved(true);
+        const source = existingAd?.car || existingAd?.ad;
+        setWasActiveBeforeEdit(source?.status === 'active');
+
+        setShowSuccess(true); // Trigger the full-screen success view
         setSaving(false);
         window.scrollTo({ top: 0, behavior: 'smooth' });
       },
       onError: (err) => {
         setSaving(false);
-        // Catch the "At least one photo is required" from backend here
         setGlobalErr(err.response?.data?.message || 'Update failed. Please try again.');
         window.scrollTo({ top: 0, behavior: 'smooth' });
       },
     });
   };
+  // ── SUCCESS VIEW ────────────────────────────────────────────────
+  if (showSuccess) {
+    return (
+      <SuccessSection
+        fields={fields}
+        adId={existingAd?.car?._id || existingAd?.ad?._id || adId}
+        onDismiss={() => setShowSuccess(false)}
+        wasActiveBeforeEdit={wasActiveBeforeEdit}
+      />
+    );
+  }
+
   if (isLoading) {
     return (
       <div className="flex h-screen items-center justify-center">
@@ -667,13 +576,6 @@ export default function EditAd() {
               Update the details below — changes go live immediately after saving.
             </p>
           </div>
-
-          {/* ── Saved success banner ─────────────────────────── */}
-          {saved && (
-            <div className="mb-6">
-              <SavedBanner adId={existingAd.id} onDismiss={() => setSaved(false)} />
-            </div>
-          )}
 
           {/* ── Progress bar ─────────────────────────────────── */}
           <ProgressBar
@@ -837,6 +739,15 @@ const STYLES = `
     max-width: 1070px;
     margin: 0 auto;
     padding: 90px 32px 80px;
+  }
+
+  .ea-banner-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 20px rgba(108,60,225,0.45);
+  }
+
+  .ea-banner-btn:active:not(:disabled) {
+    transform: translateY(0);
   }
 
   /* ── Spinner ──────────────────────────────────────────────────── */

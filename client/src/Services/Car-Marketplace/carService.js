@@ -66,58 +66,65 @@ const carService = {
     },
 
     getAdById: async (id) => {
-        const response = await api.get(`/cars/${id}`); 
-        // IMPORTANT: Check if your backend returns { data: { ...ad } } 
-        // or just { ...ad }. If it's the latter, use 'return response'
+        const response = await api.get(`/cars/my-ads/${id}`);
         return response.data || response; 
     },
 
     // Update ad (Handles JSON or FormData if you're uploading new images)
     updateAd: async (id, payload) => {
-    const formData = new FormData();
+        const formData = new FormData();
 
-    // 1. Append basic fields
-    Object.entries(payload).forEach(([key, value]) => {
-        // Skip specialized fields
-        if (!["features", "images", "existingImages"].includes(key)) {
-            if (value !== undefined && value !== null) {
-                formData.append(key, value);
-            }
-        }
-    });
-
-    // 2. Handle Features
-    if (payload.features) {
-        formData.append("features", JSON.stringify(payload.features));
-    }
-
-    // 3. Handle Existing Images (The list of URLs to keep)
-    if (payload.existingImages) {
-        formData.append("existingImages", JSON.stringify(payload.existingImages));
-    }
-
-    // 4. FIX: Flatten and Append New Files
-    if (payload.images) {
-        // .flat(Infinity) solves the [[[[File]]]] nesting issue
-        const flatImages = Array.isArray(payload.images) ? payload.images.flat(Infinity) : [];
-        
-        flatImages.forEach((img) => {
-            // Extract the raw File object
-            const fileToUpload = img instanceof File ? img : img.file;
-            
-            if (fileToUpload instanceof File) {
-                formData.append("images", fileToUpload);
+        // 1. Append basic fields
+        Object.entries(payload).forEach(([key, value]) => {
+            // Skip specialized fields
+            if (!["features", "images", "existingImages"].includes(key)) {
+                if (value !== undefined && value !== null) {
+                    formData.append(key, value);
+                }
             }
         });
-    }
 
-    // 5. Submit as Multipart
-    const response = await api.patch(`/cars/update/${id}`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-    });
-    
-    return response.data;
-},
+        // 2. Handle Features
+        if (payload.features) {
+            formData.append("features", JSON.stringify(payload.features));
+        }
+
+        // 3. Handle Existing Images (The list of URLs to keep)
+        if (payload.existingImages) {
+            formData.append("existingImages", JSON.stringify(payload.existingImages));
+        }
+
+        // 4. FIX: Flatten and Append New Files
+        if (payload.images) {
+            // .flat(Infinity) solves the [[[[File]]]] nesting issue
+            const flatImages = Array.isArray(payload.images) ? payload.images.flat(Infinity) : [];
+            
+            flatImages.forEach((img) => {
+                // Extract the raw File object
+                const fileToUpload = img instanceof File ? img : img.file;
+                
+                if (fileToUpload instanceof File) {
+                    formData.append("images", fileToUpload);
+                }
+            });
+        }
+
+        // 5. Submit as Multipart
+        const response = await api.patch(`/cars/update/${id}`, formData, {
+            headers: { "Content-Type": "multipart/form-data" },
+        });
+        
+        return response.data;
+    },
+
+    toggleSave: async (carId) => {
+        return await api.post(`/cars/${carId}/save`);
+    },
+
+    getSavedAds: async () => {
+        const data = await api.get('/cars/saved');
+        return data.ads || [];
+    },
 };
 
 export default carService;

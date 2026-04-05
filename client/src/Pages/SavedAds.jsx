@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   Heart,
   MapPin,
@@ -16,174 +16,9 @@ import {
   List,
   Clock,
 } from 'lucide-react';
-
-// ─────────────────────────────────────────────────────────────────
-// 💡 TANSTACK INTEGRATION
-//
-//  const { data, isLoading } = useQuery({
-//    queryKey: ['saved-ads'],
-//    queryFn: () => axios.get('/api/user/saved').then(r => r.data.listings),
-//  });
-//
-//  const unsaveMutation = useMutation({
-//    mutationFn: (listingId) => axios.delete(`/api/user/saved/${listingId}`),
-//    onSuccess: (_, listingId) =>
-//      queryClient.setQueryData(['saved-ads'], (old) =>
-//        old.filter((ad) => ad.id !== listingId)
-//      ),
-//  });
-//
-//  const clearAllMutation = useMutation({
-//    mutationFn: () => axios.delete('/api/user/saved'),
-//    onSuccess: () => queryClient.setQueryData(['saved-ads'], []),
-//  });
-//
-//  Replace local `ads` state and handlers with the above.
-// ─────────────────────────────────────────────────────────────────
-
-// ── Mock data ─────────────────────────────────────────────────────
-const MOCK_SAVED = [
-  {
-    id: 1,
-    make: 'Toyota',
-    model: 'Corolla',
-    year: 2021,
-    price: 2800000,
-    city: 'Lahore',
-    fuel: 'Petrol',
-    transmission: 'Automatic',
-    mileage: 42000,
-    condition: 'Used',
-    savedAt: '2 hours ago',
-    color: 'White',
-  },
-  {
-    id: 2,
-    make: 'Honda',
-    model: 'Civic',
-    year: 2020,
-    price: 3200000,
-    city: 'Karachi',
-    fuel: 'Petrol',
-    transmission: 'Automatic',
-    mileage: 58000,
-    condition: 'Used',
-    savedAt: '1 day ago',
-    color: 'Black',
-  },
-  {
-    id: 3,
-    make: 'Suzuki',
-    model: 'Alto',
-    year: 2023,
-    price: 1650000,
-    city: 'Islamabad',
-    fuel: 'Petrol',
-    transmission: 'Manual',
-    mileage: 8000,
-    condition: 'Used',
-    savedAt: '3 days ago',
-    color: 'Silver',
-  },
-  {
-    id: 4,
-    make: 'Hyundai',
-    model: 'Tucson',
-    year: 2022,
-    price: 6500000,
-    city: 'Lahore',
-    fuel: 'Petrol',
-    transmission: 'Automatic',
-    mileage: 22000,
-    condition: 'Used',
-    savedAt: '5 days ago',
-    color: 'Grey',
-  },
-  {
-    id: 5,
-    make: 'Kia',
-    model: 'Sportage',
-    year: 2021,
-    price: 5800000,
-    city: 'Rawalpindi',
-    fuel: 'Petrol',
-    transmission: 'Automatic',
-    mileage: 35000,
-    condition: 'Used',
-    savedAt: '1 week ago',
-    color: 'Red',
-  },
-  {
-    id: 6,
-    make: 'Honda',
-    model: 'City',
-    year: 2019,
-    price: 2200000,
-    city: 'Faisalabad',
-    fuel: 'CNG',
-    transmission: 'Automatic',
-    mileage: 75000,
-    condition: 'Used',
-    savedAt: '1 week ago',
-    color: 'Beige',
-  },
-  {
-    id: 7,
-    make: 'Toyota',
-    model: 'Fortuner',
-    year: 2020,
-    price: 8900000,
-    city: 'Lahore',
-    fuel: 'Diesel',
-    transmission: 'Automatic',
-    mileage: 48000,
-    condition: 'Used',
-    savedAt: '2 weeks ago',
-    color: 'White',
-  },
-  {
-    id: 8,
-    make: 'Suzuki',
-    model: 'Swift',
-    year: 2022,
-    price: 2100000,
-    city: 'Karachi',
-    fuel: 'Petrol',
-    transmission: 'Automatic',
-    mileage: 18000,
-    condition: 'Used',
-    savedAt: '2 weeks ago',
-    color: 'Blue',
-  },
-  {
-    id: 9,
-    make: 'Toyota',
-    model: 'Aqua',
-    year: 2018,
-    price: 1950000,
-    city: 'Peshawar',
-    fuel: 'Hybrid',
-    transmission: 'Automatic',
-    mileage: 90000,
-    condition: 'Used',
-    savedAt: '3 weeks ago',
-    color: 'Silver',
-  },
-  {
-    id: 10,
-    make: 'BMW',
-    model: '3 Series',
-    year: 2019,
-    price: 6800000,
-    city: 'Lahore',
-    fuel: 'Petrol',
-    transmission: 'Automatic',
-    mileage: 55000,
-    condition: 'Used',
-    savedAt: '1 month ago',
-    color: 'Black',
-  },
-];
+import { useQueryClient } from '@tanstack/react-query';
+import { useGetSavedAds } from '../Hooks/Saved-Ads/useGetSavedAds';
+import { useToggleSave } from '../Hooks/Saved-Ads/useToggleSave';
 
 const SORT_OPTIONS = [
   { value: 'newest-saved', label: 'Recently Saved' },
@@ -212,8 +47,11 @@ const BG_PAIRS = [
 ];
 
 function SavedCard({ ad, view, selected, onSelect, onUnsave }) {
-  const bg = BG_PAIRS[ad.id % BG_PAIRS.length];
-  const isDark = ad.id % 2 === 0;
+  // ad.id is the normalized mongo _id string (set in useGetSavedAds select transform)
+  const bgIdx = ad._id ? ad._id.charCodeAt(ad._id.length - 1) % BG_PAIRS.length : 0;
+  const bg = BG_PAIRS[bgIdx];
+  const isDark = bgIdx % 2 === 0;
+  const thumb = ad.images?.[0]?.url;
 
   if (view === 'list') {
     return (
@@ -223,8 +61,8 @@ function SavedCard({ ad, view, selected, onSelect, onUnsave }) {
         {/* Checkbox */}
         <button
           type="button"
-          onClick={() => onSelect(ad.id)}
-          className="flex items-center justify-center flex-shrink-0 px-4 transition-colors duration-150"
+          onClick={() => onSelect(ad._id)}
+          className="flex items-center justify-center shrink-0 px-4 transition-colors duration-150"
           style={{
             background: selected ? 'rgba(108,60,225,0.05)' : 'transparent',
             border: 'none',
@@ -259,34 +97,46 @@ function SavedCard({ ad, view, selected, onSelect, onUnsave }) {
         </button>
 
         {/* Image */}
-        <a
-          href={`/cars/${ad.id}`}
-          className="flex-shrink-0 flex items-center justify-center relative"
-          style={{ width: '180px', background: `linear-gradient(135deg, ${bg[0]}, ${bg[1]})` }}
+        <Link
+          to={`/cars/${ad?._id}`}
+          className="shrink-0 flex items-center justify-center relative overflow-hidden"
+          style={{
+            width: '180px',
+
+            background: thumb ? '#0D0B12' : `linear-gradient(135deg, ${bg[0]}, ${bg[1]})`,
+          }}
           aria-label={`View ${ad.year} ${ad.make} ${ad.model}`}
         >
-          <div className="text-center select-none">
-            <div style={{ fontSize: '2.2rem' }} aria-hidden="true">
-              🚗
+          {thumb ? (
+            <img
+              src={thumb}
+              alt={`${ad.year} ${ad.make} ${ad.model}`}
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            />
+          ) : (
+            <div className="text-center select-none">
+              <div style={{ fontSize: '2.2rem' }} aria-hidden="true">
+                🚗
+              </div>
+              <p
+                className="text-[0.65rem] mt-0.5"
+                style={{
+                  color: isDark ? 'rgba(255,255,255,0.3)' : '#C4BDD0',
+                  fontFamily: "'DM Sans', sans-serif",
+                }}
+              >
+                {ad.color}
+              </p>
             </div>
-            <p
-              className="text-[0.65rem] mt-0.5"
-              style={{
-                color: isDark ? 'rgba(255,255,255,0.3)' : '#C4BDD0',
-                fontFamily: "'DM Sans', sans-serif",
-              }}
-            >
-              {ad.color}
-            </p>
-          </div>
-        </a>
+          )}
+        </Link>
 
         {/* Info */}
         <div className="flex-1 flex flex-col justify-between p-4 min-w-0">
           <div>
             <div className="flex items-start justify-between gap-2 mb-1.5">
               <a
-                href={`/cars/${ad.id}`}
+                href={`/cars/${ad._id}`}
                 className="no-underline"
                 aria-label={`${ad.year} ${ad.make} ${ad.model}`}
               >
@@ -299,8 +149,8 @@ function SavedCard({ ad, view, selected, onSelect, onUnsave }) {
               </a>
               <button
                 type="button"
-                onClick={() => onUnsave(ad.id)}
-                className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center transition-colors duration-150"
+                onClick={() => onUnsave(ad._id)}
+                className="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center transition-colors duration-150"
                 style={{ background: 'rgba(232,98,42,0.08)' }}
                 aria-label="Remove from saved"
               >
@@ -332,7 +182,7 @@ function SavedCard({ ad, view, selected, onSelect, onUnsave }) {
             </div>
 
             <div className="flex flex-wrap gap-1.5">
-              {[ad.fuel, fmtMileage(ad.mileage), ad.transmission].map((v) => (
+              {[ad.fuel, fmtMileage(ad.mileage), ad.transmission].filter(Boolean).map((v) => (
                 <span
                   key={v}
                   className="px-2 py-0.5 rounded-full text-[0.68rem] font-medium"
@@ -362,7 +212,7 @@ function SavedCard({ ad, view, selected, onSelect, onUnsave }) {
               </span>
             </p>
             <a
-              href={`/cars/${ad.id}`}
+              href={`/cars/${ad._id}`}
               className="flex items-center gap-1.5 text-[0.75rem] font-semibold px-3.5 py-1.5 rounded-xl transition-all duration-150 hover:-translate-y-px no-underline"
               style={{
                 color: '#fff',
@@ -386,15 +236,16 @@ function SavedCard({ ad, view, selected, onSelect, onUnsave }) {
     <div
       className={`sa-card-grid rounded-2xl overflow-hidden flex flex-col ${selected ? 'sa-card-selected' : ''}`}
     >
-      {/* Image */}
       <div
         className="relative"
-        style={{ height: '150px', background: `linear-gradient(135deg, ${bg[0]}, ${bg[1]})` }}
+        style={{
+          height: '150px',
+          background: thumb ? '#0D0B12' : `linear-gradient(135deg, ${bg[0]}, ${bg[1]})`,
+        }}
       >
-        {/* Select overlay */}
         <button
           type="button"
-          onClick={() => onSelect(ad.id)}
+          onClick={() => onSelect(ad._id)}
           className="absolute top-2.5 left-2.5 w-6 h-6 rounded-lg flex items-center justify-center transition-all duration-150 z-10"
           style={{
             background: selected ? '#6C3CE1' : 'rgba(255,255,255,0.85)',
@@ -416,10 +267,9 @@ function SavedCard({ ad, view, selected, onSelect, onUnsave }) {
           )}
         </button>
 
-        {/* Unsave */}
         <button
           type="button"
-          onClick={() => onUnsave(ad.id)}
+          onClick={() => onUnsave(ad._id)}
           className="absolute top-2.5 right-2.5 w-7 h-7 rounded-xl flex items-center justify-center transition-colors duration-150 z-10"
           style={{ background: 'rgba(255,255,255,0.9)' }}
           aria-label="Remove from saved"
@@ -433,31 +283,38 @@ function SavedCard({ ad, view, selected, onSelect, onUnsave }) {
         </button>
 
         <a
-          href={`/cars/${ad.id}`}
+          href={`/cars/${ad._id}`}
           className="absolute inset-0 flex items-center justify-center"
           aria-label={`View ${ad.year} ${ad.make} ${ad.model}`}
         >
-          <div className="text-center select-none pointer-events-none">
-            <div style={{ fontSize: '2.8rem' }} aria-hidden="true">
-              🚗
+          {thumb ? (
+            <img
+              src={thumb}
+              alt={`${ad.year} ${ad.make} ${ad.model}`}
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            />
+          ) : (
+            <div className="text-center select-none pointer-events-none">
+              <div style={{ fontSize: '2.8rem' }} aria-hidden="true">
+                🚗
+              </div>
+              <p
+                className="text-[0.65rem]"
+                style={{
+                  color: isDark ? 'rgba(255,255,255,0.3)' : '#C4BDD0',
+                  fontFamily: "'DM Sans', sans-serif",
+                }}
+              >
+                {ad.year} · {ad.color}
+              </p>
             </div>
-            <p
-              className="text-[0.65rem]"
-              style={{
-                color: isDark ? 'rgba(255,255,255,0.3)' : '#C4BDD0',
-                fontFamily: "'DM Sans', sans-serif",
-              }}
-            >
-              {ad.year} · {ad.color}
-            </p>
-          </div>
+          )}
         </a>
       </div>
 
-      {/* Info */}
       <div className="flex-1 p-4 flex flex-col gap-2.5">
         <div>
-          <a href={`/cars/${ad.id}`} className="no-underline">
+          <a href={`/cars/${ad._id}`} className="no-underline">
             <h3
               className="text-[0.88rem] font-extrabold tracking-[-0.025em] leading-tight hover:text-[#6C3CE1] transition-colors duration-150"
               style={{ color: '#1A1523', fontFamily: "'Syne', sans-serif" }}
@@ -477,7 +334,7 @@ function SavedCard({ ad, view, selected, onSelect, onUnsave }) {
         </div>
 
         <div className="flex flex-wrap gap-1">
-          {[ad.fuel, fmtMileage(ad.mileage)].map((v) => (
+          {[ad.fuel, fmtMileage(ad.mileage)].filter(Boolean).map((v) => (
             <span
               key={v}
               className="px-2 py-0.5 rounded-full text-[0.65rem] font-medium"
@@ -516,7 +373,6 @@ function SavedCard({ ad, view, selected, onSelect, onUnsave }) {
 
 // ── Empty state ───────────────────────────────────────────────────
 function EmptyState({ isFiltered, onClear }) {
-  const navigate = useNavigate();
   return (
     <div className="flex flex-col items-center justify-center py-24 text-center">
       <div
@@ -574,18 +430,18 @@ function EmptyState({ isFiltered, onClear }) {
 
 // ── Main component ────────────────────────────────────────────────
 export default function SavedAds() {
-  // ← REPLACE with: const { data: ads = [], isLoading } = useQuery(...)
-  const [ads, setAds] = useState(MOCK_SAVED);
+  const { data: ads = [], isLoading } = useGetSavedAds();
+  const { mutate: toggleSave } = useToggleSave();
+
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState('newest-saved');
   const [view, setView] = useState('grid');
   const [selected, setSelected] = useState(new Set());
   const [confirmClear, setConfirmClear] = useState(false);
 
-  // Unsave single
+  // Unsave single — optimistic via useToggleSave's onSuccess
   const handleUnsave = (id) => {
-    // ← REPLACE with: unsaveMutation.mutate(id)
-    setAds((p) => p.filter((a) => a.id !== id));
+    toggleSave(id);
     setSelected((p) => {
       const n = new Set(p);
       n.delete(id);
@@ -593,22 +449,19 @@ export default function SavedAds() {
     });
   };
 
-  // Unsave selected
+  // Unsave selected — fire one mutation per id
   const handleUnsaveSelected = () => {
-    // ← REPLACE with: selected.forEach(id => unsaveMutation.mutate(id))
-    setAds((p) => p.filter((a) => !selected.has(a.id)));
+    selected.forEach((id) => toggleSave(id));
     setSelected(new Set());
   };
 
   // Clear all
   const handleClearAll = () => {
-    // ← REPLACE with: clearAllMutation.mutate()
-    setAds([]);
+    ads.forEach((ad) => toggleSave(ad._id));
     setSelected(new Set());
     setConfirmClear(false);
   };
 
-  // Select toggle
   const handleSelect = (id) => {
     setSelected((p) => {
       const n = new Set(p);
@@ -621,11 +474,10 @@ export default function SavedAds() {
     if (selected.size === filtered.length) {
       setSelected(new Set());
     } else {
-      setSelected(new Set(filtered.map((a) => a.id)));
+      setSelected(new Set(filtered.map((a) => a._id)));
     }
   };
 
-  // Filter + sort
   const filtered = useMemo(() => {
     let result = [...ads];
     if (search.trim()) {
@@ -648,7 +500,7 @@ export default function SavedAds() {
         result.sort((a, b) => a.mileage - b.mileage);
         break;
       default:
-        break; // newest-saved = original order
+        break;
     }
     return result;
   }, [ads, search, sortBy]);
@@ -656,6 +508,48 @@ export default function SavedAds() {
   const allSelected = filtered.length > 0 && selected.size === filtered.length;
   const someSelected = selected.size > 0;
   const isFiltered = !!search.trim();
+
+  if (isLoading) {
+    return (
+      <div className="sa-page">
+        <div className="sa-inner">
+          <div className="sa-grid">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="sa-card-grid rounded-2xl overflow-hidden animate-pulse">
+                <div style={{ height: '150px', background: '#F2EEE9' }} />
+                <div className="p-4 flex flex-col gap-2">
+                  <div
+                    style={{
+                      height: '14px',
+                      width: '80%',
+                      background: '#F2EEE9',
+                      borderRadius: '6px',
+                    }}
+                  />
+                  <div
+                    style={{
+                      height: '11px',
+                      width: '55%',
+                      background: '#F2EEE9',
+                      borderRadius: '6px',
+                    }}
+                  />
+                  <div
+                    style={{
+                      height: '16px',
+                      width: '45%',
+                      background: '#F2EEE9',
+                      borderRadius: '6px',
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -782,7 +676,6 @@ export default function SavedAds() {
             <>
               {/* ── Controls bar ── */}
               <div className="flex items-center gap-3 mb-4 flex-wrap">
-                {/* Search */}
                 <div className="sa-search-wrap">
                   <Search size={14} strokeWidth={2} className="sa-search-icon" aria-hidden="true" />
                   <input
@@ -805,7 +698,6 @@ export default function SavedAds() {
                   )}
                 </div>
 
-                {/* Sort */}
                 <div className="relative sa-sort-wrap">
                   <ArrowUpDown
                     size={13}
@@ -827,7 +719,6 @@ export default function SavedAds() {
                   </select>
                 </div>
 
-                {/* View toggle */}
                 <div
                   className="flex items-center border rounded-xl overflow-hidden ml-auto"
                   style={{ borderColor: '#E8E3DC' }}
@@ -921,7 +812,6 @@ export default function SavedAds() {
                   </>
                 )}
 
-                {/* Result count */}
                 <span
                   className="ml-auto text-[0.75rem]"
                   style={{ color: '#B0AABA', fontFamily: "'DM Sans', sans-serif" }}
@@ -942,10 +832,10 @@ export default function SavedAds() {
             <div className="sa-grid">
               {filtered.map((ad) => (
                 <SavedCard
-                  key={ad.id}
+                  key={ad._id}
                   ad={ad}
                   view="grid"
-                  selected={selected.has(ad.id)}
+                  selected={selected.has(ad._id)}
                   onSelect={handleSelect}
                   onUnsave={handleUnsave}
                 />
@@ -955,10 +845,10 @@ export default function SavedAds() {
             <div className="flex flex-col gap-3">
               {filtered.map((ad) => (
                 <SavedCard
-                  key={ad.id}
+                  key={ad._id}
                   ad={ad}
                   view="list"
-                  selected={selected.has(ad.id)}
+                  selected={selected.has(ad._id)}
                   onSelect={handleSelect}
                   onUnsave={handleUnsave}
                 />

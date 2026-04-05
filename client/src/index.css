@@ -1,6 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Lilita+One&family=Oswald:wght@200..700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap');
+
 @import 'tailwindcss';
 /* ********** Styling for navbar starts here ********** */
 
@@ -2408,6 +2409,217 @@ select {
   }
   .upa-stats {
     grid-template-columns: repeat(2, 1fr);
+  }
+}
+/* ********** Styling for User-Ads here ********** */
+
+/* ********** Styling for User-Ads here ********** */
+.cl-page {
+  background: #f7f4f0;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  width: 100%;
+  overflow-x: hidden;
+  padding-top: 66px;
+  box-sizing: border-box;
+}
+.cl-inner {
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 32px 24px 80px;
+  box-sizing: border-box;
+}
+.cl-grid {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 24px;
+  align-items: start;
+  width: 100%;
+  min-width: 0;
+}
+.cl-left,
+.cl-right {
+  min-width: 0;
+  width: 100%;
+}
+.cl-right {
+  position: sticky;
+  top: 82px;
+}
+.similar-section {
+  width: 100%;
+  box-sizing: border-box;
+}
+.cl-card {
+  background: #ffffff;
+  border: 1.5px solid #e8e3dc;
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 1px 4px rgba(26, 21, 35, 0.04);
+}
+.cl-section-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #1a1523;
+  letter-spacing: -0.02em;
+  margin-bottom: 16px;
+}
+.gallery-main {
+  height: 420px;
+  transition: opacity 0.15s ease;
+}
+.gallery-main-emoji {
+  font-size: 6rem;
+}
+.lightbox-img {
+  width: 70vw;
+  height: 60vh;
+}
+.lightbox-emoji {
+  font-size: 5rem;
+}
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px 16px;
+}
+.similar-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+.similar-card {
+  background: #ffffff;
+  border: 1.5px solid #e8e3dc;
+  box-shadow: 0 1px 4px rgba(26, 21, 35, 0.04);
+  transition:
+    box-shadow 0.2s ease,
+    transform 0.2s ease,
+    border-color 0.2s ease;
+}
+.similar-card:hover {
+  box-shadow: 0 6px 24px rgba(26, 21, 35, 0.1);
+  transform: translateY(-2px);
+  border-color: rgba(108, 60, 225, 0.2);
+}
+.mobile-cta-bar {
+  display: none;
+}
+.mobile-title-block,
+.mobile-seller {
+  display: none;
+}
+.report-modal,
+.share-modal {
+  border-radius: 20px !important;
+}
+@media (max-width: 1024px) {
+  .cl-grid {
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+  .cl-left,
+  .cl-right {
+    width: 100%;
+    max-width: 100%;
+  }
+  .cl-right {
+    position: static;
+  }
+  .similar-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 768px) {
+  .cl-page {
+    padding-top: 0;
+  }
+  .cl-inner {
+    padding: 16px 14px 100px;
+    width: 100%;
+    max-width: 100%;
+  }
+  .cl-grid {
+    display: block;
+    width: 100%;
+  }
+  .cl-left {
+    width: 100%;
+  }
+  .gallery-main {
+    height: 260px;
+    border-radius: 16px;
+  }
+  .gallery-main-emoji {
+    font-size: 4rem;
+  }
+  .lightbox-img {
+    width: 92vw;
+    height: 50vw;
+    min-height: 200px;
+  }
+  .lightbox-emoji {
+    font-size: 3.5rem;
+  }
+  .cl-card {
+    padding: 18px 16px;
+    border-radius: 16px;
+  }
+  .mobile-title-block,
+  .mobile-seller {
+    display: block;
+  }
+  .cl-right {
+    display: none;
+  }
+  .features-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .similar-section {
+    width: 100%;
+  }
+  .similar-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    width: 100%;
+  }
+  .mobile-cta-bar {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 40;
+    gap: 10px;
+    padding: 12px 14px;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom));
+    background: rgba(247, 244, 240, 0.95);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-top: 1px solid #e8e3dc;
+  }
+  .report-modal,
+  .share-modal {
+    border-radius: 20px 20px 0 0 !important;
+  }
+}
+@media (max-width: 390px) {
+  .cl-inner {
+    padding: 12px 12px 100px;
+  }
+  .gallery-main {
+    height: 220px;
+  }
+  .gallery-main-emoji {
+    font-size: 3rem;
+  }
+  .similar-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
   }
 }
 /* ********** Styling for User-Ads here ********** */

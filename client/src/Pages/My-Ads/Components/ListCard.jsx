@@ -27,8 +27,10 @@ const fmtKm = (km) => {
 };
 
 const ListCard = ({ ad, onDelete, onPatch }) => {
-  const bg = BG_PAIRS[ad.id % BG_PAIRS.length];
-  const isDark = ad.id % 2 === 0;
+  const idForCalc = ad._id ? parseInt(ad._id.toString().slice(-4), 16) : 0;
+
+  const bg = BG_PAIRS[idForCalc % BG_PAIRS.length];
+  const isDark = idForCalc % 2 === 0;
 
   return (
     <article
@@ -40,26 +42,40 @@ const ListCard = ({ ad, onDelete, onPatch }) => {
       aria-label={`${ad.year} ${ad.make} ${ad.model}`}
     >
       {/* Thumbnail */}
+      {/* Thumbnail */}
       <a
-        href={`/cars/${ad.id}`}
-        className="shrink-0 flex items-center justify-center no-underline"
+        href={`/cars/${ad._id}`}
+        className="shrink-0 flex items-center justify-center no-underline relative overflow-hidden"
         style={{ width: '172px', background: `linear-gradient(135deg,${bg[0]},${bg[1]})` }}
         aria-label={`View ${ad.make} ${ad.model}`}
       >
-        <div className="text-center select-none">
-          <div style={{ fontSize: '2.3rem' }} aria-hidden="true">
-            🚗
-          </div>
-          <p
-            className="text-[0.62rem] mt-0.5"
-            style={{
-              color: isDark ? 'rgba(255,255,255,0.6)' : '#666',
-              fontFamily: "'DM Sans', sans-serif",
+        {/* Check for the array AND ensure the first element has a .url property */}
+        {ad.images && ad.images.length > 0 && ad.images[0].url ? (
+          <img
+            src={ad.images[0].url}
+            alt={`${ad.make} ${ad.model}`}
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.src = 'https://via.placeholder.com/172x120?text=No+Image'; // Fallback for broken links
             }}
-          >
-            {ad.color}
-          </p>
-        </div>
+          />
+        ) : (
+          <div className="text-center select-none">
+            <div style={{ fontSize: '2.3rem' }} aria-hidden="true">
+              🚗
+            </div>
+            <p
+              className="text-[0.62rem] mt-0.5"
+              style={{
+                color: isDark ? 'rgba(255,255,255,0.6)' : '#666',
+                fontFamily: "'DM Sans', sans-serif",
+              }}
+            >
+              {ad.color || 'No Image'}
+            </p>
+          </div>
+        )}
       </a>
 
       {/* Body */}
@@ -68,7 +84,7 @@ const ListCard = ({ ad, onDelete, onPatch }) => {
           {/* Top row */}
           <div className="flex items-start justify-between gap-3 mb-1.5">
             <div className="min-w-0">
-              <a href={`/cars/${ad.id}`} className="no-underline">
+              <a href={`/cars/${ad._id}`} className="no-underline">
                 <h3
                   className="text-[0.92rem] font-extrabold tracking-[-0.025em] leading-tight hover:text-[#6C3CE1] transition-colors duration-150"
                   style={{ color: '#1A1523', fontFamily: "'Syne', sans-serif" }}
@@ -197,7 +213,7 @@ const ListCard = ({ ad, onDelete, onPatch }) => {
               </>
             )}
             <a
-              href={`/edit-ad/${ad.id}`}
+              href={`/edit-ad/${ad._id}`}
               className="inline-flex items-center gap-1.5 text-[0.78rem] font-semibold px-3.5 py-1.5 rounded-xl no-underline transition-all duration-150 hover:-translate-y-px"
               style={{
                 color: '#fff',

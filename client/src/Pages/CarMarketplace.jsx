@@ -152,7 +152,7 @@ function CarCard({ car, view }) {
     return (
       <div className="car-card-list rounded-2xl overflow-hidden flex">
         <div
-          className="flex-shrink-0 flex items-center justify-center relative"
+          className="shrink-0 flex items-center justify-center relative"
           style={{
             width: '220px',
             background: thumbUrl ? 'none' : 'linear-gradient(135deg, #F2EEE9 0%, #EAE5DD 100%)',
@@ -187,7 +187,7 @@ function CarCard({ car, view }) {
                   className="text-[1rem] font-extrabold tracking-[-0.025em] leading-tight"
                   style={{ color: '#1A1523', fontFamily: "'Syne', sans-serif" }}
                 >
-                  {car.year} {car.make} {car.model}
+                  {car.make} {car.model}
                   {car.variant ? ` ${car.variant}` : ''}
                 </h3>
                 <div className="flex items-center gap-1.5 mt-0.5">
@@ -208,7 +208,7 @@ function CarCard({ car, view }) {
               <button
                 type="button"
                 onClick={() => setLiked((p) => !p)}
-                className="flex-shrink-0 w-8 h-8 rounded-xl flex items-center justify-center transition-colors duration-150"
+                className="shrink-0 w-8 h-8 rounded-xl flex items-center justify-center transition-colors duration-150"
                 style={{ background: liked ? 'rgba(232,98,42,0.1)' : '#F7F4F0' }}
                 aria-label={liked ? 'Remove from favourites' : 'Add to favourites'}
               >
@@ -221,6 +221,7 @@ function CarCard({ car, view }) {
             </div>
             <div className="flex flex-wrap gap-2 mb-3">
               {[
+                { icon: Calendar, val: car.year },
                 { icon: Fuel, val: car.fuel },
                 { icon: Gauge, val: fmtMileage(car.mileage) },
                 { icon: ArrowUpDown, val: car.transmission },
@@ -332,7 +333,7 @@ function CarCard({ car, view }) {
             className="text-[0.92rem] font-extrabold tracking-[-0.025em] leading-tight mb-0.5"
             style={{ color: '#1A1523', fontFamily: "'Syne', sans-serif" }}
           >
-            {car.year} {car.make} {car.model}
+            {car.make} {car.model}
             {car.variant ? ` ${car.variant}` : ''}
           </h3>
           <div className="flex items-center gap-1">
@@ -346,7 +347,7 @@ function CarCard({ car, view }) {
           </div>
         </div>
         <div className="flex flex-wrap gap-1.5">
-          {[car.fuel, fmtMileage(car.mileage), car.transmission].map((v) => (
+          {[car.year, car.fuel, fmtMileage(car.mileage), car.transmission].map((v) => (
             <span
               key={v}
               className="px-2 py-0.5 rounded-full text-[0.68rem] font-medium"
@@ -904,7 +905,7 @@ export default function CarMarketplace() {
               )}
             </div>
 
-            <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="flex items-center gap-2 shrink-0">
               <button
                 type="button"
                 onClick={() => setSidebarOpen(true)}

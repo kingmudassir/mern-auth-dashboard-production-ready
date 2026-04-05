@@ -63,6 +63,7 @@ export const UserRoutes = (
     <Route path="confirm-email-change" element={<ConfirmEmailChange />} />
 
     {/* Market Routes */}
+    <Route path="saved-ads" element={<SavedAds />} />
     <Route path="cars" element={<CarMarketplace />} />
     <Route path="cars/:carId" element={<CarListing />} />
     <Route path="post-ad" element={<PostAd />} />

@@ -148,17 +148,6 @@ const carSchema = new mongoose.Schema(
             },
         },
 
-        // ── Moderation status ─────────────────────────────────────
-        //
-        // This is the SINGLE source of truth for a listing's lifecycle.
-        //
-        //   pending  → freshly submitted, awaiting admin review.
-        //              Not visible on the public marketplace.
-        //   active   → approved by admin, live on the marketplace.
-        //   rejected → admin rejected it. Seller can see the reason.
-        //              Not visible on the public marketplace.
-        //   sold     → seller marked it as sold. Removed from marketplace.
-        //
         status: {
             type: String,
             enum: ["pending", "active", "rejected", "sold"],

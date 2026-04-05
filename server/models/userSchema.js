@@ -53,6 +53,13 @@ const userSchema = new mongoose.Schema(
             enum: ["user", "admin", "moderator"],
             default: "user"
         },
+        savedAds: [
+            {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'Car',
+                default: []
+            }
+        ],
 
         isAccountVerified: {
             type: Boolean,
