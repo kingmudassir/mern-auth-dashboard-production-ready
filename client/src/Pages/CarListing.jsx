@@ -3,8 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useGetCarById, useGetSimilarCars } from '../Hooks/Car-Listing/useGetCarById';
 import { useGetSavedAds } from '../Hooks/Saved-Ads/useGetSavedAds';
 import { useToggleSave } from '../Hooks/Saved-Ads/useToggleSave';
+import FEATURE_GROUPS_DATA from '../JSON-DATA/feature_groups.json';
 import {
-  ArrowLeft,
   Heart,
   Share2,
   Flag,
@@ -16,20 +16,11 @@ import {
   Palette,
   Car,
   Shield,
-  CheckCircle2,
   Phone,
   MessageCircle,
-  ChevronLeft,
-  ChevronRight,
-  X,
-  AlertCircle,
   Check,
-  Copy,
-  ExternalLink,
   Clock,
-  Users,
-  Star,
-  BadgeCheck,
+  ChevronDown,
 } from 'lucide-react';
 import Gallery from './Car-Listing/Components/Gallery';
 import ReportModal from './Car-Listing/Components/ReportModal';
@@ -39,6 +30,7 @@ import SpecRow from './Car-Listing/Components/SpecRow';
 import { SimilarCard, SimilarSkeleton } from './Car-Listing/Components/SimilarCard';
 import MobileCTABar from './Car-Listing/Components/MobileCTABar';
 import Breadcrumbs from './Car-Listing/Functions/Breadcrumbs';
+import FeatureAccordion from './Car-Listing/Components/FeatureAccordion';
 
 // ── Helpers ───────────────────────────────────────────────────────
 const fmtPrice = (n) => {
@@ -127,6 +119,22 @@ export default function CarListing() {
         .join('')
         .toUpperCase()
     : '?';
+
+  const groupedFeatures = FEATURE_GROUPS_DATA.FEATURE_GROUPS.map((group) => {
+    // Filter items in this group that exist in the car's feature list
+    const activeItems = group.items.filter((item) =>
+      car.features.some((f) => {
+        const normalizedF = f.replace(/_/g, ' ').toLowerCase();
+        const normalizedItem = item.toLowerCase();
+        return normalizedItem === normalizedF || normalizedItem.includes(normalizedF);
+      })
+    );
+
+    return {
+      title: group.group,
+      items: activeItems,
+    };
+  }).filter((group) => group.items.length > 0);
 
   return (
     <>
@@ -304,25 +312,17 @@ export default function CarListing() {
               </div>
 
               {/* Features */}
-              {car.features?.length > 0 && (
+              {groupedFeatures.length > 0 && (
                 <div className="cl-card mt-4">
                   <h2 className="cl-section-title">Features & Equipment</h2>
-                  <div className="features-grid">
-                    {car.features.map((f) => (
-                      <div key={f} className="flex items-center gap-2.5">
-                        <CheckCircle2
-                          size={14}
-                          strokeWidth={2}
-                          style={{ color: '#6C3CE1', flexShrink: 0 }}
-                          aria-hidden="true"
-                        />
-                        <span
-                          className="text-[0.82rem]"
-                          style={{ color: '#4A4558', fontFamily: "'DM Sans', sans-serif" }}
-                        >
-                          {f}
-                        </span>
-                      </div>
+
+                  <div className="space-y-1">
+                    {groupedFeatures.map((group, index) => (
+                      <FeatureAccordion
+                        key={group.title}
+                        group={group}
+                        isLast={index === groupedFeatures.length - 1}
+                      />
                     ))}
                   </div>
                 </div>

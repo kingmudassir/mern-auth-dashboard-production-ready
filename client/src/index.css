@@ -2814,3 +2814,484 @@ select {
   }
 }
 /* ********** Styling for Marketplace ends here ********** */
+
+/* ********** Styling for Admin All Car Listings starts here ********** */
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.cl-root {
+  font-family: 'DM Sans', sans-serif;
+  max-width: 1620px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.cl-page-eyebrow {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #6c3ce1;
+  margin: 0 0 3px;
+  font-family: 'DM Sans', sans-serif;
+}
+.cl-page-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #1a1523;
+  letter-spacing: -0.035em;
+  margin: 0 0 2px;
+}
+.cl-page-sub {
+  font-size: 0.8rem;
+  color: #8a8390;
+  margin: 0;
+}
+
+.cl-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+@media (max-width: 900px) {
+  .cl-stat-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 480px) {
+  .cl-stat-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.cl-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px;
+  height: 42px;
+  border-radius: 12px;
+  border: 1.5px solid #e8e3dc;
+  background: #ffffff;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+.cl-search:focus-within {
+  border-color: rgba(108, 60, 225, 0.4);
+  box-shadow: 0 0 0 3px rgba(108, 60, 225, 0.08);
+}
+.cl-search-input {
+  flex: 1;
+  height: 100%;
+  background: transparent;
+  outline: none;
+  border: none;
+  font-size: 0.85rem;
+  color: #1a1523;
+  font-family: 'DM Sans', sans-serif;
+}
+.cl-search-input::placeholder {
+  color: #c4bdd0;
+}
+
+.cl-filter-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+  padding: 0 14px;
+  height: 42px;
+  border-radius: 12px;
+  border: 1.5px solid #e8e3dc;
+  background: #ffffff;
+  color: #8a8390;
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.cl-filter-btn:hover {
+  border-color: #c4bdd0;
+}
+.cl-filter-dot {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #6c3ce1;
+}
+
+.cl-tabs-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.cl-tabs-wrap::-webkit-scrollbar {
+  display: none;
+}
+@media (max-width: 640px) {
+  .cl-tabs-wrap:not(.cl-tabs-open) {
+    display: none;
+  }
+}
+.cl-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: #f7f4f0;
+  border-radius: 12px;
+  width: fit-content;
+}
+.cl-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: 9px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+  color: #8a8390;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background 0.15s,
+    color 0.15s,
+    box-shadow 0.15s;
+}
+.cl-tab:hover {
+  color: #1a1523;
+  background: rgba(255, 255, 255, 0.6);
+}
+.cl-tab-active {
+  background: #ffffff;
+  color: #1a1523;
+  box-shadow: 0 1px 4px rgba(26, 21, 35, 0.1);
+}
+.cl-tab-count {
+  font-size: 0.65rem;
+  font-weight: 700;
+  background: rgba(26, 21, 35, 0.06);
+  color: #8a8390;
+  padding: 1px 5px;
+  border-radius: 20px;
+}
+.cl-tab-active .cl-tab-count {
+  background: rgba(108, 60, 225, 0.1);
+  color: #6c3ce1;
+}
+
+.cl-table-wrap {
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1.5px solid #e8e3dc;
+  background: #ffffff;
+  animation: fadeUp 0.3s ease both;
+}
+.cl-thead {
+  display: grid;
+  grid-template-columns: 2.2fr 1.6fr 1fr 1.1fr 0.9fr 1fr 0.9fr auto;
+  align-items: center;
+  padding: 10px 20px;
+  background: #fafaf9;
+  border-bottom: 1px solid #f2eee9;
+  gap: 8px;
+}
+.cl-th {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #c4bdd0;
+  font-family: 'DM Sans', sans-serif;
+  white-space: nowrap;
+}
+.cl-row {
+  display: grid;
+  grid-template-columns: 2.2fr 1.6fr 1fr 1.1fr 0.9fr 1fr 0.9fr auto;
+  align-items: center;
+  padding: 14px 20px;
+  gap: 8px;
+  border-bottom: 1px solid #f2eee9;
+  transition: background 0.12s;
+}
+.cl-row:last-child {
+  border-bottom: none;
+}
+.cl-row:hover {
+  background: #fafaf9;
+}
+
+.cl-car-thumb {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(108, 60, 225, 0.06);
+  border: 1px solid rgba(108, 60, 225, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.cl-listing-name {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #1a1523;
+  font-family: 'DM Sans', sans-serif;
+  line-height: 1.2;
+}
+.cl-listing-id {
+  font-size: 0.65rem;
+  color: #c4bdd0;
+  font-family: 'DM Sans', sans-serif;
+  margin-top: 1px;
+}
+.cl-seller-name {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: #1a1523;
+  font-family: 'DM Sans', sans-serif;
+  line-height: 1.2;
+}
+.cl-seller-email {
+  font-size: 0.68rem;
+  color: #8a8390;
+  font-family: 'DM Sans', sans-serif;
+}
+.cl-price {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #1a1523;
+  font-family: 'Syne', sans-serif;
+  letter-spacing: -0.02em;
+  margin-bottom: 2px;
+}
+.cl-detail-text {
+  font-size: 0.7rem;
+  color: #8a8390;
+  font-family: 'DM Sans', sans-serif;
+}
+.cl-city {
+  font-size: 0.75rem;
+  color: #8a8390;
+  font-family: 'DM Sans', sans-serif;
+}
+.cl-posted-ago {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #1a1523;
+  font-family: 'DM Sans', sans-serif;
+}
+.cl-posted-date {
+  font-size: 0.65rem;
+  color: #c4bdd0;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.cl-action-btn {
+  width: 29px;
+  height: 29px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid #e8e3dc;
+  background: #fafaf9;
+  color: #8a8390;
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    background 0.15s,
+    color 0.15s;
+}
+.cl-action-btn:hover {
+  background: #f2eee9;
+  border-color: #c4bdd0;
+  color: #1a1523;
+}
+.cl-action-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.cl-approve {
+  color: #059669;
+  border-color: rgba(5, 150, 105, 0.25);
+  background: rgba(5, 150, 105, 0.04);
+}
+.cl-approve:hover {
+  background: rgba(5, 150, 105, 0.1);
+  border-color: rgba(5, 150, 105, 0.4);
+}
+.cl-flag {
+  color: #c4531f;
+  border-color: rgba(232, 98, 42, 0.25);
+  background: rgba(232, 98, 42, 0.04);
+}
+.cl-flag:hover {
+  background: rgba(232, 98, 42, 0.1);
+  border-color: rgba(232, 98, 42, 0.4);
+}
+.cl-delete {
+  color: #dc2626;
+  border-color: rgba(220, 38, 38, 0.25);
+  background: rgba(220, 38, 38, 0.04);
+}
+.cl-delete:hover {
+  background: rgba(220, 38, 38, 0.1);
+  border-color: rgba(220, 38, 38, 0.4);
+}
+
+.cl-mobile-card {
+  background: #ffffff;
+  border: 1.5px solid #e8e3dc;
+  border-radius: 16px;
+  padding: 16px;
+  animation: fadeUp 0.3s ease both;
+}
+.cl-mobile-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 8px 0;
+  border-radius: 10px;
+  font-size: 0.73rem;
+  font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+  border: 1.5px solid;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.cl-mobile-btn:hover {
+  opacity: 0.8;
+}
+.cl-meta-label {
+  font-size: 0.62rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #c4bdd0;
+  font-family: 'DM Sans', sans-serif;
+  margin-bottom: 1px;
+}
+.cl-meta-val {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: #1a1523;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.cl-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.cl-pagination-info {
+  font-size: 0.75rem;
+  color: #8a8390;
+  font-family: 'DM Sans', sans-serif;
+}
+.cl-page-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid #e8e3dc;
+  background: #ffffff;
+  color: #8a8390;
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+  transition:
+    border-color 0.15s,
+    background 0.15s,
+    color 0.15s;
+}
+.cl-page-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.cl-page-btn:not(:disabled):hover {
+  border-color: #c4bdd0;
+  color: #1a1523;
+}
+.cl-page-ellipsis {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.78rem;
+  color: #c4bdd0;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.cl-empty-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #1a1523;
+  margin: 0;
+}
+.cl-empty-sub {
+  font-size: 0.75rem;
+  color: #8a8390;
+  margin: 0;
+  font-family: 'DM Sans', sans-serif;
+}
+.cl-clear-btn {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #6c3ce1;
+  background: rgba(108, 60, 225, 0.08);
+  border: none;
+  padding: 7px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  transition: background 0.15s;
+}
+.cl-clear-btn:hover {
+  background: rgba(108, 60, 225, 0.15);
+}
+.cl-spinner {
+  width: 28px;
+  height: 28px;
+  border: 2.5px solid rgba(108, 60, 225, 0.15);
+  border-top-color: #6c3ce1;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+.cl-loading-text {
+  font-size: 0.8rem;
+  color: #8a8390;
+  font-family: 'DM Sans', sans-serif;
+}
+/* ********** Styling for All Car Listings ends here ********** */
